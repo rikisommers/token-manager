@@ -8,6 +8,7 @@ import { LoadingIndicatorComponent } from './loading-indicator.component';
 import { ToastNotificationComponent } from './toast-notification.component';
 import { JsonPreviewDialogComponent } from './json-preview-dialog.component';
 import { TokenTableComponent } from './token-table.component';
+import { GitHubDirectoryPickerComponent } from './github-directory-picker.component';
 
 @Component({
   selector: 'app-token-generator',
@@ -18,7 +19,8 @@ import { TokenTableComponent } from './token-table.component';
     LoadingIndicatorComponent,
     ToastNotificationComponent,
     JsonPreviewDialogComponent,
-    TokenTableComponent
+    TokenTableComponent,
+    GitHubDirectoryPickerComponent
   ],
   template: `
     <div class="container mx-auto p-6 max-w-6xl">
@@ -152,6 +154,16 @@ import { TokenTableComponent } from './token-table.component';
         [title]="'Token Preview'"
         (close)="closePreview()"
       ></app-json-preview-dialog>
+      <app-github-directory-picker
+        [isOpen]="showDirectoryPicker"
+        [githubToken]="githubConfig.token"
+        [repository]="githubConfig.repository"
+        [branch]="githubConfig.branch"
+        [mode]="directoryPickerMode"
+        [availableBranches]="availableBranches"
+        (select)="onDirectorySelected($event)"
+        (cancel)="closeDirectoryPicker()"
+      ></app-github-directory-picker>
     </div>
   `,
   styles: [`
@@ -178,6 +190,9 @@ export class TokenGeneratorComponent implements OnInit {
   isConfigValid = false;
   showJsonPreview = false;
   previewJsonData: any = {};
+  showDirectoryPicker = false;
+  directoryPickerMode: 'export' | 'import' = 'import';
+  availableBranches: string[] = [];
 
   ngOnInit() {
     console.log('Token Generator Component initialized with full features!');
@@ -215,23 +230,82 @@ export class TokenGeneratorComponent implements OnInit {
       return;
     }
 
+    // Load available branches
+    try {
+      this.setLoading(true, 'Loading branches...');
+      const branches = await this.githubService.getBranches(
+        this.githubConfig.token,
+        this.githubConfig.repository
+      );
+      this.availableBranches = branches.map(b => b.name);
+      this.setLoading(false);
+    } catch (error) {
+      console.error('Failed to load branches:', error);
+      this.availableBranches = [this.githubConfig.branch];
+      this.setLoading(false);
+    }
+
+    // Show directory picker
+    this.directoryPickerMode = 'import';
+    this.showDirectoryPicker = true;
+  }
+
+  async onDirectorySelected(event: { path: string; branch: string }) {
+    this.showDirectoryPicker = false;
     this.setLoading(true, 'Importing tokens from GitHub...');
 
     try {
-      const result = await this.githubService.importTokensFromDirectory(
-        this.githubConfig.token,
-        this.githubConfig.repository,
-        'tokens', // Default directory
-        this.githubConfig.branch
-      );
+      // Check if it's a file or directory
+      const isFile = event.path.endsWith('.json');
 
-      this.tokenGroups = result.tokenGroups;
-      this.showToast(result.toast);
+      if (isFile) {
+        // Import single file
+        const fileContent = await this.githubService.getFileContent(
+          this.githubConfig.token,
+          this.githubConfig.repository,
+          event.path,
+          event.branch
+        );
+
+        if (fileContent.content) {
+          const tokenData = JSON.parse(fileContent.content);
+          const processed = this.tokenService.processImportedTokens(
+            tokenData,
+            this.globalNamespace
+          );
+
+          this.tokenGroups = processed.groups;
+          this.globalNamespace = processed.detectedGlobalNamespace;
+
+          this.showToast(createToast(`Successfully imported tokens from ${event.path}`, 'success'));
+        }
+      } else {
+        // Import directory
+        const result = await this.githubService.importTokensFromDirectory(
+          this.githubConfig.token,
+          this.githubConfig.repository,
+          event.path || '',
+          event.branch
+        );
+
+        // Process the imported tokens properly
+        if (result.tokenGroups.length > 0) {
+          this.tokenGroups = result.tokenGroups;
+          this.showToast(result.toast);
+        } else {
+          this.showToast(createToast('No tokens found in the selected directory', 'error'));
+        }
+      }
     } catch (error) {
-      this.showToast(createToast('Import failed', 'error'));
+      console.error('Import error:', error);
+      this.showToast(createToast(`Import failed: ${error instanceof Error ? error.message : 'Unknown error'}`, 'error'));
     } finally {
       this.setLoading(false);
     }
+  }
+
+  closeDirectoryPicker() {
+    this.showDirectoryPicker = false;
   }
 
   async onFileSelected(event: any) {
