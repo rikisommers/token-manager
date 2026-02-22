@@ -50,7 +50,7 @@ export const debounce = <T extends (...args: any[]) => any>(
   func: T,
   wait: number
 ): ((...args: Parameters<T>) => void) => {
-  let timeout: NodeJS.Timeout;
+  let timeout: any;
 
   return (...args: Parameters<T>) => {
     clearTimeout(timeout);
@@ -65,7 +65,7 @@ export const throttle = <T extends (...args: any[]) => any>(
   func: T,
   limit: number
 ): ((...args: Parameters<T>) => void) => {
-  let lastFunc: NodeJS.Timeout;
+  let lastFunc: any;
   let lastRan: number;
 
   return (...args: Parameters<T>) => {
@@ -246,9 +246,9 @@ export const createCssCustomProperties = (tokens: Record<string, any>): string =
       const propertyName = prefix ? `${prefix}-${key}` : key;
 
       if (value && typeof value === 'object' && !Array.isArray(value)) {
-        if (value.$value !== undefined) {
+        if ((value as any).$value !== undefined) {
           // This is a token
-          properties.push(`  --${propertyName}: ${value.$value};`);
+          properties.push(`  --${propertyName}: ${(value as any).$value};`);
         } else {
           // This is a group, recurse
           processTokens(value, propertyName);

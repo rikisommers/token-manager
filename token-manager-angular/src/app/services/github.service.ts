@@ -3,7 +3,7 @@ import { HttpClient } from '@angular/common/http';
 import { Observable } from 'rxjs';
 import {
   GitHubConfig,
-  GitHubFileResponse,
+  GitHubFileContent,
   GitHubBranch,
   TokenGroup,
   ToastMessage
@@ -54,7 +54,7 @@ export class GitHubService {
     repository: string,
     path: string,
     branch: string = 'main'
-  ): Promise<GitHubFileResponse> {
+  ): Promise<GitHubFileContent> {
     try {
       const response = await fetch(
         `${this.BASE_URL}/repos/${repository}/contents/${path}?ref=${branch}`,
@@ -81,10 +81,10 @@ export class GitHubService {
       }
 
       return {
+        name: fileData.name,
         content: atob(fileData.content),
-        sha: fileData.sha,
         path: fileData.path,
-        size: fileData.size
+        type: 'file'
       };
     } catch (error) {
       console.error('Error fetching file content:', error);
@@ -211,7 +211,7 @@ export class GitHubService {
       for (const file of jsonFiles) {
         try {
           const fileContent = await this.getFileContent(token, repository, file.path, branch);
-          const tokenData = JSON.parse(fileContent.content);
+          const tokenData = JSON.parse(fileContent.content || '{}');
 
           // Merge tokens from this file
           Object.assign(allTokens, tokenData);
