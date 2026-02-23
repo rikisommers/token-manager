@@ -33,7 +33,9 @@ function ColorSwatch({ value, resolvedValue, onColorChange }: ColorSwatchProps) 
 
   // Use resolved value for display if available, otherwise use original value
   const displayValue = resolvedValue || value;
-  const actualColor = displayValue.startsWith('#') ? displayValue : '#cccccc';
+  // Show a placeholder if the value is still an unresolved reference; otherwise pass
+  // the value directly as a CSS color (supports #hex, rgb(), rgba(), hsl(), named colors, etc.)
+  const actualColor = displayValue.startsWith('{') ? '#cccccc' : displayValue;
 
   return (
     <div className="flex items-center gap-2">

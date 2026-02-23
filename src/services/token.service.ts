@@ -335,36 +335,67 @@ export class TokenService {
   }
 
   /**
-   * Resolve token reference to actual value
+   * Resolve token reference to actual value.
+   * Handles references like {token.color.base.teal.200.value} or {color.base.grey.600},
+   * including cases where the namespace is stripped from group paths during import.
    */
   resolveTokenReference(reference: string, allGroups: TokenGroup[]): string {
-    // Handle references like {token.color.base.teal.200.value} or {color.base.grey.600}
-    let cleanRef = reference.replace(/^\{/, '').replace(/\}$/, '');
+    return this.resolveTokenReferenceWithVisited(reference, allGroups, new Set());
+  }
+
+  private resolveTokenReferenceWithVisited(
+    reference: string,
+    allGroups: TokenGroup[],
+    visited: Set<string>
+  ): string {
+    if (typeof reference !== 'string' || !reference.startsWith('{') || !reference.endsWith('}')) {
+      return reference;
+    }
+
+    // Guard against circular references
+    if (visited.has(reference)) {
+      return reference;
+    }
+
+    let cleanRef = reference.slice(1, -1); // Remove { and }
     if (cleanRef.endsWith('.value')) {
       cleanRef = cleanRef.slice(0, -6);
     }
 
-    const parts = cleanRef.split('.');
+    // Depth-first search through nested groups, using allGroups for recursive value resolution
+    const search = (groups: TokenGroup[]): string | null => {
+      for (const group of groups) {
+        for (const token of group.tokens) {
+          const fullPath = `${group.path}.${token.path}`;
+          // Match exact path, or when the reference has a namespace prefix that was stripped
+          // from group paths during import (e.g. cleanRef='token.colors.base.red' matches
+          // fullPath='colors.base.red'). Check segment boundaries with a dot prefix to
+          // avoid partial segment matches (e.g. 'red' must not match 'infrared').
+          if (fullPath === cleanRef || cleanRef.endsWith('.' + fullPath)) {
+            const value = String(token.value);
+            // Recursively resolve if the found value is also a reference
+            if (value.startsWith('{') && value.endsWith('}')) {
+              const nextVisited = new Set(visited);
+              nextVisited.add(reference);
+              return this.resolveTokenReferenceWithVisited(value, allGroups, nextVisited);
+            }
+            return value;
+          }
+        }
 
-    // Try to find the token
-    for (const group of allGroups) {
-      for (const token of group.tokens) {
-        const fullPath = `${group.path}.${token.path}`;
-        if (fullPath === cleanRef || fullPath.endsWith(cleanRef)) {
-          return token.value;
+        // Check nested groups
+        if (group.children) {
+          const found = search(group.children);
+          if (found !== null) {
+            return found;
+          }
         }
       }
+      return null;
+    };
 
-      // Check nested groups
-      if (group.children) {
-        const resolved = this.resolveTokenReference(reference, group.children);
-        if (resolved !== reference) {
-          return resolved;
-        }
-      }
-    }
-
-    return reference; // Return original if not found
+    const result = search(allGroups);
+    return result !== null ? result : reference; // Return original if not found
   }
 
   /**
