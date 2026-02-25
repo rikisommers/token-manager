@@ -59,7 +59,13 @@ Plans:
   2. A "Load Collection" button opens a dialog listing all MongoDB collections; selecting one populates the form with its token data
   3. After loading a collection, the collection name is retained so "Save to Database" overwrites it without re-prompting for a name
   4. All existing generator form functionality (GitHub import, Figma export, GitHub PR export, format download, JSON preview) works normally when a MongoDB collection is loaded
-**Plans**: TBD
+**Plans**: 4 plans
+
+Plans:
+- [ ] 03-01-PLAN.md — POST /api/collections + PUT /api/collections/[id] + ANGULAR_PARITY.md
+- [ ] 03-02-PLAN.md — SaveCollectionDialog component + "Save to Database" button + collection state
+- [ ] 03-03-PLAN.md — LoadCollectionDialog component + "Load Collection" button + dirty flag + clear form
+- [ ] 03-04-PLAN.md — Human verify save/load/overwrite cycle end-to-end
 
 ### Phase 4: Collection Management
 **Goal**: Users can delete, rename, and duplicate collections from the tool
