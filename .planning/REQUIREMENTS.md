@@ -7,8 +7,8 @@
 
 ### Database Setup
 
-- [ ] **DB-01**: App connects to MongoDB via environment variable connection string
-- [ ] **DB-02**: MongoDB connection is established on server startup and reused across requests (singleton connection)
+- [x] **DB-01**: App connects to MongoDB via environment variable connection string
+- [x] **DB-02**: MongoDB connection is established on server startup and reused across requests (singleton connection)
 - [ ] **DB-03**: `TokenCollection` document schema defined with: `id`, `name`, `tokens` (raw JSON object), `sourceMetadata` (nullable: repo, branch, path), `userId` (nullable — reserved for future multi-user), `createdAt`, `updatedAt`
 
 ### Seeding
@@ -83,8 +83,8 @@ Which phases cover which requirements. Updated during roadmap creation.
 
 | Requirement | Phase | Status |
 |-------------|-------|--------|
-| DB-01 | Phase 1 | Pending |
-| DB-02 | Phase 1 | Pending |
+| DB-01 | Phase 1 | Complete |
+| DB-02 | Phase 1 | Complete |
 | DB-03 | Phase 1 | Pending |
 | SEED-01 | Phase 1 | Pending |
 | VIEW-01 | Phase 2 | Pending |

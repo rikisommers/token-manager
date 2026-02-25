@@ -10,28 +10,28 @@ See: .planning/PROJECT.md (updated 2026-02-25)
 ## Current Position
 
 Phase: 1 of 4 (Database Foundation)
-Plan: 0 of ? in current phase
-Status: Ready to plan
-Last activity: 2026-02-25 — Roadmap created
+Plan: 1 of ? in current phase
+Status: In progress
+Last activity: 2026-02-25 — Completed 01-01 (MongoDB connection singleton)
 
-Progress: [░░░░░░░░░░] 0%
+Progress: [█░░░░░░░░░] 5%
 
 ## Performance Metrics
 
 **Velocity:**
-- Total plans completed: 0
-- Average duration: -
-- Total execution time: 0 hours
+- Total plans completed: 1
+- Average duration: 3 min
+- Total execution time: ~0.05 hours
 
 **By Phase:**
 
 | Phase | Plans | Total | Avg/Plan |
 |-------|-------|-------|----------|
-| - | - | - | - |
+| 01-database-foundation | 1 | 3 min | 3 min |
 
 **Recent Trend:**
-- Last 5 plans: -
-- Trend: -
+- Last 5 plans: 01-01 (3 min)
+- Trend: Baseline established
 
 *Updated after each plan completion*
 
@@ -49,6 +49,13 @@ Recent decisions affecting current work:
 - Use TokenGeneratorFormNew.tsx as base (active component with most features)
 - Document all new features in .planning/ANGULAR_PARITY.md for future Angular port
 
+**01-01 decisions:**
+- Mongoose ODM over native MongoDB driver (ODM chosen for schema validation + model layer convenience; used in phases 02+)
+- Error thrown at module load time when MONGODB_URI missing (fail-fast rather than silent hang)
+- global.__mongoose_cache singleton (standard Next.js pattern to survive hot-reload without exhausting connection pool)
+- bufferCommands: false (surface connection failures immediately rather than queuing queries)
+- Event handlers registered outside dbConnect() to avoid duplicate registration on repeated calls
+
 ### Pending Todos
 
 None yet.
@@ -60,5 +67,5 @@ None yet.
 ## Session Continuity
 
 Last session: 2026-02-25
-Stopped at: Roadmap created, no phases planned yet
+Stopped at: Completed 01-01-PLAN.md (MongoDB singleton connection module)
 Resume file: None
