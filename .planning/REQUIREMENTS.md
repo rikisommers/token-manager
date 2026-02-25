@@ -13,7 +13,7 @@
 
 ### Seeding
 
-- [ ] **SEED-01**: A one-time setup script seeds all local `tokens/` directory JSON files into MongoDB as named collections (filename without extension → collection name)
+- [x] **SEED-01**: A one-time setup script seeds all local `tokens/` directory JSON files into MongoDB as named collections (filename without extension → collection name)
 
 ### View Tokens Page
 
@@ -45,7 +45,7 @@
 
 ### Angular Parity Tracking
 
-- [ ] **PARITY-01**: All new API routes (path, method, request/response shape), MongoDB schema, and significant UI patterns are documented in `.planning/ANGULAR_PARITY.md` as they are built
+- [x] **PARITY-01**: All new API routes (path, method, request/response shape), MongoDB schema, and significant UI patterns are documented in `.planning/ANGULAR_PARITY.md` as they are built
 
 ## v2 Requirements
 
@@ -86,7 +86,7 @@ Which phases cover which requirements. Updated during roadmap creation.
 | DB-01 | Phase 1 | Complete |
 | DB-02 | Phase 1 | Complete |
 | DB-03 | Phase 1 | Complete |
-| SEED-01 | Phase 1 | Pending |
+| SEED-01 | Phase 1 | Complete |
 | VIEW-01 | Phase 2 | Pending |
 | VIEW-02 | Phase 2 | Pending |
 | VIEW-03 | Phase 2 | Pending |
@@ -103,7 +103,7 @@ Which phases cover which requirements. Updated during roadmap creation.
 | MGMT-02 | Phase 4 | Pending |
 | MGMT-03 | Phase 4 | Pending |
 | MGMT-04 | Phase 4 | Pending |
-| PARITY-01 | Phase 1 (ongoing through Phase 4) | Pending |
+| PARITY-01 | Phase 1 (ongoing through Phase 4) | Complete |
 
 **Coverage:**
 - v1 requirements: 21 total
