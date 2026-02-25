@@ -12,6 +12,7 @@
     "build": "next build",
     "start": "next start",
     "lint": "eslint",
+    "seed": "DOTENV_CONFIG_PATH=.env.local npx ts-node --transpile-only -r dotenv/config --project tsconfig.scripts.json scripts/seed.ts",
     "dev:stencil": "yarn workspace token-manager-stencil dev",
     "build:stencil": "yarn workspace token-manager-stencil build",
     "start:stencil": "yarn workspace token-manager-stencil start",
@@ -30,10 +31,12 @@
     "@types/react": "18.2.0",
     "@types/react-dom": "18.2.0",
     "autoprefixer": "10.4.16",
+    "dotenv": "^17.3.1",
     "eslint": "8.57.0",
     "eslint-config-next": "13.5.6",
     "postcss": "8.4.31",
     "tailwindcss": "3.3.0",
+    "ts-node": "^10.9.2",
     "typescript": "5.2.2"
   }
 }
