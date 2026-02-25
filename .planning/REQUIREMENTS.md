@@ -23,10 +23,10 @@
 
 ### Generator Form — Save
 
-- [ ] **GEN-01**: Token generator form has a "Save to Database" button
-- [ ] **GEN-02**: Clicking "Save to Database" prompts the user to enter a collection name before saving
-- [ ] **GEN-03**: Collection is saved to MongoDB with current token data and any GitHub source metadata (repo, branch, path) as a structured metadata field
-- [ ] **GEN-04**: User receives a toast/confirmation that the collection was saved successfully
+- [x] **GEN-01**: Token generator form has a "Save to Database" button
+- [x] **GEN-02**: Clicking "Save to Database" prompts the user to enter a collection name before saving
+- [x] **GEN-03**: Collection is saved to MongoDB with current token data and any GitHub source metadata (repo, branch, path) as a structured metadata field
+- [x] **GEN-04**: User receives a toast/confirmation that the collection was saved successfully
 
 ### Generator Form — Load
 
@@ -38,7 +38,7 @@
 
 ### Collection Management
 
-- [ ] **MGMT-01**: User can save edits back to an existing collection (overwrite) from the generator form
+- [x] **MGMT-01**: User can save edits back to an existing collection (overwrite) from the generator form
 - [ ] **MGMT-02**: User can delete a collection from MongoDB (with a confirmation prompt)
 - [ ] **MGMT-03**: User can rename a collection (via inline edit or dialog)
 - [ ] **MGMT-04**: User can duplicate a collection (creates a copy prompting for a new name)
@@ -90,16 +90,16 @@ Which phases cover which requirements. Updated during roadmap creation.
 | VIEW-01 | Phase 2 | Complete |
 | VIEW-02 | Phase 2 | Complete |
 | VIEW-03 | Phase 2 | Complete |
-| GEN-01 | Phase 3 | Pending |
-| GEN-02 | Phase 3 | Pending |
-| GEN-03 | Phase 3 | Pending |
-| GEN-04 | Phase 3 | Pending |
+| GEN-01 | Phase 3 | Complete |
+| GEN-02 | Phase 3 | Complete |
+| GEN-03 | Phase 3 | Complete |
+| GEN-04 | Phase 3 | Complete |
 | GEN-05 | Phase 3 | Pending |
 | GEN-06 | Phase 3 | Pending |
 | GEN-07 | Phase 3 | Pending |
 | GEN-08 | Phase 3 | Pending |
 | GEN-09 | Phase 3 | Pending |
-| MGMT-01 | Phase 3 | Pending |
+| MGMT-01 | Phase 3 | Complete |
 | MGMT-02 | Phase 4 | Pending |
 | MGMT-03 | Phase 4 | Pending |
 | MGMT-04 | Phase 4 | Pending |
@@ -112,4 +112,4 @@ Which phases cover which requirements. Updated during roadmap creation.
 
 ---
 *Requirements defined: 2026-02-25*
-*Last updated: 2026-02-25 after roadmap creation*
+*Last updated: 2026-02-26 after 03-01 completion (GEN-01 through GEN-04, MGMT-01)*

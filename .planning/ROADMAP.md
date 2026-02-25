@@ -62,7 +62,7 @@ Plans:
 **Plans**: 4 plans
 
 Plans:
-- [ ] 03-01-PLAN.md — POST /api/collections + PUT /api/collections/[id] + ANGULAR_PARITY.md
+- [x] 03-01-PLAN.md — POST /api/collections + PUT /api/collections/[id] + ANGULAR_PARITY.md
 - [ ] 03-02-PLAN.md — SaveCollectionDialog component + "Save to Database" button + collection state
 - [ ] 03-03-PLAN.md — LoadCollectionDialog component + "Load Collection" button + dirty flag + clear form
 - [ ] 03-04-PLAN.md — Human verify save/load/overwrite cycle end-to-end
@@ -86,5 +86,5 @@ Phases execute in numeric order: 1 → 2 → 3 → 4
 |-------|----------------|--------|-----------|
 | 1. Database Foundation | 3/3 | Complete   | 2026-02-25 |
 | 2. View Integration | 2/2 | Complete   | 2026-02-25 |
-| 3. Generator Form | 0/? | Not started | - |
+| 3. Generator Form | 1/4 | In progress | - |
 | 4. Collection Management | 0/? | Not started | - |

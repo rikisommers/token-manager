@@ -5,23 +5,23 @@
 See: .planning/PROJECT.md (updated 2026-02-25)
 
 **Core value:** Token collections are always available and editable — stored in MongoDB, loadable into the generator form, and visible on the view page.
-**Current focus:** Phase 2 — View Integration
+**Current focus:** Phase 3 — Generator Form
 
 ## Current Position
 
-Phase: 2 of 4 (View Integration)
-Plan: 2 of 3 in current phase
-Status: In progress (at checkpoint — awaiting human verification of Task 3)
-Last activity: 2026-02-25 — Completed 02-02 auto tasks (CollectionSelector + page integration); at checkpoint
+Phase: 3 of 4 (Generator Form)
+Plan: 1 of 3 in current phase
+Status: In progress
+Last activity: 2026-02-26 — Completed 03-01 (POST + PUT API endpoints for collections write-side)
 
-Progress: [█████░░░░░] 44%
+Progress: [██████░░░░] 55%
 
 ## Performance Metrics
 
 **Velocity:**
-- Total plans completed: 4
-- Average duration: 3.0 min
-- Total execution time: ~0.20 hours
+- Total plans completed: 5
+- Average duration: 2.8 min
+- Total execution time: ~0.23 hours
 
 **By Phase:**
 
@@ -29,10 +29,11 @@ Progress: [█████░░░░░] 44%
 |-------|-------|-------|----------|
 | 01-database-foundation | 3 | 10 min | 3.3 min |
 | 02-view-integration | 2 | 4 min | 2.0 min |
+| 03-generator-form | 1 | 2 min | 2.0 min |
 
 **Recent Trend:**
-- Last 5 plans: 01-01 (3 min), 01-02 (2 min), 01-03 (5 min), 02-01 (2 min), 02-02 (2 min)
-- Trend: Phase 2 in progress
+- Last 5 plans: 01-03 (5 min), 02-01 (2 min), 02-02 (2 min), 03-01 (2 min)
+- Trend: Phase 3 in progress
 
 *Updated after each plan completion*
 
@@ -80,6 +81,11 @@ Recent decisions affecting current work:
 - localStorage id validated against live collections on mount — stale ids silently fall back to 'local'
 - GET /api/collections/[id] uses .lean() — consistent with collections list route pattern
 
+**03-01 decisions:**
+- 409 response includes existingId so client can call PUT /api/collections/[existingId] directly — no second GET needed
+- PUT body empty-check tests all three UpdateTokenCollectionInput fields; {} returns 400 rather than a no-op DB call
+- runValidators: true on findByIdAndUpdate ensures Mongoose schema validators run on updates
+
 ### Pending Todos
 
 None yet.
@@ -90,6 +96,6 @@ None yet.
 
 ## Session Continuity
 
-Last session: 2026-02-25
-Stopped at: 02-02 checkpoint (Task 3 — human-verify CollectionSelector in browser)
+Last session: 2026-02-26
+Stopped at: Completed 03-01-PLAN.md
 Resume file: None
