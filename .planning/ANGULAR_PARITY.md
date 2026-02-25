@@ -3,7 +3,100 @@
 Documents all new API routes, data models, and significant patterns introduced in the ATUI Tokens Manager Next.js milestone.
 Use this as the contract for implementing equivalent functionality in the Angular workspace.
 
-**Last updated:** Phase 1 — Database Foundation
+**Last updated:** Phase 3 — Generator Form
+
+---
+
+## Phase 3 — Generator Form
+
+### 1. POST /api/collections — Create Collection
+
+**Method:** POST
+**Path:** `/api/collections`
+**Purpose:** Create a new token collection document in MongoDB.
+
+**Request body:**
+```json
+{
+  "name": "string (required)",
+  "tokens": "Record<string, unknown> (required)",
+  "sourceMetadata": {
+    "repo": "string | null",
+    "branch": "string | null",
+    "path": "string | null"
+  }
+}
+```
+`sourceMetadata` is optional; omit or pass `null` for manually-created collections.
+
+**Response shapes:**
+
+| Status | Body | Condition |
+|--------|------|-----------|
+| 201 | `{ collection: ITokenCollection }` | Created successfully |
+| 400 | `{ error: 'name is required' }` | `name` missing or empty string |
+| 409 | `{ error: 'A collection named "…" already exists', existingId: string }` | Duplicate name |
+| 500 | `{ error: 'Failed to create collection' }` | Unexpected server error |
+
+**409 + existingId pattern:**
+When a collection with the same name already exists, the response includes `existingId` — the MongoDB `_id` of the existing document. The client can present a confirmation dialog and then call `PUT /api/collections/[existingId]` to overwrite it.
+
+---
+
+### 2. PUT /api/collections/[id] — Update Collection
+
+**Method:** PUT
+**Path:** `/api/collections/[id]`
+**Purpose:** Update one or more fields on an existing collection (name, tokens, sourceMetadata).
+
+**Request body (`UpdateTokenCollectionInput`):**
+```typescript
+type UpdateTokenCollectionInput = Partial<Pick<ITokenCollection, 'name' | 'tokens' | 'sourceMetadata'>>;
+```
+At least one field must be present; sending an empty object returns 400.
+
+**Response shapes:**
+
+| Status | Body | Condition |
+|--------|------|-----------|
+| 200 | `{ collection: ITokenCollection }` | Updated successfully |
+| 400 | `{ error: 'Nothing to update' }` | Body has no recognised fields |
+| 404 | `{ error: 'Collection not found' }` | `[id]` does not match any document |
+| 500 | `{ error: 'Failed to update collection' }` | Unexpected server error |
+
+**Implementation notes:**
+- Uses `findByIdAndUpdate(..., { $set: body }, { new: true, runValidators: true })` — validators re-run on update, and the updated document is returned.
+- `.lean()` is used for plain JSON-serialisable response objects (consistent with GET routes).
+
+---
+
+### 3. UI Contracts — Save/Load Dialog Behaviour
+
+#### Save Dialog
+- Triggered when the user clicks "Save" on the generator form.
+- Prompts for a collection name (modal/inline input).
+- Pre-fills the name with the currently-loaded collection name (if any).
+- On submit: calls `POST /api/collections`.
+  - 201 → save succeeded; update "Editing: [name]" indicator; clear dirty flag.
+  - 409 → present duplicate-name confirmation: "A collection named '[name]' already exists. Overwrite?"
+    - Confirm → call `PUT /api/collections/[existingId]` with current form data.
+    - Cancel → return to name prompt.
+
+#### Load Dialog
+- Shows a scrollable list of all saved collections (from `GET /api/collections`).
+- Empty state: "No saved collections yet."
+- If dirty flag is set (unsaved changes since last save/load), show confirmation before replacing form state: "You have unsaved changes. Load anyway?"
+  - Confirm → fetch `GET /api/collections/[id]`, replace form state, clear dirty flag, set "Editing: [name]".
+  - Cancel → dismiss dialog, keep current form state.
+
+#### "Editing: [name]" Indicator
+- Displayed near the Save/Load buttons when a collection has been loaded or just saved.
+- Cleared when "Clear Form" is triggered (resets form to default empty state).
+
+#### Dirty Flag
+- Set when any `tokenGroups` or `globalNamespace` field changes after the last save or load.
+- Used to trigger the unsaved-changes confirmation in the Load dialog.
+- Cleared after a successful save or load.
 
 ---
 
