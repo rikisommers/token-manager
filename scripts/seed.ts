@@ -1,8 +1,11 @@
 /**
- * Seed script: loads all tokens/ JSON files into MongoDB as TokenCollection documents.
+ * Seed script: merges all tokens/ JSON files into a single MongoDB TokenCollection document.
  *
  * Run via: yarn seed
- * Idempotent: safely re-runnable — existing collections are skipped.
+ * Idempotent: re-running replaces the existing "Design Tokens" document.
+ *
+ * Stored format: { [relativeFilePath]: tokenData } — matches TokenUpdater.getAllTokens() so
+ * the same flatten logic works for both local and MongoDB token display.
  *
  * Environment: requires MONGODB_URI in .env.local (loaded via -r dotenv/config in npm script).
  */
@@ -12,6 +15,7 @@ import dbConnect from '../src/lib/mongodb';
 import TokenCollection from '../src/lib/db/models/TokenCollection';
 
 const TOKENS_DIR = path.join(process.cwd(), 'tokens');
+const COLLECTION_NAME = 'Design Tokens';
 
 function walkDir(dir: string): string[] {
   const results: string[] = [];
@@ -27,33 +31,31 @@ function walkDir(dir: string): string[] {
   return results;
 }
 
-function deriveCollectionName(filePath: string): string {
-  const rel = path.relative(TOKENS_DIR, filePath);
-  return rel.replace(/\.json$/, '').replace(/[/\\]/g, ' / ');
-}
-
 async function seed() {
   await dbConnect();
+
+  // Merge all token files into a single object keyed by relative path (e.g. "globals/color-base.json")
   const files = walkDir(TOKENS_DIR);
-  let inserted = 0;
-  let skipped = 0;
+  const mergedTokens: Record<string, unknown> = {};
 
   for (const file of files) {
-    const name = deriveCollectionName(file);
-    const existing = await TokenCollection.findOne({ name });
-    if (existing) {
-      console.log(`[SKIP] "${name}" already exists`);
-      skipped++;
-      continue;
-    }
-    const raw = fs.readFileSync(file, 'utf-8');
-    const tokens = JSON.parse(raw);
-    await TokenCollection.create({ name, tokens, sourceMetadata: null, userId: null });
-    console.log(`[INSERT] "${name}"`);
-    inserted++;
+    const relPath = path.relative(TOKENS_DIR, file).replace(/\\/g, '/');
+    mergedTokens[relPath] = JSON.parse(fs.readFileSync(file, 'utf-8'));
+    console.log(`[MERGE] ${relPath}`);
   }
 
-  console.log(`\nSeed complete: ${inserted} inserted, ${skipped} skipped`);
+  console.log(`\nMerged ${files.length} files into "${COLLECTION_NAME}"`);
+
+  // Replace existing document (delete + insert for idempotency)
+  const deleted = await TokenCollection.deleteMany({ name: COLLECTION_NAME });
+  if (deleted.deletedCount > 0) {
+    console.log(`[REPLACE] Removed ${deleted.deletedCount} existing "${COLLECTION_NAME}" document(s)`);
+  }
+
+  await TokenCollection.create({ name: COLLECTION_NAME, tokens: mergedTokens, sourceMetadata: null, userId: null });
+  console.log(`[INSERT] "${COLLECTION_NAME}" — ${files.length} token files`);
+
+  console.log('\nSeed complete.');
   process.exit(0);
 }
 

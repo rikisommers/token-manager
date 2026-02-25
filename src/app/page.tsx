@@ -25,12 +25,13 @@ interface CollectionOption {
 }
 
 /**
- * Flatten a W3C Design Token JSON object (as stored in MongoDB) into the
- * Record<string, TokenGroup[]> shape expected by TokenTable.
+ * Flatten MongoDB token data into the Record<string, TokenGroup[]> shape expected by TokenTable.
  *
- * - Top-level keys become section names.
- * - Any node with a `$value` key is treated as a token leaf.
- * - Path segments are joined with dots.
+ * Stored format: { [relativeFilePath]: tokenData } — e.g. "globals/color-base.json": { token: {...} }
+ * This matches TokenUpdater.getAllTokens() so the same display logic works for local and MongoDB tokens.
+ *
+ * Section = first path segment of the file key (e.g. "globals", "brands", "palette").
+ * Leaf detection: a node with both `value` and `type` keys is a token (Style Dictionary format).
  */
 function flattenMongoTokens(
   tokens: Record<string, unknown>,
@@ -38,43 +39,43 @@ function flattenMongoTokens(
 ): Record<string, TokenGroup[]> {
   const result: Record<string, TokenGroup[]> = {};
 
-  function walk(
-    node: Record<string, unknown>,
-    pathParts: string[],
-    section: string
-  ) {
-    if ('$value' in node) {
+  function walk(node: Record<string, unknown>, currentPath: string, filePath: string, section: string) {
+    if ('value' in node && 'type' in node) {
       // Token leaf
-      const path = pathParts.join('.');
-      const tokenGroup: TokenGroup = {
-        path,
+      if (!result[section]) result[section] = [];
+      result[section].push({
+        path: currentPath,
         token: {
-          value: String(node.$value),
-          type: typeof node.$type === 'string' ? node.$type : 'other',
+          value: String(node.value),
+          type: typeof node.type === 'string' ? node.type : 'other',
         },
-        filePath: collectionName,
+        filePath,
         section,
-      };
-      if (!result[section]) {
-        result[section] = [];
-      }
-      result[section].push(tokenGroup);
+      });
       return;
     }
-
     for (const key of Object.keys(node)) {
-      if (key.startsWith('$')) continue; // skip $description, $extensions, etc.
       const child = node[key];
       if (child && typeof child === 'object' && !Array.isArray(child)) {
-        walk(child as Record<string, unknown>, [...pathParts, key], section);
+        const childPath = currentPath ? `${currentPath}.${key}` : key;
+        walk(child as Record<string, unknown>, childPath, filePath, section);
       }
     }
   }
 
-  for (const topKey of Object.keys(tokens)) {
-    const topNode = tokens[topKey];
-    if (topNode && typeof topNode === 'object' && !Array.isArray(topNode)) {
-      walk(topNode as Record<string, unknown>, [topKey], topKey);
+  // tokens keys are relative file paths like "globals/color-base.json"
+  for (const filePath of Object.keys(tokens)) {
+    const section = filePath.split('/')[0];
+    const fileData = tokens[filePath];
+    if (fileData && typeof fileData === 'object' && !Array.isArray(fileData)) {
+      walk(fileData as Record<string, unknown>, '', filePath, section);
+    }
+  }
+
+  // Strip leading dot from paths produced by empty-string start
+  for (const section of Object.keys(result)) {
+    for (const group of result[section]) {
+      group.path = group.path.replace(/^\./, '');
     }
   }
 
