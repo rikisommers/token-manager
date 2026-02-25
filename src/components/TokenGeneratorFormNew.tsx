@@ -5,6 +5,7 @@ import { GitHubDirectoryPicker } from './GitHubDirectoryPicker';
 import { LoadingIndicator } from './LoadingIndicator';
 import { ToastNotification } from './ToastNotification';
 import { JsonPreviewDialog } from './JsonPreviewDialog';
+import { SaveCollectionDialog } from './SaveCollectionDialog';
 
 // Import services and types
 import { githubService, tokenService, fileService } from '../services';
@@ -48,6 +49,12 @@ export function TokenGeneratorFormNew({ githubConfig }: TokenGeneratorFormNewPro
   const [loadingState, setLoadingState] = useState<LoadingState>(createLoadingState(false));
   const [toast, setToast] = useState<ToastMessage | null>(null);
 
+  // Collection persistence state
+  const [loadedCollection, setLoadedCollection] = useState<{ id: string; name: string } | null>(null);
+  const [showSaveDialog, setShowSaveDialog] = useState(false);
+  const [isSaving, setIsSaving] = useState(false);
+  const [saveDialogDuplicateName, setSaveDialogDuplicateName] = useState<string | null>(null);
+
   // Toast helper functions
   const showToast = (message: string, type: 'success' | 'error' | 'info' = 'info') => {
     setToast(createToast(message, type));
@@ -59,6 +66,66 @@ export function TokenGeneratorFormNew({ githubConfig }: TokenGeneratorFormNewPro
   // Loading helper functions
   const setLoading = (isLoading: boolean, message?: string) => {
     setLoadingState(createLoadingState(isLoading, message));
+  };
+
+  // Save collection to MongoDB
+  const handleSaveCollection = async (name: string) => {
+    setIsSaving(true);
+    try {
+      const tokenSet = generateTokenSet();
+      const sourceMetadata = githubConfig
+        ? { repo: githubConfig.repository, branch: githubConfig.branch, path: null }
+        : null;
+
+      // If name matches an already-loaded collection, attempt PUT (overwrite) directly
+      if (loadedCollection && loadedCollection.name === name) {
+        const res = await fetch(`/api/collections/${loadedCollection.id}`, {
+          method: 'PUT',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ name, tokens: tokenSet, sourceMetadata }),
+        });
+        const data = await res.json();
+        if (!res.ok) {
+          showToast(`Failed to save: ${data.error}`, 'error');
+          return;
+        }
+        setLoadedCollection({ id: data.collection._id, name: data.collection.name });
+        setSaveDialogDuplicateName(null);
+        setShowSaveDialog(false);
+        showToast(`Saved to database: ${data.collection.name}`, 'success');
+        return;
+      }
+
+      // Otherwise POST (new name)
+      const res = await fetch('/api/collections', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ name, tokens: tokenSet, sourceMetadata }),
+      });
+      const data = await res.json();
+
+      if (res.status === 409) {
+        // Duplicate name — surface confirm-overwrite step in dialog
+        setSaveDialogDuplicateName(name);
+        // Store the existingId so the overwrite PUT uses it
+        setLoadedCollection({ id: data.existingId, name });
+        return; // dialog stays open, advances to confirm-overwrite step
+      }
+
+      if (!res.ok) {
+        showToast(`Failed to save: ${data.error}`, 'error');
+        return;
+      }
+
+      setLoadedCollection({ id: data.collection._id, name: data.collection.name });
+      setSaveDialogDuplicateName(null);
+      setShowSaveDialog(false);
+      showToast(`Saved to database: ${data.collection.name}`, 'success');
+    } catch (err) {
+      showToast(`Error: ${err instanceof Error ? err.message : 'Unknown error'}`, 'error');
+    } finally {
+      setIsSaving(false);
+    }
   };
 
   // Use utility functions from utils module
@@ -368,8 +435,7 @@ export function TokenGeneratorFormNew({ githubConfig }: TokenGeneratorFormNewPro
 
     const isImportMode = directoryPickerMode === 'import';
 
-    setIsLoading(true);
-    setLoadingMessage(isImportMode ? 'Importing tokens from GitHub...' : 'Exporting tokens to GitHub...');
+    setLoading(true, isImportMode ? 'Importing tokens from GitHub...' : 'Exporting tokens to GitHub...');
 
     try {
       if (directoryPickerMode === 'export') {
@@ -722,6 +788,11 @@ export function TokenGeneratorFormNew({ githubConfig }: TokenGeneratorFormNewPro
         <div className="flex justify-between items-center mb-4">
           <div className="flex items-center space-x-4">
             <h3 className="text-lg font-medium text-gray-900">Export Actions</h3>
+            {loadedCollection && (
+              <p className="text-xs text-emerald-700 font-medium">
+                Editing: {loadedCollection.name}
+              </p>
+            )}
             <div className="flex items-center space-x-2">
               <label className="text-sm font-medium text-gray-700">Global Namespace:</label>
               <input
@@ -739,6 +810,12 @@ export function TokenGeneratorFormNew({ githubConfig }: TokenGeneratorFormNewPro
               className="px-3 py-2 text-sm font-medium text-white bg-gray-600 rounded-md hover:bg-gray-700"
             >
               Preview JSON
+            </button>
+            <button
+              onClick={() => setShowSaveDialog(true)}
+              className="px-3 py-2 text-sm font-medium text-white bg-emerald-600 rounded-md hover:bg-emerald-700"
+            >
+              Save to Database
             </button>
             <button
               onClick={exportToJSON}
@@ -839,6 +916,15 @@ export function TokenGeneratorFormNew({ githubConfig }: TokenGeneratorFormNewPro
         isOpen={showJsonDialog}
         onClose={() => setShowJsonDialog(false)}
         jsonData={generateTokenSet()}
+      />
+
+      {/* Save Collection Dialog */}
+      <SaveCollectionDialog
+        isOpen={showSaveDialog}
+        initialName={loadedCollection?.name ?? ''}
+        onSave={handleSaveCollection}
+        onCancel={() => { setShowSaveDialog(false); setSaveDialogDuplicateName(null); }}
+        isSaving={isSaving}
       />
 
       {/* Loading Indicator */}
