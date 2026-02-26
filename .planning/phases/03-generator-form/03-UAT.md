@@ -65,11 +65,14 @@ skipped: 0
 ## Gaps
 
 - truth: "Color tokens referencing another token show the actual inherited color swatch on /generate"
-  status: failed
+  status: fixed
   reason: "User reported: no"
   severity: major
   test: 9
-  root_cause: ""
-  artifacts: []
-  missing: []
+  root_cause: "resolveTokenReferenceWithVisited only checked cleanRef.endsWith('.' + fullPath), covering the case where namespace was stripped from group paths. But collections saved before the deepMerge fix have file-path artifacts in group.path (e.g. 'brands.brand1.color.json.token.color.brand'), making fullPath LONGER than cleanRef — the reverse direction. Added fullPath.endsWith('.' + cleanRef) to handle both directions."
+  artifacts:
+    - path: "src/services/token.service.ts"
+      issue: "resolveTokenReferenceWithVisited line 374 missing bidirectional suffix check"
+  missing:
+    - "Added fullPath.endsWith('.' + cleanRef) as third condition — commit 7b8c848"
   debug_session: ""
