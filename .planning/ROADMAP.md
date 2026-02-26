@@ -15,7 +15,7 @@ Decimal phases appear between their surrounding integers in numeric order.
 - [x] **Phase 1: Database Foundation** - MongoDB connection, schema, and seed script (completed 2026-02-25)
 - [x] **Phase 2: View Integration** - Collection selector on View Tokens page (completed 2026-02-25)
 - [x] **Phase 3: Generator Form** - Save, load, and update collections from the generator (completed 2026-02-26)
-- [ ] **Phase 4: Collection Management** - Delete, rename, and duplicate collections
+- [x] **Phase 4: Collection Management** - Delete, rename, and duplicate collections (completed 2026-02-26)
 - [ ] **Phase 5: Export style dictionary build tokens** - Style-dictionary build pipeline with modal output
 
 ## Phase Details
@@ -48,8 +48,8 @@ Plans:
 **Plans**: 2 plans
 
 Plans:
-- [ ] 02-01-PLAN.md — GET /api/collections route (VIEW-01, VIEW-02, VIEW-03)
-- [ ] 02-02-PLAN.md — CollectionSelector component + page.tsx integration + GET /api/collections/[id] route (VIEW-01, VIEW-02, VIEW-03)
+- [x] 02-01-PLAN.md — GET /api/collections route (VIEW-01, VIEW-02, VIEW-03)
+- [x] 02-02-PLAN.md — CollectionSelector component + page.tsx integration + GET /api/collections/[id] route (VIEW-01, VIEW-02, VIEW-03)
 
 ### Phase 3: Generator Form
 **Goal**: Users can save new collections to MongoDB, load existing collections into the generator form, and save edits back
@@ -66,7 +66,7 @@ Plans:
 - [x] 03-01-PLAN.md — POST /api/collections + PUT /api/collections/[id] + ANGULAR_PARITY.md
 - [x] 03-02-PLAN.md — SaveCollectionDialog component + "Save to Database" button + collection state
 - [x] 03-03-PLAN.md — LoadCollectionDialog component + "Load Collection" button + dirty flag + clear form
-- [ ] 03-04-PLAN.md — Human verify save/load/overwrite cycle end-to-end
+- [x] 03-04-PLAN.md — Human verify save/load/overwrite cycle end-to-end
 
 ### Phase 4: Collection Management
 **Goal**: Users can delete, rename, and duplicate collections from the tool
@@ -80,8 +80,8 @@ Plans:
 
 Plans:
 - [x] 04-01-PLAN.md — DELETE API endpoint + CollectionActions component (MGMT-02, MGMT-03, MGMT-04)
-- [ ] 04-02-PLAN.md — Wire CollectionActions into page.tsx + ANGULAR_PARITY.md update (MGMT-02, MGMT-03, MGMT-04)
-- [ ] 04-03-PLAN.md — Human verify delete/rename/duplicate end-to-end
+- [x] 04-02-PLAN.md — Wire CollectionActions into page.tsx + ANGULAR_PARITY.md update (MGMT-02, MGMT-03, MGMT-04)
+- [x] 04-03-PLAN.md — Human verify delete/rename/duplicate end-to-end
 
 ### Phase 5: Export style dictionary build tokens
 **Goal**: Users can trigger a style-dictionary build from either page header and view all format outputs (CSS, SCSS, LESS, JS, TS, JSON) in a modal with per-tab copy and ZIP download
