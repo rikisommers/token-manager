@@ -196,3 +196,31 @@ export interface StructureDetectionResult {
   globalNamespace?: string;
   description: string;
 }
+
+// Build Tokens — Phase 5
+
+/** Output for one brand in one format */
+export interface BrandFormatOutput {
+  brand: string;       // e.g. "brand1", "globals", "shared"
+  content: string;     // the built file content as a string
+  filename: string;    // e.g. "tokens-brand1.css"
+}
+
+/** All outputs for one format */
+export interface FormatOutput {
+  format: 'css' | 'scss' | 'less' | 'js' | 'ts' | 'json';
+  outputs: BrandFormatOutput[];  // one per brand; length=1 for single-brand
+}
+
+/** Response from POST /api/build-tokens */
+export interface BuildTokensResult {
+  formats: FormatOutput[];       // 6 entries, one per format
+  collectionName: string;
+}
+
+/** Request body for POST /api/build-tokens */
+export interface BuildTokensRequest {
+  tokens: Record<string, unknown>;   // raw token JSON from MongoDB or generator form
+  namespace: string;                  // e.g. "token" — used as CSS variable prefix
+  collectionName: string;             // used for ZIP filename
+}
