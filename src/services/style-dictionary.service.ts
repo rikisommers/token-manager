@@ -117,6 +117,45 @@ function normalizeTokens(obj: Record<string, unknown>): Record<string, unknown> 
 }
 
 /**
+ * JS/TS reserved keywords that may appear as token group names.
+ * When style-dictionary emits javascript/es6 output it produces:
+ *   export const default = "..."   ← syntax error
+ * We rename matching keys to append an underscore suffix: default → default_
+ *
+ * Only token group name keys are renamed (not SD meta-keys like $value, $type).
+ */
+const JS_RESERVED_KEYWORDS = new Set([
+  'break', 'case', 'catch', 'class', 'const', 'continue', 'debugger',
+  'default', 'delete', 'do', 'else', 'export', 'extends', 'finally',
+  'for', 'function', 'if', 'import', 'in', 'instanceof', 'let', 'new',
+  'null', 'return', 'static', 'super', 'switch', 'this', 'throw', 'true',
+  'false', 'try', 'type', 'typeof', 'undefined', 'var', 'void', 'while',
+  'with', 'yield', 'enum', 'interface', 'implements', 'package', 'private',
+  'protected', 'public', 'abstract', 'as', 'async', 'await', 'from', 'of',
+]);
+
+/**
+ * Recursively walk the token tree and rename any token-group key that is a
+ * JS reserved keyword by appending an underscore suffix (e.g. default → default_).
+ * SD meta-keys ($value, $type, $description) are never renamed.
+ */
+function sanitizeTokenKeys(obj: Record<string, unknown>): Record<string, unknown> {
+  const result: Record<string, unknown> = {};
+  for (const [key, val] of Object.entries(obj)) {
+    // Never rename SD meta-keys
+    const isMetaKey = key.startsWith('$');
+    const safeKey = !isMetaKey && JS_RESERVED_KEYWORDS.has(key) ? `${key}_` : key;
+
+    if (val && typeof val === 'object' && !Array.isArray(val)) {
+      result[safeKey] = sanitizeTokenKeys(val as Record<string, unknown>);
+    } else {
+      result[safeKey] = val;
+    }
+  }
+  return result;
+}
+
+/**
  * Build a single brand's tokens into all 6 formats using style-dictionary v5 programmatic API.
  * Returns a map from format name to file content string.
  */
@@ -129,11 +168,10 @@ async function buildBrandTokens(
 
   const normalizedBrandTokens = normalizeTokens(brandTokens);
 
-  // Wrap in namespace: { [namespace]: normalizedTokens }
-  // Variable names: --{namespace}-{path} e.g. --token-colors-primary
-  const wrappedTokens = {
-    [namespace || 'token']: normalizedBrandTokens,
-  };
+  // Sanitize reserved JS keywords in token group names before passing to SD.
+  // Tokens from MongoDB are already wrapped with a namespace key (e.g. { token: { ... } })
+  // so we pass them directly — no additional wrapping to avoid --token-token-... double prefix.
+  const sanitizedTokens = sanitizeTokenKeys(normalizedBrandTokens);
 
   const formatConfigs: Record<Format, { formatter: string; extension: string; transformGroup: string }> = {
     css:  { formatter: 'css/variables',                transformGroup: 'css', extension: 'css' },
@@ -147,11 +185,13 @@ async function buildBrandTokens(
   for (const [fmt, { formatter, extension, transformGroup }] of Object.entries(formatConfigs) as [Format, { formatter: string; extension: string; transformGroup: string }][]) {
     try {
       const sd = new StyleDictionary({
-        tokens: wrappedTokens as Record<string, never>,
+        tokens: sanitizedTokens as Record<string, never>,
         platforms: {
           [fmt]: {
             transformGroup,
-            prefix: namespace || 'token',
+            // No prefix: the token tree already contains the namespace as its root key
+            // (e.g. { token: { common: { ... } } }) so SD derives --token-common-...
+            // directly from the path. Adding prefix here would produce --token-token-...
             files: [
               {
                 destination: `tokens-${brand}.${extension}`,
