@@ -16,6 +16,7 @@ Decimal phases appear between their surrounding integers in numeric order.
 - [x] **Phase 2: View Integration** - Collection selector on View Tokens page (completed 2026-02-25)
 - [x] **Phase 3: Generator Form** - Save, load, and update collections from the generator (completed 2026-02-26)
 - [ ] **Phase 4: Collection Management** - Delete, rename, and duplicate collections
+- [ ] **Phase 5: Export style dictionary build tokens** - Style-dictionary build pipeline with modal output
 
 ## Phase Details
 
@@ -82,23 +83,32 @@ Plans:
 - [ ] 04-02-PLAN.md — Wire CollectionActions into page.tsx + ANGULAR_PARITY.md update (MGMT-02, MGMT-03, MGMT-04)
 - [ ] 04-03-PLAN.md — Human verify delete/rename/duplicate end-to-end
 
+### Phase 5: Export style dictionary build tokens
+**Goal**: Users can trigger a style-dictionary build from either page header and view all format outputs (CSS, SCSS, LESS, JS, TS, JSON) in a modal with per-tab copy and ZIP download
+**Depends on:** Phase 4
+**Requirements**: EXPORT-01, EXPORT-02, EXPORT-03, EXPORT-04, EXPORT-05, EXPORT-06, EXPORT-07
+**Success Criteria** (what must be TRUE):
+  1. A "Build Tokens" button appears in the header of both the View Tokens page and the Generator page
+  2. The button is disabled when no buildable collection is present (local files on View page, no tokens on Generator page)
+  3. Clicking "Build Tokens" opens a modal showing built output for all 6 formats (CSS, SCSS, LESS, JS, TS, JSON)
+  4. Multi-brand collections produce per-brand output with brand sub-tabs inside each format tab
+  5. Each format tab has a copy-to-clipboard button; a "Download All" button produces a ZIP with all brand x format files
+  6. Both pages use the same BuildTokensModal component — no code duplication
+**Plans**: 2 plans
+
+Plans:
+- [ ] 05-01-PLAN.md — Install style-dictionary + jszip, build service, API route, BuildTokensModal component
+- [ ] 05-02-PLAN.md — Wire Build Tokens button into both pages + ANGULAR_PARITY.md + human verify
+
 ## Progress
 
 **Execution Order:**
-Phases execute in numeric order: 1 → 2 → 3 → 4
+Phases execute in numeric order: 1 → 2 → 3 → 4 → 5
 
 | Phase | Plans Complete | Status | Completed |
 |-------|----------------|--------|-----------|
 | 1. Database Foundation | 3/3 | Complete   | 2026-02-25 |
 | 2. View Integration | 2/2 | Complete   | 2026-02-25 |
 | 3. Generator Form | 3/4 | In Progress|  |
-| 4. Collection Management | 2/3 | In Progress|  |
-
-### Phase 5: Export style dictionary build tokens
-
-**Goal:** [To be planned]
-**Depends on:** Phase 4
-**Plans:** 2/3 plans executed
-
-Plans:
-- [ ] TBD (run /gsd:plan-phase 5 to break down)
+| 4. Collection Management | 1/3 | In Progress | - |
+| 5. Export style dictionary | 0/2 | Planned | - |
