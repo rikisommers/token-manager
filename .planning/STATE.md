@@ -5,16 +5,16 @@
 See: .planning/PROJECT.md (updated 2026-02-25)
 
 **Core value:** Token collections are always available and editable — stored in MongoDB, loadable into the generator form, and visible on the view page.
-**Current focus:** Phase 5 — Export Style Dictionary Build Tokens
+**Current focus:** Phase 5 complete — all 5 phases done
 
 ## Current Position
 
 Phase: 5 of 5 (Export Style Dictionary Build Tokens)
-Plan: 1 of 2 in current phase (complete)
-Status: In progress
-Last activity: 2026-02-26 — Completed 05-01 (Build service, API route, BuildTokensModal component)
+Plan: 2 of 2 in current phase (complete)
+Status: Complete
+Last activity: 2026-02-26 — Completed 05-02 (Build Tokens button wired, SD reference errors fixed, button state fixed)
 
-Progress: [████████░░] 80%
+Progress: [██████████] 100%
 
 ## Performance Metrics
 
@@ -31,14 +31,14 @@ Progress: [████████░░] 80%
 | 02-view-integration | 2 | 4 min | 2.0 min |
 | 03-generator-form | 3 | 7 min | 2.3 min |
 | 04-collection-management | 2 | 3 min | 1.5 min |
-| 05-export-style-dictionary-build-tokens | 1 | 5 min | 5.0 min |
+| 05-export-style-dictionary-build-tokens | 2 | 21 min | 10.5 min |
 
 **Recent Trend:**
-- Last 5 plans: 03-03 (3 min), 04-01 (2 min), 04-02 (1 min), 05-01 (5 min)
-- Trend: Phase 5 in progress
+- Last 5 plans: 04-01 (2 min), 04-02 (1 min), 05-01 (5 min), 05-02 (16 min)
+- Trend: Phase 5 complete — all phases done
 
 *Updated after each plan completion*
-| Phase 05 P02 | 3 | 2 tasks | 4 files |
+| Phase 05 P02 | 16 | 3 tasks | 5 files |
 
 ## Accumulated Context
 
@@ -122,6 +122,9 @@ Recent decisions affecting current work:
 - globals brand is NOT emitted as separate output when non-globals brands exist — only used as merge source (self-contained brand files)
 - [Phase 05-02]: namespace hardcoded to 'token' on View Tokens page — convention --token-{category}-{token} per plan spec
 - [Phase 05-02]: Three-argument onTokensChange in TokenGeneratorFormNew exposes collectionName so Generator page ZIP filename uses actual loaded collection name
+- [Phase 05-02]: Recursive token count in useEffect: countTokensRecursive() descends into child TokenGroups — flat count misses tokens in nested structures from processImportedTokens()
+- [Phase 05-02]: SD v5 brokenReferences: 'console' — only throw/console valid in SD v5 type system; 'warn' does not exist; 'console' routes diagnostic to console without throwing
+- [Phase 05-02]: generate/page.tsx header layout: outer justify-between must have two direct children; flattened nested structure so Build Tokens button anchors to right side
 
 ### Pending Todos
 
@@ -134,5 +137,5 @@ None yet.
 ## Session Continuity
 
 Last session: 2026-02-26
-Stopped at: Completed 05-01-PLAN.md
+Stopped at: Completed 05-02-PLAN.md (Phase 5 complete — all plans done)
 Resume file: None
