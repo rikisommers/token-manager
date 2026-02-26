@@ -39,9 +39,9 @@
 ### Collection Management
 
 - [x] **MGMT-01**: User can save edits back to an existing collection (overwrite) from the generator form
-- [ ] **MGMT-02**: User can delete a collection from MongoDB (with a confirmation prompt)
-- [ ] **MGMT-03**: User can rename a collection (via inline edit or dialog)
-- [ ] **MGMT-04**: User can duplicate a collection (creates a copy prompting for a new name)
+- [x] **MGMT-02**: User can delete a collection from MongoDB (with a confirmation prompt)
+- [x] **MGMT-03**: User can rename a collection (via inline edit or dialog)
+- [x] **MGMT-04**: User can duplicate a collection (creates a copy prompting for a new name)
 
 ### Angular Parity Tracking
 
@@ -100,9 +100,9 @@ Which phases cover which requirements. Updated during roadmap creation.
 | GEN-08 | Phase 3 | Complete |
 | GEN-09 | Phase 3 | Complete |
 | MGMT-01 | Phase 3 | Complete |
-| MGMT-02 | Phase 4 | Pending |
-| MGMT-03 | Phase 4 | Pending |
-| MGMT-04 | Phase 4 | Pending |
+| MGMT-02 | Phase 4 | Complete |
+| MGMT-03 | Phase 4 | Complete |
+| MGMT-04 | Phase 4 | Complete |
 | PARITY-01 | Phase 1 (ongoing through Phase 4) | Complete |
 
 **Coverage:**

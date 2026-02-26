@@ -14,7 +14,7 @@ Decimal phases appear between their surrounding integers in numeric order.
 
 - [x] **Phase 1: Database Foundation** - MongoDB connection, schema, and seed script (completed 2026-02-25)
 - [x] **Phase 2: View Integration** - Collection selector on View Tokens page (completed 2026-02-25)
-- [ ] **Phase 3: Generator Form** - Save, load, and update collections from the generator
+- [x] **Phase 3: Generator Form** - Save, load, and update collections from the generator (completed 2026-02-26)
 - [ ] **Phase 4: Collection Management** - Delete, rename, and duplicate collections
 
 ## Phase Details
@@ -63,8 +63,8 @@ Plans:
 
 Plans:
 - [x] 03-01-PLAN.md — POST /api/collections + PUT /api/collections/[id] + ANGULAR_PARITY.md
-- [ ] 03-02-PLAN.md — SaveCollectionDialog component + "Save to Database" button + collection state
-- [ ] 03-03-PLAN.md — LoadCollectionDialog component + "Load Collection" button + dirty flag + clear form
+- [x] 03-02-PLAN.md — SaveCollectionDialog component + "Save to Database" button + collection state
+- [x] 03-03-PLAN.md — LoadCollectionDialog component + "Load Collection" button + dirty flag + clear form
 - [ ] 03-04-PLAN.md — Human verify save/load/overwrite cycle end-to-end
 
 ### Phase 4: Collection Management
@@ -78,7 +78,7 @@ Plans:
 **Plans**: 3 plans
 
 Plans:
-- [ ] 04-01-PLAN.md — DELETE API endpoint + CollectionActions component (MGMT-02, MGMT-03, MGMT-04)
+- [x] 04-01-PLAN.md — DELETE API endpoint + CollectionActions component (MGMT-02, MGMT-03, MGMT-04)
 - [ ] 04-02-PLAN.md — Wire CollectionActions into page.tsx + ANGULAR_PARITY.md update (MGMT-02, MGMT-03, MGMT-04)
 - [ ] 04-03-PLAN.md — Human verify delete/rename/duplicate end-to-end
 
@@ -92,7 +92,7 @@ Phases execute in numeric order: 1 → 2 → 3 → 4
 | 1. Database Foundation | 3/3 | Complete   | 2026-02-25 |
 | 2. View Integration | 2/2 | Complete   | 2026-02-25 |
 | 3. Generator Form | 3/4 | In Progress|  |
-| 4. Collection Management | 0/? | Not started | - |
+| 4. Collection Management | 1/3 | In Progress | - |
 
 ### Phase 5: Export style dictionary build tokens
 

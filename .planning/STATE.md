@@ -5,23 +5,23 @@
 See: .planning/PROJECT.md (updated 2026-02-25)
 
 **Core value:** Token collections are always available and editable — stored in MongoDB, loadable into the generator form, and visible on the view page.
-**Current focus:** Phase 3 — Generator Form
+**Current focus:** Phase 4 — Collection Management
 
 ## Current Position
 
-Phase: 3 of 4 (Generator Form)
-Plan: 3 of 3 in current phase
-Status: Phase complete
-Last activity: 2026-02-26 — Completed 03-03 (Load Collection button, LoadCollectionDialog, dirty flag)
+Phase: 4 of 4 (Collection Management)
+Plan: 1 of 2 in current phase
+Status: In progress
+Last activity: 2026-02-26 — Completed 04-01 (DELETE endpoint, CollectionActions component)
 
-Progress: [████████░░] 75%
+Progress: [█████████░] 87%
 
 ## Performance Metrics
 
 **Velocity:**
-- Total plans completed: 6
-- Average duration: 2.7 min
-- Total execution time: ~0.27 hours
+- Total plans completed: 7
+- Average duration: 2.6 min
+- Total execution time: ~0.30 hours
 
 **By Phase:**
 
@@ -30,10 +30,11 @@ Progress: [████████░░] 75%
 | 01-database-foundation | 3 | 10 min | 3.3 min |
 | 02-view-integration | 2 | 4 min | 2.0 min |
 | 03-generator-form | 3 | 7 min | 2.3 min |
+| 04-collection-management | 1 | 2 min | 2.0 min |
 
 **Recent Trend:**
-- Last 5 plans: 02-01 (2 min), 02-02 (2 min), 03-01 (2 min), 03-02 (2 min), 03-03 (3 min)
-- Trend: Phase 3 complete
+- Last 5 plans: 03-01 (2 min), 03-02 (2 min), 03-03 (3 min), 04-01 (2 min)
+- Trend: Phase 4 in progress
 
 *Updated after each plan completion*
 
@@ -101,6 +102,12 @@ Recent decisions affecting current work:
 - clearForm resets both loadedCollection and isDirty: clears full editing session context so next Save prompts for a new name
 - LoadCollectionDialog manages isFetching and isLoading separately: fetch on open vs load-in-progress are independent loading states
 
+**04-01 decisions:**
+- CollectionActions renders null when selectedId is falsy, 'local', or collections is empty — single guard covers all hidden states
+- Rename Save disabled when value unchanged from current name — prevents no-op PUT call
+- Duplicate 409 handled inline in modal (not via onError) — error stays visible in context where user can fix the name
+- Two-step duplicate (GET source then POST copy) avoids adding server-side duplicate endpoint; reuses existing POST /api/collections
+
 ### Pending Todos
 
 None yet.
@@ -112,5 +119,5 @@ None yet.
 ## Session Continuity
 
 Last session: 2026-02-26
-Stopped at: Completed 03-03-PLAN.md
+Stopped at: Completed 04-01-PLAN.md
 Resume file: None
