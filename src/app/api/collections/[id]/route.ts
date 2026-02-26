@@ -67,3 +67,23 @@ export async function PUT(
     return NextResponse.json({ error: 'Failed to update collection' }, { status: 500 });
   }
 }
+
+export async function DELETE(
+  _request: Request,
+  { params }: { params: { id: string } }
+) {
+  try {
+    await dbConnect();
+
+    const doc = await TokenCollection.findByIdAndDelete(params.id).lean();
+
+    if (!doc) {
+      return NextResponse.json({ error: 'Collection not found' }, { status: 404 });
+    }
+
+    return NextResponse.json({ success: true });
+  } catch (error) {
+    console.error('[DELETE /api/collections/[id]]', error);
+    return NextResponse.json({ error: 'Failed to delete collection' }, { status: 500 });
+  }
+}
