@@ -112,3 +112,12 @@ Phases execute in numeric order: 1 → 2 → 3 → 4 → 5
 | 3. Generator Form | 3/4 | In Progress|  |
 | 4. Collection Management | 1/3 | In Progress | - |
 | 5. Export style dictionary | 0/2 | Planned | - |
+
+### Phase 6: Collection UX Improvements
+
+**Goal:** [To be planned]
+**Depends on:** Phase 5
+**Plans:** 0 plans
+
+Plans:
+- [ ] TBD (run /gsd:plan-phase 6 to break down)

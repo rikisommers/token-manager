@@ -44,6 +44,7 @@ Progress: [████████░░] 80%
 ### Roadmap Evolution
 
 - Phase 5 added: Export style dictionary build tokens
+- Phase 6 added: Collection UX Improvements
 
 ### Decisions
 
