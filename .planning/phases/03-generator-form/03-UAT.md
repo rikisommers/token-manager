@@ -65,7 +65,7 @@ skipped: 0
 ## Gaps
 
 - truth: "Color tokens referencing another token show the actual inherited color swatch on /generate"
-  status: fixed
+  status: known-bug
   reason: "User reported: no"
   severity: major
   test: 9
