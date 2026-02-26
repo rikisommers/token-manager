@@ -43,14 +43,16 @@ function flattenMongoTokens(
   const result: Record<string, TokenGroup[]> = {};
 
   function walk(node: Record<string, unknown>, currentPath: string, filePath: string, section: string) {
-    if ('value' in node && 'type' in node) {
-      // Token leaf
+    if (('value' in node && 'type' in node) || ('$value' in node && '$type' in node)) {
+      // Token leaf — supports both plain {value, type} and W3C {$value, $type} formats
+      const rawValue = node.$value ?? node.value;
+      const rawType = node.$type ?? node.type;
       if (!result[section]) result[section] = [];
       result[section].push({
         path: currentPath,
         token: {
-          value: String(node.value),
-          type: typeof node.type === 'string' ? node.type : 'other',
+          value: String(rawValue),
+          type: typeof rawType === 'string' ? rawType : 'other',
         },
         filePath,
         section,
