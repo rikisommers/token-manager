@@ -45,6 +45,7 @@ Progress: [██████████] 100%
 | Phase 07 P02 | 110 | 2 tasks | 3 files |
 | Phase 07-fix-figma-integration P04 | 108 | 2 tasks | 2 files |
 | Phase 07 P03 | 3 | 2 tasks | 3 files |
+| Phase 07-fix-figma-integration P05 | 7 | 2 tasks | 3 files |
 
 ## Accumulated Context
 
@@ -152,6 +153,9 @@ Recent decisions affecting current work:
 - [Phase 07-03]: ExportToFigmaDialog reads figma-config from localStorage on open — no prop drilling of credentials
 - [Phase 07-03]: mongoCollectionId update in export route is non-fatal — console.error logged but export response still returns 200
 - [Phase 07-03]: Dynamic import of dbConnect and TokenCollection in export route — avoids top-level module import coupling
+- [Phase 07-05]: SourceContextBar returns null for null/undefined/no-type sourceMetadata to avoid layout gaps
+- [Phase 07-05]: FigmaConfig placed before GitHubConfig in header flex div per CONTEXT.md locked decision
+- [Phase 07-05]: GET /api/collections/[id] changed to explicit shape for consistency and safety
 
 ### Pending Todos
 
