@@ -130,7 +130,7 @@ Phases execute in numeric order: 1 → 2 → 3 → 4 → 5 → 6
 
 **Goal:** Fix broken Figma export by consolidating user key + page key into a single persistent credentials dialog (stored like GitHub config, set once). Add import-from-Figma action to save as a collection. Highlight the upstream source (GitHub or Figma) clearly on both the View and Generate tabs so users know that pushing will affect the upstream source.
 **Depends on:** Phase 6
-**Plans:** 6 plans
+**Plans:** 2/6 plans executed
 
 Plans:
 - [ ] 07-01-PLAN.md — FigmaConfig component + fix export auth header + extend sourceMetadata schema
