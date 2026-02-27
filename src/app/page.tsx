@@ -1,11 +1,12 @@
 'use client';
 
-import { useState, useEffect, useRef } from 'react';
+import { useState, useEffect, useRef, Suspense } from 'react';
+import { useSearchParams, useRouter } from 'next/navigation';
 import { TokenTable } from '@/components/TokenTable';
-import { CollectionSelector } from '@/components/CollectionSelector';
-import { CollectionActions } from '@/components/CollectionActions';
 import { ToastNotification } from '@/components/ToastNotification';
 import { BuildTokensModal } from '@/components/BuildTokensModal';
+import { SaveCollectionDialog } from '@/components/SaveCollectionDialog';
+import { SharedCollectionHeader } from '@/components/SharedCollectionHeader';
 import type { ToastMessage } from '@/types';
 
 interface Token {
@@ -114,7 +115,12 @@ function flattenMongoTokens(
   return result;
 }
 
-export default function Home() {
+function HomeContent() {
+  const searchParams = useSearchParams();
+  const router = useRouter();
+
+  const activeTab = (searchParams.get('tab') as 'view' | 'generate') ?? 'view';
+
   const [tokenData, setTokenData] = useState<Record<string, TokenGroup[]>>({});
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
@@ -125,11 +131,17 @@ export default function Home() {
   const [buildModalOpen, setBuildModalOpen] = useState(false);
   const [rawCollectionTokens, setRawCollectionTokens] = useState<Record<string, unknown> | null>(null);
   const [rawCollectionName, setRawCollectionName] = useState<string>('');
+  const [saveAsDialogOpen, setSaveAsDialogOpen] = useState(false);
+  const [isSavingAs, setIsSavingAs] = useState(false);
 
   const abortControllerRef = useRef<AbortController | null>(null);
 
   // Build is enabled when a MongoDB collection is selected (not 'local')
   const isBuildEnabled = selectedId !== 'local' && selectedId !== '';
+
+  const switchTab = (tab: 'view' | 'generate') => {
+    router.push(tab === 'view' ? '/' : '/?tab=generate');
+  };
 
   // Auto-dismiss toast after 4 seconds
   useEffect(() => {
@@ -256,6 +268,56 @@ export default function Home() {
     setToast({ message: `Duplicated as "${newName}"`, type: 'success' });
   };
 
+  const handleNewCollection = () => {
+    // Clear selection to local, switch to generate tab
+    handleSelectionChange('local');
+    switchTab('generate');
+  };
+
+  const handleSaveAs = async (name: string) => {
+    setIsSavingAs(true);
+    try {
+      // Determine token payload: rawCollectionTokens for MongoDB collection, tokenData for local
+      const tokensPayload = rawCollectionTokens ?? tokenData;
+      const res = await fetch('/api/collections', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ name, tokens: tokensPayload }),
+      });
+      if (res.status === 201) {
+        const { collection } = await res.json();
+        setCollections(prev => [...prev, { _id: collection._id, name: collection.name }]);
+        handleSelectionChange(collection._id);
+        setSaveAsDialogOpen(false);
+        setToast({ message: `Saved as "${collection.name}"`, type: 'success' });
+      } else if (res.status === 409) {
+        // Name conflict — dialog will show overwrite step
+        const data = await res.json();
+        // Overwrite: PUT
+        const putRes = await fetch(`/api/collections/${data.existingId}`, {
+          method: 'PUT',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ name, tokens: tokensPayload }),
+        });
+        if (putRes.ok) {
+          const { collection } = await putRes.json();
+          setCollections(prev => prev.map(c => c._id === collection._id ? { ...c, name: collection.name } : c));
+          handleSelectionChange(collection._id);
+          setSaveAsDialogOpen(false);
+          setToast({ message: `Saved as "${collection.name}"`, type: 'success' });
+        } else {
+          setToast({ message: 'Failed to save collection', type: 'error' });
+        }
+      } else {
+        setToast({ message: 'Failed to save collection', type: 'error' });
+      }
+    } catch {
+      setToast({ message: 'Failed to save collection', type: 'error' });
+    } finally {
+      setIsSavingAs(false);
+    }
+  };
+
   const saveToken = async (filePath: string, tokenData: unknown) => {
     try {
       const response = await fetch(`/api/tokens/${filePath}`, {
@@ -301,26 +363,11 @@ export default function Home() {
 
   return (
     <div className="min-h-screen bg-gray-50">
+      {/* App header */}
       <header className="bg-white shadow-sm border-b border-gray-200">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
           <div className="flex items-center justify-between h-16">
-            <div className="flex items-center gap-8">
-              <h1 className="text-2xl font-bold text-gray-900">Design Token Manager</h1>
-              <nav className="flex space-x-4">
-                <a
-                  href="/"
-                  className="bg-blue-100 text-blue-900 px-3 py-2 rounded-md text-sm font-medium"
-                >
-                  View Tokens
-                </a>
-                <a
-                  href="/generate"
-                  className="text-gray-600 hover:text-gray-900 px-3 py-2 rounded-md text-sm font-medium"
-                >
-                  Generate Tokens
-                </a>
-              </nav>
-            </div>
+            <h1 className="text-2xl font-bold text-gray-900">Design Token Manager</h1>
             <div className="flex items-center gap-2">
               <button
                 onClick={() => setBuildModalOpen(true)}
@@ -329,61 +376,95 @@ export default function Home() {
               >
                 Build Tokens
               </button>
-              <button
-                onClick={fetchTokens}
-                className="px-4 py-2 text-sm font-medium text-gray-600 hover:text-gray-900 hover:bg-gray-100 rounded-md"
-              >
-                Refresh
-              </button>
             </div>
           </div>
         </div>
       </header>
 
-      <main className="max-w-7xl mx-auto py-6 px-4 sm:px-6 lg:px-8">
-        <CollectionSelector
-          collections={collections}
-          selectedId={selectedId}
-          loading={tableLoading}
-          onChange={handleSelectionChange}
-        />
-        <CollectionActions
-          selectedId={selectedId}
-          selectedName={collections.find(c => c._id === selectedId)?.name ?? ''}
-          collections={collections}
-          onDeleted={handleDeleted}
-          onRenamed={handleRenamed}
-          onDuplicated={handleDuplicated}
-          onError={(message) => setToast({ message, type: 'error' })}
-        />
+      {/* Shared collection header */}
+      <SharedCollectionHeader
+        collections={collections}
+        selectedId={selectedId}
+        tableLoading={tableLoading}
+        onSelectionChange={handleSelectionChange}
+        onSaveAs={() => setSaveAsDialogOpen(true)}
+        onNewCollection={handleNewCollection}
+        onDeleted={handleDeleted}
+        onRenamed={handleRenamed}
+        onDuplicated={handleDuplicated}
+        onError={(msg) => setToast({ message: msg, type: 'error' })}
+      />
 
-        <div className="relative mt-6">
-          {tableLoading && (
-            <div className="absolute inset-0 bg-white bg-opacity-70 flex items-center justify-center z-10">
-              <div className="animate-spin rounded-full h-10 w-10 border-b-2 border-blue-600"></div>
-            </div>
-          )}
-
-          {Object.keys(tokenData).length === 0 ? (
-            <div className="text-center py-12">
-              <p className="text-gray-500">No design tokens found.</p>
-            </div>
-          ) : (
-            <div className="space-y-8">
-              {Object.entries(tokenData).map(([section, tokens]) => (
-                <TokenTable
-                  key={section}
-                  section={section}
-                  tokens={tokens}
-                  onSave={saveToken}
-                />
-              ))}
-            </div>
-          )}
+      {/* Tab switcher */}
+      <div className="bg-white border-b border-gray-200">
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+          <div className="flex space-x-1 py-2">
+            <button
+              onClick={() => switchTab('view')}
+              className={
+                activeTab === 'view'
+                  ? 'px-4 py-2 text-sm font-medium bg-blue-100 text-blue-900 rounded-md'
+                  : 'px-4 py-2 text-sm font-medium text-gray-600 hover:text-gray-900 hover:bg-gray-100 rounded-md'
+              }
+            >
+              View Tokens
+            </button>
+            <button
+              onClick={() => switchTab('generate')}
+              className={
+                activeTab === 'generate'
+                  ? 'px-4 py-2 text-sm font-medium bg-blue-100 text-blue-900 rounded-md'
+                  : 'px-4 py-2 text-sm font-medium text-gray-600 hover:text-gray-900 hover:bg-gray-100 rounded-md'
+              }
+            >
+              Generate Tokens
+            </button>
+          </div>
         </div>
+      </div>
+
+      {/* Tab content */}
+      <main className="max-w-7xl mx-auto py-6 px-4 sm:px-6 lg:px-8">
+        {activeTab === 'view' && (
+          <div className="relative">
+            {tableLoading && (
+              <div className="absolute inset-0 bg-white bg-opacity-70 flex items-center justify-center z-10">
+                <div className="animate-spin rounded-full h-10 w-10 border-b-2 border-blue-600"></div>
+              </div>
+            )}
+
+            {Object.keys(tokenData).length === 0 ? (
+              <div className="text-center py-12">
+                <p className="text-gray-500">No design tokens found.</p>
+              </div>
+            ) : (
+              <div className="space-y-8">
+                {Object.entries(tokenData).map(([section, tokens]) => (
+                  <TokenTable
+                    key={section}
+                    section={section}
+                    tokens={tokens}
+                    onSave={saveToken}
+                  />
+                ))}
+              </div>
+            )}
+          </div>
+        )}
+
+        {activeTab === 'generate' && (
+          <div className="text-gray-500 text-sm">Generate tab (coming in Plan 02)</div>
+        )}
       </main>
 
       <ToastNotification toast={toast} onClose={() => setToast(null)} />
+
+      <SaveCollectionDialog
+        isOpen={saveAsDialogOpen}
+        onSave={handleSaveAs}
+        onCancel={() => setSaveAsDialogOpen(false)}
+        isSaving={isSavingAs}
+      />
 
       {rawCollectionTokens && (
         <BuildTokensModal
@@ -395,5 +476,19 @@ export default function Home() {
         />
       )}
     </div>
+  );
+}
+
+export default function Home() {
+  return (
+    <Suspense
+      fallback={
+        <div className="min-h-screen bg-gray-50 flex items-center justify-center">
+          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600"></div>
+        </div>
+      }
+    >
+      <HomeContent />
+    </Suspense>
   );
 }
