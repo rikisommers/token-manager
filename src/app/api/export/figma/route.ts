@@ -2,7 +2,7 @@ import { NextRequest, NextResponse } from 'next/server';
 
 export async function POST(request: NextRequest) {
   try {
-    const { tokenSet, figmaToken, fileKey, collectionId } = await request.json();
+    const { tokenSet, figmaToken, fileKey, collectionId, mongoCollectionId } = await request.json();
 
     if (!tokenSet || !figmaToken || !fileKey) {
       return NextResponse.json(
@@ -34,6 +34,25 @@ export async function POST(request: NextRequest) {
     }
 
     const responseData = await response.json();
+
+    // Update MongoDB collection's sourceMetadata to record Figma as upstream
+    if (mongoCollectionId) {
+      try {
+        const { default: dbConnect } = await import('@/lib/mongodb');
+        const { default: TokenCollection } = await import('@/lib/db/models/TokenCollection');
+        await dbConnect();
+        await TokenCollection.findByIdAndUpdate(mongoCollectionId, {
+          $set: {
+            'sourceMetadata.type': 'figma',
+            'sourceMetadata.figmaFileKey': fileKey,
+            'sourceMetadata.figmaCollectionId': collectionId || null,
+          },
+        });
+      } catch (e) {
+        // Non-fatal: log but don't fail the export response
+        console.error('Failed to update sourceMetadata after Figma export:', e);
+      }
+    }
 
     return NextResponse.json({
       success: true,

@@ -7,6 +7,7 @@ import { ToastNotification } from './ToastNotification';
 import { JsonPreviewDialog } from './JsonPreviewDialog';
 import { SaveCollectionDialog } from './SaveCollectionDialog';
 import { LoadCollectionDialog } from './LoadCollectionDialog';
+import { ExportToFigmaDialog } from './ExportToFigmaDialog';
 
 // Import services and types
 import { githubService, tokenService, fileService } from '../services';
@@ -63,6 +64,7 @@ export function TokenGeneratorFormNew({ githubConfig, onTokensChange, collection
   const [saveDialogDuplicateName, setSaveDialogDuplicateName] = useState<string | null>(null);
   const [showLoadDialog, setShowLoadDialog] = useState(false);
   const [isDirty, setIsDirty] = useState(false);
+  const [showExportFigmaDialog, setShowExportFigmaDialog] = useState(false);
 
   // Expose live token state to parent via onTokensChange
   useEffect(() => {
@@ -627,32 +629,8 @@ export function TokenGeneratorFormNew({ githubConfig, onTokensChange, collection
     return tokenService.processImportedTokens(tokenSet, globalNamespace);
   };
 
-  const exportToFigma = async () => {
-    const figmaToken = prompt('Enter Figma Personal Access Token:');
-    const fileKey = prompt('Enter Figma File Key:');
-
-    if (!figmaToken || !fileKey) {
-      showToast('Figma token and file key are required', 'error');
-      return;
-    }
-
-    try {
-      const tokenSet = generateTokenSet();
-      const response = await fetch('/api/export/figma', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ tokenSet, figmaToken, fileKey }),
-      });
-
-      const result = await response.json();
-      if (response.ok) {
-        showToast('Successfully exported to Figma!', 'success');
-      } else {
-        showToast(`Failed to export to Figma: ${result.error}`, 'error');
-      }
-    } catch (error) {
-      showToast(`Error: ${error instanceof Error ? error.message : 'Unknown error'}`, 'error');
-    }
+  const exportToFigma = () => {
+    setShowExportFigmaDialog(true);
   };
 
   // Use token service for resolving token references
@@ -1031,6 +1009,14 @@ export function TokenGeneratorFormNew({ githubConfig, onTokensChange, collection
         isOpen={showLoadDialog}
         onLoad={handleLoadRequest}
         onCancel={() => setShowLoadDialog(false)}
+      />
+
+      {/* Export to Figma Dialog */}
+      <ExportToFigmaDialog
+        isOpen={showExportFigmaDialog}
+        onClose={() => setShowExportFigmaDialog(false)}
+        tokenSet={generateTokenSet() as Record<string, unknown>}
+        loadedCollectionId={loadedCollection?.id ?? null}
       />
 
       {/* Loading Indicator */}
