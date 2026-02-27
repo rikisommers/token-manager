@@ -125,6 +125,7 @@ Phases execute in numeric order: 1 → 2 → 3 → 4 → 5 → 6
 | 4. Collection Management | 3/3 | Complete   | 2026-02-26 |
 | 5. Export style dictionary | 2/2 | Complete   | 2026-02-26 |
 | 6. Collection UX Improvements | 3/3 | Complete   | 2026-02-28 |
+| 7. Fix Figma Integration | 3/6 | In Progress | — |
 
 ### Phase 7: Fix Figma Integration
 
@@ -133,9 +134,9 @@ Phases execute in numeric order: 1 → 2 → 3 → 4 → 5 → 6
 **Plans:** 3/6 plans executed
 
 Plans:
-- [ ] 07-01-PLAN.md — FigmaConfig component + fix export auth header + extend sourceMetadata schema
-- [ ] 07-02-PLAN.md — Figma API proxy routes (test, list collections, import-and-save)
-- [ ] 07-03-PLAN.md — ExportToFigmaDialog component + wire into TokenGeneratorFormNew + post-export sourceMetadata update
+- [x] 07-01-PLAN.md — FigmaConfig component + fix export auth header + extend sourceMetadata schema
+- [x] 07-02-PLAN.md — Figma API proxy routes (test, list collections, import-and-save)
+- [x] 07-03-PLAN.md — ExportToFigmaDialog component + wire into TokenGeneratorFormNew + post-export sourceMetadata update
 - [ ] 07-04-PLAN.md — ImportFromFigmaDialog component + Import from Figma button in Generate tab
 - [ ] 07-05-PLAN.md — SourceContextBar component + wire into page.tsx
 - [ ] 07-06-PLAN.md — Human verify complete Figma integration

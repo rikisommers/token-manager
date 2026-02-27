@@ -5,14 +5,14 @@
 See: .planning/PROJECT.md (updated 2026-02-25)
 
 **Core value:** Token collections are always available and editable — stored in MongoDB, loadable into the generator form, and visible on the view page.
-**Current focus:** Milestone complete — all 6 phases done
+**Current focus:** Phase 7 — Fix Figma Integration (in progress)
 
 ## Current Position
 
-Phase: 6 of 6 (Collection UX Improvements)
-Plan: 3 of 3 in current phase (complete)
-Status: Complete
-Last activity: 2026-02-28 — Completed 06-03 (human verification + post-verification bug fixes: GitHubConfig moved to app header, + Add Token always visible, collection auto-load into generator)
+Phase: 7 of 7 (Fix Figma Integration)
+Plan: 3 of 5 in current phase (complete)
+Status: In Progress
+Last activity: 2026-02-28 — Completed 07-03 (ExportToFigmaDialog + export route sourceMetadata update)
 
 Progress: [██████████] 100%
 
@@ -44,6 +44,7 @@ Progress: [██████████] 100%
 | Phase 06 P02 | 3 | 2 tasks | 2 files |
 | Phase 07 P02 | 110 | 2 tasks | 3 files |
 | Phase 07-fix-figma-integration P04 | 108 | 2 tasks | 2 files |
+| Phase 07 P03 | 3 | 2 tasks | 3 files |
 
 ## Accumulated Context
 
@@ -148,6 +149,9 @@ Recent decisions affecting current work:
 - [Phase 07-02]: dbConnect default export used in import route (consistent with existing routes); FigmaVariable types defined inline server-side (server-only route; avoids client class coupling); 502 for Figma upstream failures
 - [Phase 07-04]: handleImported appends new collection then calls handleSelectionChange(newId) — mirrors handleDuplicated pattern
 - [Phase 07-04]: noCredentials state shown inline in dialog when localStorage figma-config absent or malformed
+- [Phase 07-03]: ExportToFigmaDialog reads figma-config from localStorage on open — no prop drilling of credentials
+- [Phase 07-03]: mongoCollectionId update in export route is non-fatal — console.error logged but export response still returns 200
+- [Phase 07-03]: Dynamic import of dbConnect and TokenCollection in export route — avoids top-level module import coupling
 
 ### Pending Todos
 
@@ -160,5 +164,5 @@ None.
 ## Session Continuity
 
 Last session: 2026-02-28
-Stopped at: Completed 07-04-PLAN.md (ImportFromFigmaDialog + page.tsx wiring)
+Stopped at: Completed 07-03-PLAN.md (ExportToFigmaDialog + export route sourceMetadata update)
 Resume file: None
