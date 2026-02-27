@@ -123,4 +123,4 @@ Phases execute in numeric order: 1 → 2 → 3 → 4 → 5 → 6
 | 3. Generator Form | 4/4 | Complete   | 2026-02-26 |
 | 4. Collection Management | 3/3 | Complete   | 2026-02-26 |
 | 5. Export style dictionary | 2/2 | Complete   | 2026-02-26 |
-| 6. Collection UX Improvements | 0/3 | In Progress | - |
+| 6. Collection UX Improvements | 1/3 | In Progress|  |

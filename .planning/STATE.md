@@ -5,16 +5,16 @@
 See: .planning/PROJECT.md (updated 2026-02-25)
 
 **Core value:** Token collections are always available and editable — stored in MongoDB, loadable into the generator form, and visible on the view page.
-**Current focus:** Phase 5 complete — all 5 phases done
+**Current focus:** Phase 6 in progress — Plan 01 complete (tabbed layout + SharedCollectionHeader)
 
 ## Current Position
 
-Phase: 5 of 5 (Export Style Dictionary Build Tokens)
-Plan: 2 of 2 in current phase (complete)
-Status: Complete
-Last activity: 2026-02-26 — Completed 05-02 (Build Tokens button wired, SD reference errors fixed, button state fixed)
+Phase: 6 of 6 (Collection UX Improvements)
+Plan: 1 of 3 in current phase (complete)
+Status: In Progress
+Last activity: 2026-02-27 — Completed 06-01 (SharedCollectionHeader, tabbed layout, Save As, URL tab routing)
 
-Progress: [██████████] 100%
+Progress: [█████████░] 90%
 
 ## Performance Metrics
 
@@ -32,13 +32,15 @@ Progress: [██████████] 100%
 | 03-generator-form | 3 | 7 min | 2.3 min |
 | 04-collection-management | 2 | 3 min | 1.5 min |
 | 05-export-style-dictionary-build-tokens | 2 | 21 min | 10.5 min |
+| 06-collection-ux-improvements | 1 of 3 | 3 min | 3 min |
 
 **Recent Trend:**
-- Last 5 plans: 04-01 (2 min), 04-02 (1 min), 05-01 (5 min), 05-02 (16 min)
-- Trend: Phase 5 complete — all phases done
+- Last 5 plans: 04-02 (1 min), 05-01 (5 min), 05-02 (16 min), 06-01 (3 min)
+- Trend: Phase 6 underway — Plan 01 complete
 
 *Updated after each plan completion*
 | Phase 05 P02 | 16 | 3 tasks | 5 files |
+| Phase 06 P01 | 3 | 2 tasks | 4 files |
 
 ## Accumulated Context
 
@@ -126,6 +128,14 @@ Recent decisions affecting current work:
 - [Phase 05-02]: SD v5 brokenReferences: 'console' — only throw/console valid in SD v5 type system; 'warn' does not exist; 'console' routes diagnostic to console without throwing
 - [Phase 05-02]: generate/page.tsx header layout: outer justify-between must have two direct children; flattened nested structure so Build Tokens button anchors to right side
 
+**06-01 decisions:**
+- CollectionSelector wrapper changed from full-width border-b container to inline flex div — enables embedding in SharedCollectionHeader horizontal row
+- CollectionActions mt-3 removed — vertical margin inappropriate in flex row context (SharedCollectionHeader is now layout parent)
+- SharedCollectionHeader is pure presentation component — no internal state, all callbacks from page.tsx
+- Save As uses rawCollectionTokens (MongoDB) or tokenData (local flat) — flat format is valid SD token structure
+- switchTab uses router.push('/' | '/?tab=generate') — clean URL for default view tab
+- Suspense wrapper: export default Home wraps HomeContent in Suspense; all hooks/state in HomeContent (required for useSearchParams in Next.js App Router)
+
 ### Pending Todos
 
 None yet.
@@ -136,6 +146,6 @@ None yet.
 
 ## Session Continuity
 
-Last session: 2026-02-26
-Stopped at: Completed 05-02-PLAN.md (Phase 5 complete — all plans done)
+Last session: 2026-02-27
+Stopped at: Completed 06-01-PLAN.md (Phase 6 Plan 01 — tabbed layout + SharedCollectionHeader complete)
 Resume file: None
