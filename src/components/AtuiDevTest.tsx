@@ -1,7 +1,8 @@
 'use client';
 
 import React, { useEffect } from 'react';
-import '@alliedtelesis-labs-nz/atui-components-stencil/dist/atui-components-stencil/atui-components-stencil.css';
+// CSS imported via relative path to bypass the package's restrictive `exports` field
+import '../../node_modules/@alliedtelesis-labs-nz/atui-components-stencil/dist/atui-components-stencil/atui-components-stencil.css';
 
 declare global {
   namespace JSX {
