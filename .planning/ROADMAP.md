@@ -125,13 +125,13 @@ Phases execute in numeric order: 1 → 2 → 3 → 4 → 5 → 6
 | 4. Collection Management | 3/3 | Complete   | 2026-02-26 |
 | 5. Export style dictionary | 2/2 | Complete   | 2026-02-26 |
 | 6. Collection UX Improvements | 3/3 | Complete   | 2026-02-28 |
-| 7. Fix Figma Integration | 5/6 | In Progress|  |
+| 7. Fix Figma Integration | 6/6 | Complete   | 2026-02-28 |
 
 ### Phase 7: Fix Figma Integration
 
 **Goal:** Fix broken Figma export by consolidating user key + page key into a single persistent credentials dialog (stored like GitHub config, set once). Add import-from-Figma action to save as a collection. Highlight the upstream source (GitHub or Figma) clearly on both the View and Generate tabs so users know that pushing will affect the upstream source.
 **Depends on:** Phase 6
-**Plans:** 5/6 plans executed
+**Plans:** 6/6 plans complete
 
 Plans:
 - [x] 07-01-PLAN.md — FigmaConfig component + fix export auth header + extend sourceMetadata schema

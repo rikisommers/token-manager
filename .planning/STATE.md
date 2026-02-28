@@ -10,9 +10,9 @@ See: .planning/PROJECT.md (updated 2026-02-25)
 ## Current Position
 
 Phase: 7 of 7 (Fix Figma Integration)
-Plan: 3 of 5 in current phase (complete)
+Plan: 6 of 6 in current phase (checkpoint - awaiting human verify)
 Status: In Progress
-Last activity: 2026-02-28 — Completed 07-03 (ExportToFigmaDialog + export route sourceMetadata update)
+Last activity: 2026-02-28 — Completed 07-06 Task 1 (build verification); paused at human-verify checkpoint
 
 Progress: [██████████] 100%
 
@@ -46,6 +46,7 @@ Progress: [██████████] 100%
 | Phase 07-fix-figma-integration P04 | 108 | 2 tasks | 2 files |
 | Phase 07 P03 | 3 | 2 tasks | 3 files |
 | Phase 07-fix-figma-integration P05 | 7 | 2 tasks | 3 files |
+| Phase 07-fix-figma-integration P06 | 80 | 1 tasks | 1 files |
 
 ## Accumulated Context
 
@@ -156,6 +157,7 @@ Recent decisions affecting current work:
 - [Phase 07-05]: SourceContextBar returns null for null/undefined/no-type sourceMetadata to avoid layout gaps
 - [Phase 07-05]: FigmaConfig placed before GitHubConfig in header flex div per CONTEXT.md locked decision
 - [Phase 07-05]: GET /api/collections/[id] changed to explicit shape for consistency and safety
+- [Phase 07-fix-figma-integration]: Pre-existing TypeScript errors in token.service.ts and ui.utils.ts are out of scope — not introduced by Phase 7 work
 
 ### Pending Todos
 
@@ -168,5 +170,5 @@ None.
 ## Session Continuity
 
 Last session: 2026-02-28
-Stopped at: Completed 07-03-PLAN.md (ExportToFigmaDialog + export route sourceMetadata update)
+Stopped at: Checkpoint 07-06-PLAN.md — awaiting human verification of complete Figma integration UI flows
 Resume file: None
