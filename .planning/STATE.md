@@ -9,12 +9,12 @@ See: .planning/PROJECT.md (updated 2026-02-28)
 
 ## Current Position
 
-Phase: 02-test-atui-component-library (v1.1)
+Phase: 01-update-ui-to-use-shadcn-components-for-common-elements-buttons-tabs-modals (v1.1)
 Plan: 1/1 complete
-Status: Plan 02-01 complete — ATUI Stencil integration pattern confirmed
-Last activity: 2026-03-01 — 02-01 complete; /dev-test sandbox verified, integration pattern documented
+Status: Plan 01-01 complete — shadcn/ui installed, 5 components created, Tailwind CSS variables configured
+Last activity: 2026-03-07 — 01-01 complete; src/components/ui/ ready with Button, Input, Select, Tabs, Dialog
 
-Progress: [██████████] 100% — v1.0 shipped; v1.1 Phase 2 complete (1/1 plans)
+Progress: [██████████] 100% — v1.0 shipped; v1.1 Phase 1 complete (1/1 plans)
 
 ## Accumulated Context
 
@@ -32,16 +32,23 @@ All v1.0 decisions logged in PROJECT.md Key Decisions table.
 - Import ATUI CSS via relative path to node_modules — package exports field blocks direct subpath import
 - Call `defineCustomElements(window)` inside `useEffect` — ensures client-only registration
 
+**01-01 (shadcn/ui installation):**
+- Manually created components.json and component files — shadcn CLI requires interactive input unavailable in Claude Code
+- Used canonical shadcn/ui source directly — no hand-rolled implementations
+- CSS variable defaults are neutral slate — do not override existing app styles
+- Client components (Select, Tabs, Dialog) use 'use client' directive — required for Radix UI event handlers
+- CSS variables follow hsl(H S% L%) format without hsl() wrapper — tailwind.config.js adds hsl(var(...))
+
 ### Pending Todos
 
 None.
 
 ### Blockers/Concerns
 
-None.
+Pre-existing TypeScript error in src/services/token.service.ts line 131 (string index on `{}`). Not caused by shadcn work. Deferred.
 
 ## Session Continuity
 
-Last session: 2026-03-01
-Stopped at: Completed 02-01-PLAN.md — ATUI Stencil integration confirmed, sandbox page at /dev-test
+Last session: 2026-03-07
+Stopped at: Completed 01-01-PLAN.md — shadcn/ui installed, 5 components in src/components/ui/, Tailwind CSS variables configured
 Resume file: None
