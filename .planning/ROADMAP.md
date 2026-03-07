@@ -33,7 +33,7 @@ See: `.planning/milestones/v1.0-ROADMAP.md` for full phase details.
 | 5. Export Style Dictionary | v1.0 | 2/2 | Complete | 2026-02-26 |
 | 6. Collection UX Improvements | v1.0 | 3/3 | Complete | 2026-02-28 |
 | 7. Fix Figma Integration | v1.0 | 6/6 | Complete | 2026-02-28 |
-| 1. shadcn UI Components | v1.1 | 0/? | Not started | - |
+| 1. shadcn UI Components | v1.1 | 0/5 | Not started | - |
 | 2. Test ATUI Component Library | v1.1 | 1/1 | Complete | 2026-03-01 |
 
 ### 🚧 v1.1 shadcn UI
@@ -42,10 +42,14 @@ See: `.planning/milestones/v1.0-ROADMAP.md` for full phase details.
 
 **Goal:** Migrate all common UI elements to shadcn/ui components (buttons, tabs, modals/dialogs) and replace all color token fields with native color picker inputs
 **Depends on:** Nothing (first phase of v1.1)
-**Plans:** 0 plans
+**Plans:** 5 plans
 
 Plans:
-- [ ] TBD (run /gsd:plan-phase 1 to break down)
+- [ ] 01-01-PLAN.md — Install shadcn/ui and generate Button, Input, Select, Tabs, Dialog components
+- [ ] 01-02-PLAN.md — Migrate page.tsx (tabs, buttons) and TokenTable (Input, color picker)
+- [ ] 01-03-PLAN.md — Migrate all dialog components (BuildTokensModal, ExportToFigmaDialog, ImportFromFigmaDialog, JsonPreviewDialog, LoadCollectionDialog, SaveCollectionDialog, CollectionActions)
+- [ ] 01-04-PLAN.md — Migrate form and config components (TokenGeneratorFormNew, GitHubConfig, FigmaConfig, GitHubDirectoryPicker, CollectionSelector, SharedCollectionHeader, SourceContextBar)
+- [ ] 01-05-PLAN.md — Final build sweep and visual verification checkpoint
 
 ### Phase 2: Test ATUI component library - confirm Button can be imported and used
 
