@@ -1,6 +1,7 @@
 'use client';
 
 import { useState, useCallback } from 'react';
+import { Input } from '@/components/ui/input';
 
 interface Token {
   value: string;
@@ -90,7 +91,7 @@ function TextInput({ value, onChange, type }: TextInputProps) {
 
   if (isEditing) {
     return (
-      <input
+      <Input
         type="text"
         value={localValue}
         onChange={(e) => setLocalValue(e.target.value)}
