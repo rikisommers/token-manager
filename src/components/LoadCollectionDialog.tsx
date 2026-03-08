@@ -1,4 +1,6 @@
 import React, { useState, useEffect } from 'react';
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from '@/components/ui/dialog';
+import { Button } from '@/components/ui/button';
 
 interface CollectionListItem {
   _id: string;
@@ -54,10 +56,6 @@ export function LoadCollectionDialog({
     fetchCollections();
   }, [isOpen]);
 
-  if (!isOpen) {
-    return null;
-  }
-
   const handleSelect = async (collectionId: string) => {
     setIsLoading(true);
     try {
@@ -68,22 +66,14 @@ export function LoadCollectionDialog({
   };
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black bg-opacity-50">
-      <div className="bg-white rounded-lg shadow-xl w-full max-w-sm mx-4">
-        {/* Header */}
-        <div className="flex justify-between items-center p-4 border-b border-gray-200">
-          <h3 className="text-lg font-medium text-gray-900">Load Collection</h3>
-          <button
-            onClick={onCancel}
-            className="text-gray-500 hover:text-gray-700"
-            disabled={isLoading}
-          >
-            ✕
-          </button>
-        </div>
+    <Dialog open={isOpen} onOpenChange={(open) => { if (!open) onCancel(); }}>
+      <DialogContent className="w-full max-w-sm">
+        <DialogHeader>
+          <DialogTitle>Load Collection</DialogTitle>
+        </DialogHeader>
 
         {/* Body */}
-        <div className="p-4">
+        <div>
           {isFetching ? (
             <div className="flex justify-center py-6">
               <span className="inline-block w-5 h-5 border-2 border-gray-300 border-t-blue-600 rounded-full animate-spin" />
@@ -95,30 +85,30 @@ export function LoadCollectionDialog({
           ) : (
             <div className="max-h-64 overflow-y-auto">
               {collections.map((item) => (
-                <button
+                <Button
                   key={item._id}
                   onClick={() => handleSelect(item._id)}
                   disabled={isLoading}
-                  className="w-full text-left px-4 py-2 text-sm text-gray-800 hover:bg-gray-100 disabled:opacity-50"
+                  variant="ghost"
+                  className="w-full justify-start px-4 py-2 text-sm text-gray-800 disabled:opacity-50"
                 >
                   {item.name}
-                </button>
+                </Button>
               ))}
             </div>
           )}
         </div>
 
-        {/* Footer */}
-        <div className="flex justify-end p-4 border-t border-gray-200">
-          <button
+        <DialogFooter>
+          <Button
+            variant="outline"
             onClick={onCancel}
             disabled={isLoading}
-            className="px-4 py-2 text-sm font-medium text-gray-700 bg-white border border-gray-300 rounded-md hover:bg-gray-50 disabled:opacity-50"
           >
             Cancel
-          </button>
-        </div>
-      </div>
-    </div>
+          </Button>
+        </DialogFooter>
+      </DialogContent>
+    </Dialog>
   );
 }

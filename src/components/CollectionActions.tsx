@@ -1,6 +1,9 @@
 'use client';
 
 import React, { useState, useEffect } from 'react';
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from '@/components/ui/dialog';
+import { Button } from '@/components/ui/button';
+import { Input } from '@/components/ui/input';
 
 interface CollectionActionsProps {
   selectedId: string;
@@ -145,189 +148,153 @@ export function CollectionActions({
     }
   };
 
-  const baseButtonClass =
-    'inline-flex items-center gap-1 px-3 py-1.5 text-sm font-medium bg-white border rounded-md';
-
   return (
     <div className="flex gap-2">
       {/* Delete button */}
-      <button
+      <Button
+        variant="outline"
+        size="sm"
         onClick={() => setShowDeleteModal(true)}
-        className={`${baseButtonClass} text-red-600 border-red-300 hover:bg-red-50`}
+        className="text-red-600 border-red-300 hover:bg-red-50"
       >
-        🗑️ Delete
-      </button>
+        Delete
+      </Button>
 
       {/* Rename button */}
-      <button
+      <Button
+        variant="outline"
+        size="sm"
         onClick={() => setShowRenameModal(true)}
-        className={`${baseButtonClass} text-gray-700 border-gray-300 hover:bg-gray-50`}
       >
-        ✏️ Rename
-      </button>
+        Rename
+      </Button>
 
       {/* Duplicate button */}
-      <button
+      <Button
+        variant="outline"
+        size="sm"
         onClick={() => setShowDuplicateModal(true)}
-        className={`${baseButtonClass} text-gray-700 border-gray-300 hover:bg-gray-50`}
       >
-        📋 Duplicate
-      </button>
+        Duplicate
+      </Button>
 
-      {/* ---- Delete Modal ---- */}
-      {showDeleteModal && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black bg-opacity-50">
-          <div className="bg-white rounded-lg shadow-xl w-full max-w-md mx-4">
-            <div className="flex justify-between items-center p-4 border-b border-gray-200">
-              <h3 className="text-lg font-medium text-gray-900">Delete Collection</h3>
-              <button
-                onClick={() => setShowDeleteModal(false)}
-                className="text-gray-500 hover:text-gray-700"
-                disabled={isDeleting}
-              >
-                ✕
-              </button>
-            </div>
-            <div className="p-4">
-              <p className="text-sm text-gray-700">
-                Delete <strong>&ldquo;{selectedName}&rdquo;</strong>? This cannot be undone.
+      {/* ---- Delete Dialog ---- */}
+      <Dialog open={showDeleteModal} onOpenChange={setShowDeleteModal}>
+        <DialogContent className="w-full max-w-md">
+          <DialogHeader>
+            <DialogTitle>Delete Collection</DialogTitle>
+          </DialogHeader>
+          <div>
+            <p className="text-sm text-gray-700">
+              Delete <strong>&ldquo;{selectedName}&rdquo;</strong>? This cannot be undone.
+            </p>
+          </div>
+          <DialogFooter>
+            <Button
+              variant="outline"
+              onClick={() => setShowDeleteModal(false)}
+              disabled={isDeleting}
+            >
+              Cancel
+            </Button>
+            <Button
+              variant="destructive"
+              onClick={handleDelete}
+              disabled={isDeleting}
+            >
+              {isDeleting ? 'Deleting...' : 'Delete'}
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
+      {/* ---- Rename Dialog ---- */}
+      <Dialog open={showRenameModal} onOpenChange={setShowRenameModal}>
+        <DialogContent className="w-full max-w-md">
+          <DialogHeader>
+            <DialogTitle>Rename Collection</DialogTitle>
+          </DialogHeader>
+          <div className="space-y-2">
+            <label className="block text-sm font-medium text-gray-700">
+              Collection name
+            </label>
+            <Input
+              type="text"
+              value={renameValue}
+              onChange={(e) => setRenameValue(e.target.value)}
+              onKeyDown={(e) => {
+                if (e.key === 'Enter' && !renameSaveDisabled) handleRename();
+                if (e.key === 'Escape') setShowRenameModal(false);
+              }}
+              autoFocus
+              disabled={isRenaming}
+            />
+            {renameIsDuplicate && (
+              <p className="text-sm text-red-600">
+                A collection named &ldquo;{renameTrimmed}&rdquo; already exists.
               </p>
-            </div>
-            <div className="flex justify-end space-x-3 p-4 border-t border-gray-200">
-              <button
-                onClick={() => setShowDeleteModal(false)}
-                className="px-4 py-2 text-sm font-medium text-gray-700 bg-white border border-gray-300 rounded-md hover:bg-gray-50"
-                disabled={isDeleting}
-              >
-                Cancel
-              </button>
-              <button
-                onClick={handleDelete}
-                className={`px-4 py-2 text-sm font-medium text-white bg-red-600 rounded-md hover:bg-red-700 ${
-                  isDeleting ? 'opacity-50 cursor-not-allowed' : ''
-                }`}
-                disabled={isDeleting}
-              >
-                {isDeleting ? 'Deleting...' : 'Delete'}
-              </button>
-            </div>
+            )}
           </div>
-        </div>
-      )}
+          <DialogFooter>
+            <Button
+              variant="outline"
+              onClick={() => setShowRenameModal(false)}
+              disabled={isRenaming}
+            >
+              Cancel
+            </Button>
+            <Button
+              onClick={handleRename}
+              disabled={renameSaveDisabled}
+            >
+              {isRenaming ? 'Saving...' : 'Save'}
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
 
-      {/* ---- Rename Modal ---- */}
-      {showRenameModal && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black bg-opacity-50">
-          <div className="bg-white rounded-lg shadow-xl w-full max-w-md mx-4">
-            <div className="flex justify-between items-center p-4 border-b border-gray-200">
-              <h3 className="text-lg font-medium text-gray-900">Rename Collection</h3>
-              <button
-                onClick={() => setShowRenameModal(false)}
-                className="text-gray-500 hover:text-gray-700"
-                disabled={isRenaming}
-              >
-                ✕
-              </button>
-            </div>
-            <div className="p-4 space-y-2">
-              <label className="block text-sm font-medium text-gray-700">
-                Collection name
-              </label>
-              <input
-                type="text"
-                value={renameValue}
-                onChange={(e) => setRenameValue(e.target.value)}
-                onKeyDown={(e) => {
-                  if (e.key === 'Enter' && !renameSaveDisabled) handleRename();
-                  if (e.key === 'Escape') setShowRenameModal(false);
-                }}
-                className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 text-sm"
-                autoFocus
-                disabled={isRenaming}
-              />
-              {renameIsDuplicate && (
-                <p className="text-sm text-red-600">
-                  A collection named &ldquo;{renameTrimmed}&rdquo; already exists.
-                </p>
-              )}
-            </div>
-            <div className="flex justify-end space-x-3 p-4 border-t border-gray-200">
-              <button
-                onClick={() => setShowRenameModal(false)}
-                className="px-4 py-2 text-sm font-medium text-gray-700 bg-white border border-gray-300 rounded-md hover:bg-gray-50"
-                disabled={isRenaming}
-              >
-                Cancel
-              </button>
-              <button
-                onClick={handleRename}
-                className={`px-4 py-2 text-sm font-medium text-white bg-blue-600 rounded-md hover:bg-blue-700 ${
-                  renameSaveDisabled ? 'opacity-50 cursor-not-allowed' : ''
-                }`}
-                disabled={renameSaveDisabled}
-              >
-                {isRenaming ? 'Saving...' : 'Save'}
-              </button>
-            </div>
+      {/* ---- Duplicate Dialog ---- */}
+      <Dialog open={showDuplicateModal} onOpenChange={setShowDuplicateModal}>
+        <DialogContent className="w-full max-w-md">
+          <DialogHeader>
+            <DialogTitle>Duplicate Collection</DialogTitle>
+          </DialogHeader>
+          <div className="space-y-2">
+            <label className="block text-sm font-medium text-gray-700">
+              New collection name
+            </label>
+            <Input
+              type="text"
+              value={duplicateName}
+              onChange={(e) => setDuplicateName(e.target.value)}
+              onKeyDown={(e) => {
+                if (e.key === 'Enter' && !duplicateSaveDisabled) handleDuplicate();
+                if (e.key === 'Escape') setShowDuplicateModal(false);
+              }}
+              autoFocus
+              disabled={isDuplicating}
+            />
+            {duplicateError && (
+              <p className="text-sm text-red-600">{duplicateError}</p>
+            )}
           </div>
-        </div>
-      )}
-
-      {/* ---- Duplicate Modal ---- */}
-      {showDuplicateModal && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black bg-opacity-50">
-          <div className="bg-white rounded-lg shadow-xl w-full max-w-md mx-4">
-            <div className="flex justify-between items-center p-4 border-b border-gray-200">
-              <h3 className="text-lg font-medium text-gray-900">Duplicate Collection</h3>
-              <button
-                onClick={() => setShowDuplicateModal(false)}
-                className="text-gray-500 hover:text-gray-700"
-                disabled={isDuplicating}
-              >
-                ✕
-              </button>
-            </div>
-            <div className="p-4 space-y-2">
-              <label className="block text-sm font-medium text-gray-700">
-                New collection name
-              </label>
-              <input
-                type="text"
-                value={duplicateName}
-                onChange={(e) => setDuplicateName(e.target.value)}
-                onKeyDown={(e) => {
-                  if (e.key === 'Enter' && !duplicateSaveDisabled) handleDuplicate();
-                  if (e.key === 'Escape') setShowDuplicateModal(false);
-                }}
-                className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 text-sm"
-                autoFocus
-                disabled={isDuplicating}
-              />
-              {duplicateError && (
-                <p className="text-sm text-red-600">{duplicateError}</p>
-              )}
-            </div>
-            <div className="flex justify-end space-x-3 p-4 border-t border-gray-200">
-              <button
-                onClick={() => setShowDuplicateModal(false)}
-                className="px-4 py-2 text-sm font-medium text-gray-700 bg-white border border-gray-300 rounded-md hover:bg-gray-50"
-                disabled={isDuplicating}
-              >
-                Cancel
-              </button>
-              <button
-                onClick={handleDuplicate}
-                className={`px-4 py-2 text-sm font-medium text-white bg-blue-600 rounded-md hover:bg-blue-700 ${
-                  duplicateSaveDisabled ? 'opacity-50 cursor-not-allowed' : ''
-                }`}
-                disabled={duplicateSaveDisabled}
-              >
-                {isDuplicating ? 'Duplicating...' : 'Duplicate'}
-              </button>
-            </div>
-          </div>
-        </div>
-      )}
+          <DialogFooter>
+            <Button
+              variant="outline"
+              onClick={() => setShowDuplicateModal(false)}
+              disabled={isDuplicating}
+            >
+              Cancel
+            </Button>
+            <Button
+              onClick={handleDuplicate}
+              disabled={duplicateSaveDisabled}
+            >
+              {isDuplicating ? 'Duplicating...' : 'Duplicate'}
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
     </div>
   );
 }

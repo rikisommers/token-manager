@@ -1,4 +1,7 @@
 import React, { useState, useEffect, useRef } from 'react';
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from '@/components/ui/dialog';
+import { Button } from '@/components/ui/button';
+import { Input } from '@/components/ui/input';
 
 interface SaveCollectionDialogProps {
   isOpen: boolean;
@@ -29,10 +32,6 @@ export function SaveCollectionDialog({
     prevIsOpen.current = isOpen;
   }, [isOpen, initialName]);
 
-  if (!isOpen) {
-    return null;
-  }
-
   const handleSave = async () => {
     if (!name.trim()) return;
     await onSave(name.trim());
@@ -43,30 +42,22 @@ export function SaveCollectionDialog({
   };
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black bg-opacity-50">
-      <div className="bg-white rounded-lg shadow-xl w-full max-w-md mx-4">
-        {/* Header */}
-        <div className="flex justify-between items-center p-4 border-b border-gray-200">
-          <h3 className="text-lg font-medium text-gray-900">
+    <Dialog open={isOpen} onOpenChange={(open) => { if (!open) onCancel(); }}>
+      <DialogContent className="w-full max-w-md">
+        <DialogHeader>
+          <DialogTitle>
             {step === 'name-entry' ? 'Save to Database' : 'Overwrite Collection?'}
-          </h3>
-          <button
-            onClick={onCancel}
-            className="text-gray-500 hover:text-gray-700"
-            disabled={isSaving}
-          >
-            ✕
-          </button>
-        </div>
+          </DialogTitle>
+        </DialogHeader>
 
         {/* Body */}
-        <div className="p-4">
+        <div>
           {step === 'name-entry' ? (
             <div className="space-y-3">
               <label className="block text-sm font-medium text-gray-700">
                 Collection name
               </label>
-              <input
+              <Input
                 type="text"
                 value={name}
                 onChange={(e) => setName(e.target.value)}
@@ -77,7 +68,6 @@ export function SaveCollectionDialog({
                   if (e.key === 'Escape') onCancel();
                 }}
                 placeholder="Enter a name for this collection"
-                className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 text-sm"
                 autoFocus
                 disabled={isSaving}
               />
@@ -89,38 +79,32 @@ export function SaveCollectionDialog({
           )}
         </div>
 
-        {/* Footer */}
-        <div className="flex justify-end space-x-3 p-4 border-t border-gray-200">
-          <button
+        <DialogFooter>
+          <Button
+            variant="outline"
             onClick={onCancel}
-            className="px-4 py-2 text-sm font-medium text-gray-700 bg-white border border-gray-300 rounded-md hover:bg-gray-50"
             disabled={isSaving}
           >
             Cancel
-          </button>
+          </Button>
           {step === 'name-entry' ? (
-            <button
+            <Button
               onClick={handleSave}
-              className={`px-4 py-2 text-sm font-medium text-white bg-blue-600 rounded-md hover:bg-blue-700 ${
-                isSaving || !name.trim() ? 'opacity-50 cursor-not-allowed' : ''
-              }`}
               disabled={isSaving || !name.trim()}
             >
               {isSaving ? 'Saving...' : 'Save'}
-            </button>
+            </Button>
           ) : (
-            <button
+            <Button
+              variant="destructive"
               onClick={() => onSave(name.trim())}
-              className={`px-4 py-2 text-sm font-medium text-white bg-red-600 rounded-md hover:bg-red-700 ${
-                isSaving ? 'opacity-50 cursor-not-allowed' : ''
-              }`}
               disabled={isSaving}
             >
               {isSaving ? 'Saving...' : 'Overwrite'}
-            </button>
+            </Button>
           )}
-        </div>
-      </div>
-    </div>
+        </DialogFooter>
+      </DialogContent>
+    </Dialog>
   );
 }
