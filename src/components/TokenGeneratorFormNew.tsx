@@ -8,6 +8,9 @@ import { JsonPreviewDialog } from './JsonPreviewDialog';
 import { SaveCollectionDialog } from './SaveCollectionDialog';
 import { LoadCollectionDialog } from './LoadCollectionDialog';
 import { ExportToFigmaDialog } from './ExportToFigmaDialog';
+import { Button } from '@/components/ui/button';
+import { Input } from '@/components/ui/input';
+import { Select, SelectTrigger, SelectContent, SelectItem, SelectValue } from '@/components/ui/select';
 
 // Import services and types
 import { githubService, tokenService, fileService } from '../services';
@@ -653,21 +656,23 @@ export function TokenGeneratorFormNew({ githubConfig, onTokensChange, collection
             <div className="flex justify-between items-center">
               <div className="flex items-center space-x-2">
                 {hasChildren && (
-                  <button
+                  <Button
+                    variant="ghost"
+                    size="sm"
                     onClick={() => toggleGroupExpansion(group.id)}
-                    className="text-gray-500 hover:text-gray-700 focus:outline-none"
+                    className="text-gray-500 hover:text-gray-700 h-auto p-0"
                   >
                     {group.expanded ? '▼' : '▶'}
-                  </button>
+                  </Button>
                 )}
                 <span className="font-mono text-sm text-gray-500">
                   Level {group.level}
                 </span>
-                <input
+                <Input
                   type="text"
                   value={group.name}
                   onChange={(e) => updateGroupName(group.id, e.target.value)}
-                  className="px-2 py-1 text-lg font-medium bg-transparent rounded border-none outline-none focus:bg-gray-50"
+                  className="px-2 py-1 text-lg font-medium bg-transparent rounded border-none outline-none focus:bg-gray-50 h-auto"
                   placeholder="Group name"
                 />
                 {hasChildren && (
@@ -681,12 +686,14 @@ export function TokenGeneratorFormNew({ githubConfig, onTokensChange, collection
                   </span>
                 )}
               </div>
-              <button
+              <Button
+                variant="ghost"
+                size="sm"
                 onClick={() => deleteTokenGroup(group.id)}
                 className="text-sm font-medium text-red-600 hover:text-red-800"
               >
                 Delete Group
-              </button>
+              </Button>
             </div>
           </div>
 
@@ -711,26 +718,30 @@ export function TokenGeneratorFormNew({ githubConfig, onTokensChange, collection
                             <div className="mr-2 font-mono text-sm text-gray-600">
                               {buildTokenPath(group, token.path).replace(/\./g, '-')}
                             </div>
-                            <input
+                            <Input
                               type="text"
                               value={token.path}
                               onChange={(e) => updateToken(group.id, token.id, 'path', e.target.value)}
                               placeholder="token.name"
-                              className="px-2 py-1 font-mono text-xs rounded border border-gray-300 bg-gray-50 text-gray-600"
+                              className="px-2 py-1 font-mono text-xs rounded border border-gray-300 bg-gray-50 text-gray-600 h-auto"
                               style={{ minWidth: '100px', maxWidth: '150px' }}
                             />
                           </div>
                         </td>
                         <td className="px-4 py-3">
-                          <select
+                          <Select
                             value={token.type}
-                            onChange={(e) => updateToken(group.id, token.id, 'type', e.target.value)}
-                            className="px-2 py-1 text-sm rounded border border-gray-300"
+                            onValueChange={(v) => updateToken(group.id, token.id, 'type', v)}
                           >
-                            {TOKEN_TYPES.map(type => (
-                              <option key={type} value={type}>{type}</option>
-                            ))}
-                          </select>
+                            <SelectTrigger className="h-8 text-sm px-2 w-auto min-w-[100px]">
+                              <SelectValue placeholder="Type" />
+                            </SelectTrigger>
+                            <SelectContent>
+                              {TOKEN_TYPES.map(type => (
+                                <SelectItem key={type} value={type}>{type}</SelectItem>
+                              ))}
+                            </SelectContent>
+                          </Select>
                         </td>
                         <td className="px-4 py-3">
                           <div className="flex items-center gap-2">
@@ -748,38 +759,42 @@ export function TokenGeneratorFormNew({ githubConfig, onTokensChange, collection
                                 title={`Color preview: ${token.value} ${token.value !== resolveTokenReference(token.value.toString()) ? `→ ${resolveTokenReference(token.value.toString())}` : ''}`}
                               />
                             )}
-                            <input
+                            <Input
                               type="text"
                               value={token.value}
                               onChange={(e) => updateToken(group.id, token.id, 'value', parseTokenValue(e.target.value, token.type))}
                               placeholder={getValuePlaceholder(token.type)}
-                              className="flex-1 px-2 py-1 font-mono text-sm rounded border border-gray-300"
+                              className="flex-1 px-2 py-1 font-mono text-sm rounded border border-gray-300 h-auto"
                             />
                           </div>
                         </td>
                         <td className="px-4 py-3">
-                          <input
+                          <Input
                             type="text"
                             value={token.description || ''}
                             onChange={(e) => updateToken(group.id, token.id, 'description', e.target.value)}
                             placeholder="Optional description"
-                            className="flex-1 px-2 py-1 text-sm rounded border border-gray-300"
+                            className="flex-1 px-2 py-1 text-sm rounded border border-gray-300 h-auto"
                           />
                         </td>
                         <td className="px-4 py-3">
                           <div className="flex space-x-2">
-                            <button
+                            <Button
+                              variant="ghost"
+                              size="sm"
                               onClick={() => toggleTokenExpansion(token.id)}
-                              className="text-sm text-blue-600 hover:text-blue-800"
+                              className="text-sm text-blue-600 hover:text-blue-800 h-auto p-0"
                             >
                               {expandedTokens.has(token.id) ? '↑' : '↓'}
-                            </button>
-                            <button
+                            </Button>
+                            <Button
+                              variant="ghost"
+                              size="sm"
                               onClick={() => deleteToken(group.id, token.id)}
-                              className="text-sm text-red-600 hover:text-red-800"
+                              className="text-sm text-red-600 hover:text-red-800 h-auto p-0"
                             >
                               ✕
-                            </button>
+                            </Button>
                           </div>
                         </td>
                       </tr>
@@ -790,7 +805,7 @@ export function TokenGeneratorFormNew({ githubConfig, onTokensChange, collection
                               <h5 className="mb-2 text-sm font-medium text-gray-700">Custom Attributes</h5>
                               {Object.entries(token.attributes || {}).map(([key, value]) => (
                                 <div key={key} className="flex items-center space-x-2">
-                                  <input
+                                  <Input
                                     type="text"
                                     value={key}
                                     onChange={(e) => {
@@ -799,30 +814,34 @@ export function TokenGeneratorFormNew({ githubConfig, onTokensChange, collection
                                       updateTokenAttribute(group.id, token.id, newKey, value as string);
                                     }}
                                     placeholder="Attribute name"
-                                    className="flex-1 px-2 py-1 text-xs rounded border border-gray-300"
+                                    className="flex-1 px-2 py-1 text-xs rounded border border-gray-300 h-auto"
                                   />
                                   <span className="text-gray-500">:</span>
-                                  <input
+                                  <Input
                                     type="text"
                                     value={value as string}
                                     onChange={(e) => updateTokenAttribute(group.id, token.id, key, e.target.value)}
                                     placeholder="Attribute value"
-                                    className="flex-1 px-2 py-1 text-xs rounded border border-gray-300"
+                                    className="flex-1 px-2 py-1 text-xs rounded border border-gray-300 h-auto"
                                   />
-                                  <button
+                                  <Button
+                                    variant="ghost"
+                                    size="sm"
                                     onClick={() => removeTokenAttribute(group.id, token.id, key)}
-                                    className="text-sm text-red-600 hover:text-red-800"
+                                    className="text-sm text-red-600 hover:text-red-800 h-auto p-0"
                                   >
                                     ✕
-                                  </button>
+                                  </Button>
                                 </div>
                               ))}
-                              <button
+                              <Button
+                                variant="ghost"
+                                size="sm"
                                 onClick={() => updateTokenAttribute(group.id, token.id, 'newAttribute', '')}
-                                className="text-sm font-medium text-blue-600 hover:text-blue-800"
+                                className="text-sm font-medium text-blue-600 hover:text-blue-800 h-auto p-0"
                               >
                                 + Add Attribute
-                              </button>
+                              </Button>
                             </div>
                           </td>
                         </tr>
@@ -835,12 +854,14 @@ export function TokenGeneratorFormNew({ githubConfig, onTokensChange, collection
           )}
           {/* Always show — even when group is empty */}
           <div className="border-t border-gray-200 px-4 py-3 text-center">
-            <button
+            <Button
+              variant="ghost"
+              size="sm"
               onClick={() => addToken(group.id)}
-              className="text-sm font-medium text-blue-600 hover:text-blue-800"
+              className="text-sm font-medium text-blue-600 hover:text-blue-800 h-auto p-0"
             >
               + Add Token
-            </button>
+            </Button>
           </div>
         </div>
         {hasChildren && group.expanded && (
@@ -866,64 +887,72 @@ export function TokenGeneratorFormNew({ githubConfig, onTokensChange, collection
             )}
             <div className="flex items-center space-x-2">
               <label className="text-sm font-medium text-gray-700">Global Namespace:</label>
-              <input
+              <Input
                 type="text"
                 value={globalNamespace}
                 onChange={(e) => { setGlobalNamespace(e.target.value); setIsDirty(true); }}
                 placeholder="Optional namespace (e.g., 'design', 'token')"
-                className="px-3 py-2 text-sm rounded-md border border-gray-300 focus:outline-none focus:ring-2 focus:ring-blue-500"
+                className="text-sm"
               />
             </div>
           </div>
           <div className="flex space-x-3">
-            <button
+            <Button
+              size="sm"
               onClick={() => setShowJsonDialog(true)}
-              className="px-3 py-2 text-sm font-medium text-white bg-gray-600 rounded-md hover:bg-gray-700"
+              className="bg-gray-600 hover:bg-gray-700 text-white"
             >
               Preview JSON
-            </button>
-            <button
+            </Button>
+            <Button
+              size="sm"
               onClick={() => setShowSaveDialog(true)}
-              className="px-3 py-2 text-sm font-medium text-white bg-emerald-600 rounded-md hover:bg-emerald-700"
+              className="bg-emerald-600 hover:bg-emerald-700 text-white"
             >
               Save to Database
-            </button>
-            <button
+            </Button>
+            <Button
+              size="sm"
               onClick={() => setShowLoadDialog(true)}
-              className="px-3 py-2 text-sm font-medium text-white bg-indigo-600 rounded-md hover:bg-indigo-700"
+              className="bg-indigo-600 hover:bg-indigo-700 text-white"
             >
               Load Collection
-            </button>
-            <button
+            </Button>
+            <Button
+              size="sm"
               onClick={exportToJSON}
-              className="px-3 py-2 text-sm font-medium text-white bg-blue-600 rounded-md hover:bg-blue-700"
+              className="bg-blue-600 hover:bg-blue-700 text-white"
             >
               Download JSON
-            </button>
-            <button
+            </Button>
+            <Button
+              size="sm"
               onClick={exportToGitHub}
-              className="px-3 py-2 text-sm font-medium text-white bg-gray-800 rounded-md hover:bg-gray-900"
+              className="bg-gray-800 hover:bg-gray-900 text-white"
             >
               Push to GitHub
-            </button>
-            <button
+            </Button>
+            <Button
+              size="sm"
               onClick={importFromGitHub}
-              className="px-3 py-2 text-sm font-medium text-white bg-green-600 rounded-md hover:bg-green-700"
+              className="bg-green-600 hover:bg-green-700 text-white"
             >
               Import from GitHub
-            </button>
-            <button
+            </Button>
+            <Button
+              size="sm"
               onClick={exportToFigma}
-              className="px-3 py-2 text-sm font-medium text-white bg-purple-600 rounded-md hover:bg-purple-700"
+              className="bg-purple-600 hover:bg-purple-700 text-white"
             >
               Export to Figma
-            </button>
-            <button
+            </Button>
+            <Button
+              variant="destructive"
+              size="sm"
               onClick={clearForm}
-              className="px-3 py-2 text-sm font-medium text-white bg-red-600 rounded-md hover:bg-red-700"
             >
               Clear Form
-            </button>
+            </Button>
           </div>
         </div>
         {globalNamespace && (
@@ -938,15 +967,16 @@ export function TokenGeneratorFormNew({ githubConfig, onTokensChange, collection
       {/* Add Group */}
       <div className="p-6 text-center bg-gray-50 rounded-lg border-2 border-gray-300 border-dashed">
         {!isAddingGroup ? (
-          <button
+          <Button
+            variant="ghost"
             onClick={() => setIsAddingGroup(true)}
             className="font-medium text-gray-600 hover:text-gray-800"
           >
             + Add Token Group
-          </button>
+          </Button>
         ) : (
           <div className="flex justify-center items-center space-x-3">
-            <input
+            <Input
               type="text"
               value={newGroupName}
               onChange={(e) => setNewGroupName(e.target.value)}
@@ -955,21 +985,20 @@ export function TokenGeneratorFormNew({ githubConfig, onTokensChange, collection
                 if (e.key === 'Escape') { setIsAddingGroup(false); setNewGroupName(''); }
               }}
               placeholder="Group name (optional)..."
-              className="px-3 py-2 rounded-md border border-gray-300 focus:outline-none focus:ring-2 focus:ring-blue-500"
               autoFocus
             />
-            <button
+            <Button
               onClick={addTokenGroup}
-              className="px-3 py-2 font-medium text-white bg-green-600 rounded-md hover:bg-green-700"
+              className="bg-green-600 hover:bg-green-700 text-white"
             >
               ✓
-            </button>
-            <button
+            </Button>
+            <Button
+              variant="outline"
               onClick={() => { setIsAddingGroup(false); setNewGroupName(''); }}
-              className="px-3 py-2 font-medium text-white bg-gray-500 rounded-md hover:bg-gray-600"
             >
               ✕
-            </button>
+            </Button>
           </div>
         )}
       </div>

@@ -1,6 +1,9 @@
 'use client';
 
 import { useState, useEffect } from 'react';
+import { Button } from '@/components/ui/button';
+import { Input } from '@/components/ui/input';
+import { Select, SelectTrigger, SelectContent, SelectItem, SelectValue } from '@/components/ui/select';
 
 interface DirectoryItem {
   name: string;
@@ -231,12 +234,14 @@ export function GitHubDirectoryPicker({
           <h3 className="text-lg font-medium">
             {mode === 'import' ? 'Select File to Import' : 'Choose Export Destination'}
           </h3>
-          <button
+          <Button
+            variant="ghost"
+            size="sm"
             onClick={onCancel}
             className="text-gray-500 hover:text-gray-700"
           >
             ×
-          </button>
+          </Button>
         </div>
 
         <div className="flex-1 overflow-auto p-4">
@@ -246,15 +251,19 @@ export function GitHubDirectoryPicker({
               {availableBranches.length > 0 && (
                 <div className="flex items-center gap-2">
                   <label className="text-xs font-medium text-gray-700">Branch:</label>
-                  <select
+                  <Select
                     value={selectedBranch}
-                    onChange={(e) => setSelectedBranch(e.target.value)}
-                    className="px-2 py-1 text-xs border border-gray-300 rounded focus:outline-none focus:ring-1 focus:ring-blue-500"
+                    onValueChange={(v) => setSelectedBranch(v)}
                   >
-                    {availableBranches.map(branchName => (
-                      <option key={branchName} value={branchName}>{branchName}</option>
-                    ))}
-                  </select>
+                    <SelectTrigger className="h-7 text-xs px-2 py-1 w-auto min-w-[120px]">
+                      <SelectValue placeholder="Select branch" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      {availableBranches.map(branchName => (
+                        <SelectItem key={branchName} value={branchName}>{branchName}</SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
                 </div>
               )}
             </div>
@@ -331,11 +340,10 @@ export function GitHubDirectoryPicker({
                 <label className="block text-sm font-medium text-gray-700 mb-1">
                   Filename:
                 </label>
-                <input
+                <Input
                   type="text"
                   value={filename}
                   onChange={(e) => setFilename(e.target.value)}
-                  className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
                   placeholder="tokens.json"
                 />
               </div>
@@ -353,18 +361,18 @@ export function GitHubDirectoryPicker({
         </div>
 
         <div className="p-4 border-t flex justify-end space-x-3">
-          <button
+          <Button
+            variant="ghost"
             onClick={onCancel}
-            className="px-4 py-2 text-gray-600 hover:text-gray-700"
+            className="text-gray-600 hover:text-gray-700"
           >
             Cancel
-          </button>
-          <button
+          </Button>
+          <Button
             onClick={handleSelect}
-            className="px-4 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700"
           >
             Select Path
-          </button>
+          </Button>
         </div>
       </div>
     </div>

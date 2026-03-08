@@ -1,6 +1,8 @@
 'use client';
 
 import { useState, useEffect } from 'react';
+import { Button } from '@/components/ui/button';
+import { Input } from '@/components/ui/input';
 
 interface FigmaConfigState {
   token: string;
@@ -139,13 +141,14 @@ export function FigmaConfig({ onConfigChange, className = '' }: FigmaConfigProps
   return (
     <div className={className}>
       <div className="flex items-center gap-2">
-        <button
+        <Button
+          variant="outline"
           onClick={() => setIsOpen(true)}
-          className={`px-3 py-2 rounded-md text-sm font-medium transition-colors ${
+          className={
             isConnected
-              ? 'bg-green-100 text-green-800 hover:bg-green-200'
-              : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
-          }`}
+              ? 'bg-green-100 text-green-800 hover:bg-green-200 border-green-200'
+              : 'bg-gray-100 text-gray-700 hover:bg-gray-200 border-gray-200'
+          }
         >
           {isConnected ? (
             <span className="flex items-center gap-2">
@@ -155,7 +158,7 @@ export function FigmaConfig({ onConfigChange, className = '' }: FigmaConfigProps
           ) : (
             'Configure Figma'
           )}
-        </button>
+        </Button>
       </div>
 
       {isOpen && (
@@ -170,12 +173,14 @@ export function FigmaConfig({ onConfigChange, className = '' }: FigmaConfigProps
                   </p>
                 )}
               </div>
-              <button
+              <Button
+                variant="ghost"
+                size="sm"
                 onClick={handleCancel}
                 className="text-gray-500 hover:text-gray-700"
               >
                 x
-              </button>
+              </Button>
             </div>
 
             <div className="space-y-4">
@@ -183,11 +188,10 @@ export function FigmaConfig({ onConfigChange, className = '' }: FigmaConfigProps
                 <label className="block text-sm font-medium text-gray-700 mb-1">
                   Personal Access Token
                 </label>
-                <input
+                <Input
                   type="password"
                   value={config.token}
                   onChange={(e) => handleTokenChange(e.target.value)}
-                  className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
                   placeholder="figd_xxxx..."
                 />
                 <p className="text-xs text-gray-500 mt-1">
@@ -199,11 +203,10 @@ export function FigmaConfig({ onConfigChange, className = '' }: FigmaConfigProps
                 <label className="block text-sm font-medium text-gray-700 mb-1">
                   Figma File URL
                 </label>
-                <input
+                <Input
                   type="text"
                   value={config.fileUrl}
                   onChange={(e) => handleFileUrlChange(e.target.value)}
-                  className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
                   placeholder="https://www.figma.com/design/ABC123/..."
                 />
                 {config.fileKey && (
@@ -214,13 +217,14 @@ export function FigmaConfig({ onConfigChange, className = '' }: FigmaConfigProps
               </div>
 
               <div className="flex items-center gap-3">
-                <button
+                <Button
+                  variant="outline"
                   onClick={handleTestConnection}
                   disabled={loading || !config.token}
-                  className="px-4 py-2 text-sm font-medium text-blue-600 border border-blue-300 rounded-md hover:bg-blue-50 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
+                  className="text-blue-600 border-blue-300 hover:bg-blue-50"
                 >
                   {loading ? 'Testing...' : 'Test Connection'}
-                </button>
+                </Button>
 
                 {testStatus === 'ok' && (
                   <span className="text-sm text-green-600 flex items-center gap-1">
@@ -237,29 +241,30 @@ export function FigmaConfig({ onConfigChange, className = '' }: FigmaConfigProps
             <div className="flex justify-between items-center mt-6">
               <div>
                 {isConnected && (
-                  <button
+                  <Button
+                    variant="outline"
                     onClick={handleReset}
-                    className="px-3 py-2 bg-red-100 text-red-700 hover:bg-red-200 rounded-md text-sm font-medium transition-colors"
+                    className="bg-red-100 text-red-700 hover:bg-red-200 border-red-200"
                     title="Completely disconnect and clear all Figma settings"
                   >
                     Reset Connection
-                  </button>
+                  </Button>
                 )}
               </div>
               <div className="space-x-2">
-                <button
+                <Button
+                  variant="ghost"
                   onClick={handleCancel}
-                  className="px-4 py-2 text-gray-600 hover:text-gray-700"
+                  className="text-gray-600 hover:text-gray-700"
                 >
                   Cancel
-                </button>
-                <button
+                </Button>
+                <Button
                   onClick={handleSave}
                   disabled={!canSave}
-                  className="px-4 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700 disabled:opacity-50 disabled:cursor-not-allowed"
                 >
                   Save
-                </button>
+                </Button>
               </div>
             </div>
           </div>

@@ -1,6 +1,9 @@
 'use client';
 
 import { useState, useEffect } from 'react';
+import { Button } from '@/components/ui/button';
+import { Input } from '@/components/ui/input';
+import { Select, SelectTrigger, SelectContent, SelectItem, SelectValue } from '@/components/ui/select';
 
 interface GitHubRepo {
   repository: string;
@@ -188,13 +191,14 @@ export function GitHubConfig({ onConfigChange, className = '' }: GitHubConfigPro
   return (
     <div className={className}>
       <div className="flex items-center gap-2">
-        <button
+        <Button
+          variant="outline"
           onClick={() => setIsOpen(true)}
-          className={`px-3 py-2 rounded-md text-sm font-medium transition-colors ${
+          className={
             isConnected
-              ? 'bg-green-100 text-green-800 hover:bg-green-200'
-              : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
-          }`}
+              ? 'bg-green-100 text-green-800 hover:bg-green-200 border-green-200'
+              : 'bg-gray-100 text-gray-700 hover:bg-gray-200 border-gray-200'
+          }
         >
           {isConnected ? (
             <span className="flex items-center gap-2">
@@ -204,16 +208,18 @@ export function GitHubConfig({ onConfigChange, className = '' }: GitHubConfigPro
           ) : (
             'Configure GitHub'
           )}
-        </button>
+        </Button>
 
         {isConnected && (
-          <button
+          <Button
+            variant="outline"
+            size="sm"
             onClick={() => setIsOpen(true)}
-            className="px-2 py-1 text-xs bg-blue-100 text-blue-700 hover:bg-blue-200 rounded transition-colors"
+            className="text-xs bg-blue-100 text-blue-700 hover:bg-blue-200 border-blue-200"
             title="Reconfigure GitHub connection (e.g., update token)"
           >
             Reconfigure
-          </button>
+          </Button>
         )}
       </div>
 
@@ -229,12 +235,14 @@ export function GitHubConfig({ onConfigChange, className = '' }: GitHubConfigPro
                   </p>
                 )}
               </div>
-              <button
+              <Button
+                variant="ghost"
+                size="sm"
                 onClick={() => setIsOpen(false)}
                 className="text-gray-500 hover:text-gray-700"
               >
                 ×
-              </button>
+              </Button>
             </div>
 
             {isConnected && (
@@ -251,11 +259,10 @@ export function GitHubConfig({ onConfigChange, className = '' }: GitHubConfigPro
                 <label className="block text-sm font-medium text-gray-700 mb-1">
                   Repository Name
                 </label>
-                <input
+                <Input
                   type="text"
                   value={config.repository}
                   onChange={(e) => setConfig(prev => ({ ...prev, repository: e.target.value }))}
-                  className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
                   placeholder="rikisommers/design-tokens"
                 />
                 <p className="text-gray-500 text-xs mt-1">
@@ -269,11 +276,10 @@ export function GitHubConfig({ onConfigChange, className = '' }: GitHubConfigPro
                 <label className="block text-sm font-medium text-gray-700 mb-1">
                   Personal Access Token
                 </label>
-                <input
+                <Input
                   type="password"
                   value={config.token}
                   onChange={(e) => setConfig(prev => ({ ...prev, token: e.target.value }))}
-                  className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
                   placeholder="ghp_xxxxxxxxxxxx"
                 />
                 <p className="text-xs text-gray-500 mt-1">
@@ -287,25 +293,31 @@ export function GitHubConfig({ onConfigChange, className = '' }: GitHubConfigPro
                     <label className="block text-sm font-medium text-gray-700">
                       Branch
                     </label>
-                    <button
+                    <Button
+                      variant="ghost"
+                      size="sm"
                       onClick={() => {
                         setShowCreateBranch(true);
                         setSourceBranch(config.branch);
                       }}
-                      className="text-xs text-blue-600 hover:text-blue-700"
+                      className="text-xs text-blue-600 hover:text-blue-700 h-auto p-0"
                     >
                       + Create Branch
-                    </button>
+                    </Button>
                   </div>
-                  <select
+                  <Select
                     value={config.branch}
-                    onChange={(e) => setConfig(prev => ({ ...prev, branch: e.target.value }))}
-                    className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+                    onValueChange={(v) => setConfig(prev => ({ ...prev, branch: v }))}
                   >
-                    {branches.map(branch => (
-                      <option key={branch} value={branch}>{branch}</option>
-                    ))}
-                  </select>
+                    <SelectTrigger>
+                      <SelectValue placeholder="Select branch" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      {branches.map(branch => (
+                        <SelectItem key={branch} value={branch}>{branch}</SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
                 </div>
               )}
 
@@ -316,47 +328,53 @@ export function GitHubConfig({ onConfigChange, className = '' }: GitHubConfigPro
                     <label className="block text-xs font-medium text-blue-700 mb-1">
                       Branch Name
                     </label>
-                    <input
+                    <Input
                       type="text"
                       value={newBranchName}
                       onChange={(e) => setNewBranchName(e.target.value)}
                       placeholder="feature/new-tokens"
-                      className="w-full px-2 py-1 text-sm border border-blue-300 rounded focus:outline-none focus:ring-1 focus:ring-blue-500"
+                      className="text-sm"
                     />
                   </div>
                   <div>
                     <label className="block text-xs font-medium text-blue-700 mb-1">
                       Create From
                     </label>
-                    <select
+                    <Select
                       value={sourceBranch}
-                      onChange={(e) => setSourceBranch(e.target.value)}
-                      className="w-full px-2 py-1 text-sm border border-blue-300 rounded focus:outline-none focus:ring-1 focus:ring-blue-500"
+                      onValueChange={(v) => setSourceBranch(v)}
                     >
-                      <option value="">Select source branch</option>
-                      {branches.map(branch => (
-                        <option key={branch} value={branch}>{branch}</option>
-                      ))}
-                    </select>
+                      <SelectTrigger className="text-sm">
+                        <SelectValue placeholder="Select source branch" />
+                      </SelectTrigger>
+                      <SelectContent>
+                        {branches.map(branch => (
+                          <SelectItem key={branch} value={branch}>{branch}</SelectItem>
+                        ))}
+                      </SelectContent>
+                    </Select>
                   </div>
                   <div className="flex justify-end space-x-2">
-                    <button
+                    <Button
+                      variant="ghost"
+                      size="sm"
                       onClick={() => {
                         setShowCreateBranch(false);
                         setNewBranchName('');
                         setSourceBranch('');
                       }}
-                      className="px-2 py-1 text-xs text-blue-600 hover:text-blue-700"
+                      className="text-xs text-blue-600 hover:text-blue-700"
                     >
                       Cancel
-                    </button>
-                    <button
+                    </Button>
+                    <Button
+                      size="sm"
                       onClick={handleCreateBranch}
                       disabled={loading}
-                      className="px-2 py-1 text-xs bg-blue-600 text-white rounded hover:bg-blue-700 disabled:opacity-50"
+                      className="text-xs bg-blue-600 text-white hover:bg-blue-700"
                     >
                       {loading ? 'Creating...' : 'Create'}
-                    </button>
+                    </Button>
                   </div>
                 </div>
               )}
@@ -366,30 +384,31 @@ export function GitHubConfig({ onConfigChange, className = '' }: GitHubConfigPro
               <div className="flex space-x-3">
                 {isConnected && (
                   <>
-                    <button
+                    <Button
+                      variant="outline"
                       onClick={handleDisconnect}
-                      className="px-3 py-2 bg-red-100 text-red-700 hover:bg-red-200 rounded-md text-sm font-medium transition-colors"
+                      className="bg-red-100 text-red-700 hover:bg-red-200 border-red-200"
                       title="Completely disconnect and clear all GitHub settings"
                     >
                       Reset Connection
-                    </button>
+                    </Button>
                   </>
                 )}
               </div>
               <div className="space-x-2">
-                <button
+                <Button
+                  variant="ghost"
                   onClick={() => setIsOpen(false)}
-                  className="px-4 py-2 text-gray-600 hover:text-gray-700"
+                  className="text-gray-600 hover:text-gray-700"
                 >
                   Cancel
-                </button>
-                <button
+                </Button>
+                <Button
                   onClick={handleSave}
                   disabled={loading}
-                  className="px-4 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700 disabled:opacity-50"
                 >
                   {loading ? 'Connecting...' : (isConnected ? 'Update & Reconnect' : 'Save & Connect')}
-                </button>
+                </Button>
               </div>
             </div>
           </div>
