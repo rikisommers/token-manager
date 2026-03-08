@@ -10,11 +10,11 @@ See: .planning/PROJECT.md (updated 2026-02-28)
 ## Current Position
 
 Phase: 01-update-ui-to-use-shadcn-components-for-common-elements-buttons-tabs-modals (v1.1)
-Plan: 1/1 complete
-Status: Plan 01-01 complete — shadcn/ui installed, 5 components created, Tailwind CSS variables configured
-Last activity: 2026-03-07 — 01-01 complete; src/components/ui/ ready with Button, Input, Select, Tabs, Dialog
+Plan: 4/5 complete (Wave 3 — 01-05 human verification pending)
+Status: Wave 2 complete — all src/ components migrated to shadcn Button/Input/Select/Tabs/Dialog; awaiting human visual verification
+Last activity: 2026-03-09 — 01-02, 01-03, 01-04 complete
 
-Progress: [██████████] 100% — v1.0 shipped; v1.1 Phase 1 complete (1/1 plans)
+Progress: [████████░░] 80% — v1.0 shipped; v1.1 Phase 1 Wave 2 complete (4/5 plans)
 
 ## Accumulated Context
 
@@ -39,6 +39,19 @@ All v1.0 decisions logged in PROJECT.md Key Decisions table.
 - Client components (Select, Tabs, Dialog) use 'use client' directive — required for Radix UI event handlers
 - CSS variables follow hsl(H S% L%) format without hsl() wrapper — tailwind.config.js adds hsl(var(...))
 
+**01-02 (page.tsx + TokenTable migration):**
+- shadcn Tabs used as visual-only tab UI; content switching driven by activeTab React state (not TabsContent) — preserves form state across tab switches
+- Color tokens retain native <input type="color"> — color picker only, no text input alongside
+
+**01-03 (dialog migration):**
+- CollectionActions uses 3 separate Dialog components (delete/rename/duplicate) controlled by separate state vars
+- shadcn Select replaces native <select> in Figma dialogs: onValueChange replaces onChange event handler
+- ImportFromFigmaDialog handleSelectChange removed; logic inlined into Select onValueChange
+
+**01-04 (form components migration):**
+- SourceContextBar is display-only (no interactive elements) — no migration needed
+- shadcn Select onValueChange pattern: (v) => setState(v) throughout all form components
+
 ### Pending Todos
 
 None.
@@ -49,6 +62,6 @@ Pre-existing TypeScript error in src/services/token.service.ts line 131 (string 
 
 ## Session Continuity
 
-Last session: 2026-03-07
-Stopped at: Completed 01-01-PLAN.md — shadcn/ui installed, 5 components in src/components/ui/, Tailwind CSS variables configured
+Last session: 2026-03-09
+Stopped at: Wave 2 complete (01-02, 01-03, 01-04 done). Wave 3: 01-05 human visual verification checkpoint pending — run `yarn dev` and visit http://localhost:3000
 Resume file: None
