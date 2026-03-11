@@ -10,11 +10,11 @@ See: .planning/PROJECT.md (updated 2026-02-28)
 ## Current Position
 
 Phase: 04-collection-management
-Plan: 4/5 complete
-Status: IN PROGRESS — 04-04 Collection-scoped layout and pages complete
-Last activity: 2026-03-12 — 04-04 CollectionSidebar, CollectionLayoutClient, /collections/[id]/layout, Tokens and Config pages
+Plan: 5/5 complete
+Status: COMPLETE — 04-05 Per-collection settings page with auto-saving config fields
+Last activity: 2026-03-12 — 04-05 CollectionSettingsPage, /collections/[id]/settings, auto-save debounce, localStorage fallback
 
-Progress: [████████░░] 80% — Phase 4 plan 4/5 done
+Progress: [██████████] 100% — Phase 4 plan 5/5 done
 
 ## Accumulated Context
 
@@ -85,6 +85,12 @@ All v1.0 decisions logged in PROJECT.md Key Decisions table.
 - CollectionSidebar has two distinct back links to /collections: app name at top and explicit Collections chevron link
 - Collection-scoped Tokens and Config pages use params.id directly — no localStorage dependency, clean URL-driven scoping
 
+**04-05 (Per-collection settings page):**
+- localStorage keys used are 'figma-config' (JSON: {token, fileUrl, fileKey}) and 'github-config' (JSON: {repository, token, branch}) — these are the actual keys from FigmaConfig/GitHubConfig, not the atui-* keys mentioned in plan spec
+- figmaFileId mapped from figmaConfig.fileKey (extracted file key, not full URL)
+- didMountRef prevents auto-save from firing during initial data load; separate useEffect sets it true after loading=false
+- Clear buttons bypass debounce and call saveToDb immediately with empty strings → null
+
 **04-02 (Layout restructure):**
 - LayoutShell is a 'use client' component in src/components/ — root layout.tsx stays a clean server component (required for Next.js metadata export)
 - CollectionProvider moved into LayoutShell so it wraps both the grid path and the sidebar shell path
@@ -107,5 +113,5 @@ Pre-existing TypeScript error in src/services/token.service.ts line 131 (string 
 ## Session Continuity
 
 Last session: 2026-03-12
-Stopped at: Phase 4, Plan 04 complete. Collection-scoped layout shell — CollectionSidebar, CollectionLayoutClient, /collections/[id] layout, Tokens and Config pages.
+Stopped at: Phase 4, Plan 05 complete. Per-collection settings page — CollectionSettingsPage at /collections/[id]/settings, auto-save debounce, localStorage fallback, save status badge.
 Resume file: None
