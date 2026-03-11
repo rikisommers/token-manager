@@ -29,7 +29,7 @@ See: `.planning/milestones/v1.0-ROADMAP.md` for full phase details.
 | 1. Database Foundation | v1.0 | 3/3 | Complete | 2026-02-25 |
 | 2. View Integration | v1.0 | 2/2 | Complete | 2026-02-25 |
 | 3. Generator Form | 4/4 | Complete   | 2026-03-11 | 2026-02-26 |
-| 4. Collection Management | 2/6 | In Progress|  | 2026-02-26 |
+| 4. Collection Management | 4/6 | In Progress|  | 2026-02-26 |
 | 5. Export Style Dictionary | v1.0 | 2/2 | Complete | 2026-02-26 |
 | 6. Collection UX Improvements | v1.0 | 3/3 | Complete | 2026-02-28 |
 | 7. Fix Figma Integration | v1.0 | 6/6 | Complete | 2026-02-28 |
@@ -78,7 +78,7 @@ Plans:
 
 **Goal:** Deliver a full collection management flow: a browseable grid of all collections (no sidebar), collection-scoped navigation where each collection has its own Tokens/Config/Settings pages with a sidebar, and per-collection Figma/GitHub config persisted to MongoDB. URL structure changes to /collections/[id]/tokens etc.
 **Depends on:** Phase 3
-**Plans:** 3/6 plans executed
+**Plans:** 4/6 plans executed
 
 Plans:
 - [ ] 04-01-PLAN.md — Extend DB schema and API: collection metadata fields (description, tags) + per-collection config fields (figmaToken, figmaFileId, githubRepo, githubBranch) + duplicate endpoint

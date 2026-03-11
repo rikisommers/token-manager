@@ -10,11 +10,11 @@ See: .planning/PROJECT.md (updated 2026-02-28)
 ## Current Position
 
 Phase: 04-collection-management
-Plan: 3/5 complete
-Status: IN PROGRESS — 04-03 Collections grid page complete
-Last activity: 2026-03-12 — 04-03 CollectionCard, DeleteCollectionDialog, and /collections grid page built
+Plan: 4/5 complete
+Status: IN PROGRESS — 04-04 Collection-scoped layout and pages complete
+Last activity: 2026-03-12 — 04-04 CollectionSidebar, CollectionLayoutClient, /collections/[id]/layout, Tokens and Config pages
 
-Progress: [██████░░░░] 60% — Phase 4 plan 3/5 done
+Progress: [████████░░] 80% — Phase 4 plan 4/5 done
 
 ## Accumulated Context
 
@@ -79,6 +79,12 @@ All v1.0 decisions logged in PROJECT.md Key Decisions table.
 - shadcn Select onValueChange pattern: (v) => setState(v) throughout all form components
 - [Phase 03-04]: ui.utils.ts TS2339 ( on object) auto-fixed by casting to Record<string, unknown> — pre-existing error not caused by Phase 3
 
+**04-04 (Collection-scoped layout and pages):**
+- LayoutShell updated to pathname.startsWith('/collections') — suppresses root sidebar for all collection-scoped routes; their own CollectionLayoutClient provides sidebar
+- CollectionLayoutClient is a 'use client' component fetching collection name — keeps layout.tsx as a clean server component
+- CollectionSidebar has two distinct back links to /collections: app name at top and explicit Collections chevron link
+- Collection-scoped Tokens and Config pages use params.id directly — no localStorage dependency, clean URL-driven scoping
+
 **04-02 (Layout restructure):**
 - LayoutShell is a 'use client' component in src/components/ — root layout.tsx stays a clean server component (required for Next.js metadata export)
 - CollectionProvider moved into LayoutShell so it wraps both the grid path and the sidebar shell path
@@ -101,5 +107,5 @@ Pre-existing TypeScript error in src/services/token.service.ts line 131 (string 
 ## Session Continuity
 
 Last session: 2026-03-12
-Stopped at: Phase 4, Plan 03 complete. Collections grid — CollectionCard, DeleteCollectionDialog, /collections grid page with full CRUD.
+Stopped at: Phase 4, Plan 04 complete. Collection-scoped layout shell — CollectionSidebar, CollectionLayoutClient, /collections/[id] layout, Tokens and Config pages.
 Resume file: None
