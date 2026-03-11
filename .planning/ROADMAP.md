@@ -36,6 +36,7 @@ See: `.planning/milestones/v1.0-ROADMAP.md` for full phase details.
 | 1. shadcn UI Components | v1.1 | 5/5 | Complete | 2026-03-09 |
 | 2. Test ATUI Component Library | v1.1 | 1/1 | Complete | 2026-03-01 |
 | 3. App Layout UX (sidebar + scoped pages) | v1.1 | 0/4 | In progress | - |
+| 4. Collection Management (grid + scoped routing + config persistence) | v1.1 | 0/6 | Planned | - |
 
 ### 🚧 v1.1 shadcn UI
 
@@ -75,9 +76,14 @@ Plans:
 
 ### Phase 4: Collection Management — grid of collections, collection-scoped pages with sidebar, tokens/config/settings per collection, config persisted to DB
 
-**Goal:** [To be planned]
+**Goal:** Deliver a full collection management flow: a browseable grid of all collections (no sidebar), collection-scoped navigation where each collection has its own Tokens/Config/Settings pages with a sidebar, and per-collection Figma/GitHub config persisted to MongoDB. URL structure changes to /collections/[id]/tokens etc.
 **Depends on:** Phase 3
-**Plans:** 0 plans
+**Plans:** 6 plans
 
 Plans:
-- [ ] TBD (run /gsd:plan-phase 4 to break down)
+- [ ] 04-01-PLAN.md — Extend DB schema and API: collection metadata fields (description, tags) + per-collection config fields (figmaToken, figmaFileId, githubRepo, githubBranch) + duplicate endpoint
+- [ ] 04-02-PLAN.md — Root layout restructure: conditional sidebar/header, redirect / to /collections, collections layout file
+- [ ] 04-03-PLAN.md — Collections grid page: card grid with CRUD (rename inline, delete dialog, duplicate), empty state, + New Collection card
+- [ ] 04-04-PLAN.md — Collection-scoped layout + routing: CollectionSidebar, /collections/[id]/tokens, /collections/[id]/config
+- [ ] 04-05-PLAN.md — Per-collection Settings page: auto-saving Figma + GitHub config with localStorage pre-population
+- [ ] 04-06-PLAN.md — Final build verification + human visual verification checkpoint
