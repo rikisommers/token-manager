@@ -10,11 +10,11 @@ See: .planning/PROJECT.md (updated 2026-02-28)
 ## Current Position
 
 Phase: 03-update-app-layout-to-improve-ux
-Plan: 1/4 complete
-Status: IN PROGRESS — 03-01 sidebar shell complete
-Last activity: 2026-03-11 — 03-01 sidebar + layout shell complete
+Plan: 2/4 complete
+Status: IN PROGRESS — 03-02 Tokens page refactor complete
+Last activity: 2026-03-11 — 03-02 Tokens page refactored (collection actions top bar, Generate Tokens primary)
 
-Progress: [██░░░░░░░░] 25% — Phase 3 plan 1/4 done
+Progress: [████░░░░░░] 50% — Phase 3 plan 2/4 done
 
 ## Accumulated Context
 
@@ -25,6 +25,12 @@ Progress: [██░░░░░░░░] 25% — Phase 3 plan 1/4 done
 - Phase 3 (v1.1) added: Update app layout to improve UX — sidebar, scoped config/status pages
 
 ### Decisions
+
+**03-02 (Tokens page refactor):**
+- View Tokens section preserved as hidden div — code intact, not navigable via sidebar
+- githubConfig and figmaConfig kept as local state for future Settings page integration
+- HomeContent/Home split collapsed into single default export — Suspense removed (no useSearchParams)
+- handleSaveAs uses generateTabTokens ?? rawCollectionTokens ?? tokenData — no activeTab discrimination needed
 
 **03-01 (sidebar + layout shell):**
 - AppSidebar is fully self-contained: fetches /api/collections via useEffect, persists selectedId to localStorage (key: atui-selected-collection-id)
@@ -70,5 +76,5 @@ Pre-existing TypeScript error in src/services/token.service.ts line 131 (string 
 ## Session Continuity
 
 Last session: 2026-03-11
-Stopped at: Phase 3, Plan 01 complete. Sidebar shell + root layout updated.
+Stopped at: Phase 3, Plan 02 complete. Tokens page refactored — collection actions top bar, Generate Tokens as primary content.
 Resume file: None
