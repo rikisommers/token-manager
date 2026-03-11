@@ -5,16 +5,16 @@
 See: .planning/PROJECT.md (updated 2026-02-28)
 
 **Core value:** Token collections are always available and editable — stored in MongoDB, loadable into the generator form, and visible on the view page, with Figma import/export fully integrated.
-**Current focus:** v1.1 complete — both phases shipped
+**Current focus:** Phase 3 in progress — app layout UX (sidebar + scoped config/status pages)
 
 ## Current Position
 
-Phase: 01-update-ui-to-use-shadcn-components-for-common-elements-buttons-tabs-modals (v1.1)
-Plan: 5/5 complete
-Status: COMPLETE — all shadcn migration verified by human; phase 1 done
-Last activity: 2026-03-09 — 01-05 human verification approved
+Phase: 03-update-app-layout-to-improve-ux
+Plan: 1/4 complete
+Status: IN PROGRESS — 03-01 sidebar shell complete
+Last activity: 2026-03-11 — 03-01 sidebar + layout shell complete
 
-Progress: [██████████] 100% — v1.0 shipped; v1.1 Phase 1 complete (5/5 plans)
+Progress: [██░░░░░░░░] 25% — Phase 3 plan 1/4 done
 
 ## Accumulated Context
 
@@ -25,6 +25,12 @@ Progress: [██████████] 100% — v1.0 shipped; v1.1 Phase 1 c
 - Phase 3 (v1.1) added: Update app layout to improve UX — sidebar, scoped config/status pages
 
 ### Decisions
+
+**03-01 (sidebar + layout shell):**
+- AppSidebar is fully self-contained: fetches /api/collections via useEffect, persists selectedId to localStorage (key: atui-selected-collection-id)
+- layout.tsx remains a server component; importing a client component (AppSidebar) into a server layout is valid in Next.js App Router
+- Sidebar width set via w-[200px] flex-shrink-0 wrapper div in layout; AppSidebar fills h-full
+- CollectionSelectorSidebar inline sub-component uses Tailwind descendant selectors to apply dark styling over CollectionSelector without forking it
 
 All v1.0 decisions logged in PROJECT.md Key Decisions table.
 
@@ -63,7 +69,6 @@ Pre-existing TypeScript error in src/services/token.service.ts line 131 (string 
 
 ## Session Continuity
 
-Last session: 2026-03-09
-Stopped at: Phase 1 complete. All 5 plans done. Human approved visual verification.
-v1.1 complete. Both phases shipped.
+Last session: 2026-03-11
+Stopped at: Phase 3, Plan 01 complete. Sidebar shell + root layout updated.
 Resume file: None
