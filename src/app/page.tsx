@@ -10,6 +10,7 @@ import { SourceContextBar } from '@/components/SourceContextBar';
 import { ImportFromFigmaDialog } from '@/components/ImportFromFigmaDialog';
 import { CollectionActions } from '@/components/CollectionActions';
 import { Button } from '@/components/ui/button';
+import { useCollection } from '@/context/CollectionContext';
 import type { ToastMessage } from '@/types';
 import type { ISourceMetadata } from '@/types/collection.types';
 
@@ -27,10 +28,6 @@ interface TokenGroup {
   section: string;
 }
 
-interface CollectionOption {
-  _id: string;
-  name: string;
-}
 
 /**
  * Flatten MongoDB token data into the Record<string, TokenGroup[]> shape expected by TokenTable.
@@ -121,11 +118,10 @@ function flattenMongoTokens(
 }
 
 export default function Home() {
+  const { collections, selectedId, setSelectedId, loading: collectionsLoading, refreshCollections } = useCollection();
   const [tokenData, setTokenData] = useState<Record<string, TokenGroup[]>>({});
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
-  const [collections, setCollections] = useState<CollectionOption[]>([]);
-  const [selectedId, setSelectedId] = useState<string>('local');
   const [tableLoading, setTableLoading] = useState(false);
   const [toast, setToast] = useState<ToastMessage | null>(null);
   const [rawCollectionTokens, setRawCollectionTokens] = useState<Record<string, unknown> | null>(null);
@@ -162,40 +158,12 @@ export default function Home() {
     return () => clearTimeout(timer);
   }, [toast]);
 
-  // Load collections list on mount; restore last selection from localStorage
+  // Load tokens when selectedId changes (driven by CollectionContext)
   useEffect(() => {
-    (async () => {
-      try {
-        const response = await fetch('/api/collections');
-        if (!response.ok) throw new Error('Failed to load collections list');
-        const data = await response.json();
-        const fetchedCollections: CollectionOption[] = data.collections || [];
-        setCollections(fetchedCollections);
-
-        const storedId = localStorage.getItem('atui-selected-collection-id');
-        const storedExists =
-          storedId &&
-          fetchedCollections.some((c) => c._id === storedId);
-
-        if (storedExists && storedId) {
-          handleSelectionChange(storedId, fetchedCollections);
-        } else {
-          handleSelectionChange('local', fetchedCollections);
-        }
-      } catch {
-        setToast({ message: 'Failed to load collections list', type: 'error' });
-        // Stay on local files -- collections stays empty
-        handleSelectionChange('local', []);
-      }
-    })();
+    if (collectionsLoading) return; // wait for context to resolve selectedId
+    loadTokensForSelection(selectedId);
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, []);
-
-  // Initial Local Files load
-  useEffect(() => {
-    fetchTokens();
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, []);
+  }, [selectedId, collectionsLoading]);
 
   const fetchTokens = async () => {
     try {
@@ -210,21 +178,16 @@ export default function Home() {
     }
   };
 
-  const handleSelectionChange = (
-    id: string,
-    _collections?: CollectionOption[]
-  ) => {
+  const loadTokensForSelection = (id: string) => {
     // Cancel any in-flight request
     abortControllerRef.current?.abort();
     abortControllerRef.current = new AbortController();
-
-    setSelectedId(id);
-    localStorage.setItem('atui-selected-collection-id', id);
 
     if (id === 'local') {
       setRawCollectionTokens(null);
       setRawCollectionName('');
       setSelectedSourceMetadata(null);
+      setGenerateFormKey(k => k + 1);
       fetchTokens();
       return;
     }
@@ -248,7 +211,6 @@ export default function Home() {
         setTokenData(transformed);
       } catch (err) {
         if (err instanceof Error && err.name === 'AbortError') {
-          // User switched away -- do nothing
           return;
         }
         setToast({ message: 'Failed to load collection', type: 'error' });
@@ -259,34 +221,21 @@ export default function Home() {
     })();
   };
 
-  const handleDeleted = () => {
-    // Remove deleted collection from list
-    setCollections(prev => prev.filter(c => c._id !== selectedId));
-    // Clear selection back to local files
-    handleSelectionChange('local');
+  const handleDeleted = async () => {
+    await refreshCollections();
+    setSelectedId('local');
     setToast({ message: 'Collection deleted', type: 'success' });
   };
 
-  const handleRenamed = (newName: string) => {
-    // Update name in collections list in place
-    setCollections(prev =>
-      prev.map(c => c._id === selectedId ? { ...c, name: newName } : c)
-    );
+  const handleRenamed = async (newName: string) => {
+    await refreshCollections();
     setToast({ message: `Renamed to "${newName}"`, type: 'success' });
   };
 
-  const handleDuplicated = (newId: string, newName: string) => {
-    // Add duplicate to collections list
-    setCollections(prev => [...prev, { _id: newId, name: newName }]);
-    // Switch to the new duplicate
-    handleSelectionChange(newId);
+  const handleDuplicated = async (newId: string, newName: string) => {
+    await refreshCollections();
+    setSelectedId(newId);
     setToast({ message: `Duplicated as "${newName}"`, type: 'success' });
-  };
-
-  const handleNewCollection = () => {
-    // Clear selection to local, reset the generate form
-    handleSelectionChange('local');
-    setGenerateFormKey(k => k + 1); // reset form by remounting
   };
 
   const handleSaveAs = async (name: string) => {
@@ -301,8 +250,8 @@ export default function Home() {
       });
       if (res.status === 201) {
         const { collection } = await res.json();
-        setCollections(prev => [...prev, { _id: collection._id, name: collection.name }]);
-        handleSelectionChange(collection._id);
+        await refreshCollections();
+        setSelectedId(collection._id);
         setSaveAsDialogOpen(false);
         setToast({ message: `Saved as "${collection.name}"`, type: 'success' });
       } else if (res.status === 409) {
@@ -316,8 +265,8 @@ export default function Home() {
         });
         if (putRes.ok) {
           const { collection } = await putRes.json();
-          setCollections(prev => prev.map(c => c._id === collection._id ? { ...c, name: collection.name } : c));
-          handleSelectionChange(collection._id);
+          await refreshCollections();
+          setSelectedId(collection._id);
           setSaveAsDialogOpen(false);
           setToast({ message: `Saved as "${collection.name}"`, type: 'success' });
         } else {
@@ -371,7 +320,6 @@ export default function Home() {
       {/* Collection actions top bar */}
       <div className="flex items-center gap-3 flex-wrap border-b border-gray-200 bg-white px-6 py-3">
         <Button variant="outline" size="sm" onClick={() => setSaveAsDialogOpen(true)}>Save As</Button>
-        <Button variant="outline" size="sm" onClick={handleNewCollection}>New Collection</Button>
         <CollectionActions
           selectedId={selectedId}
           selectedName={collections.find(c => c._id === selectedId)?.name ?? ''}
@@ -453,9 +401,9 @@ export default function Home() {
       <ImportFromFigmaDialog
         isOpen={importFigmaOpen}
         onClose={() => setImportFigmaOpen(false)}
-        onImported={(collectionId, collectionName) => {
-          setCollections(prev => [...prev, { _id: collectionId, name: collectionName }]);
-          handleSelectionChange(collectionId);
+        onImported={async (collectionId, collectionName) => {
+          await refreshCollections();
+          setSelectedId(collectionId);
           setImportFigmaOpen(false);
           setToast({ message: `Imported "${collectionName}" from Figma`, type: 'success' });
         }}
