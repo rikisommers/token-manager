@@ -70,6 +70,7 @@ All v1.0 decisions logged in PROJECT.md Key Decisions table.
 **01-04 (form components migration):**
 - SourceContextBar is display-only (no interactive elements) — no migration needed
 - shadcn Select onValueChange pattern: (v) => setState(v) throughout all form components
+- [Phase 03-04]: ui.utils.ts TS2339 ( on object) auto-fixed by casting to Record<string, unknown> — pre-existing error not caused by Phase 3
 
 ### Pending Todos
 
