@@ -23,8 +23,20 @@ The user can also rename the collection from the database.
 The user can also duplicate the collection from the database.
 
 
+3. Collection Management
+Display a grid page of all collections form the database
+This page also aloows us to create a new collection in the database.
+Each collectiosn is displayed as a card in the grid. Each card linkks to the collection's page.
+The collectiosn card should display the collection name, the number of tokens in the collection, and the last updated date.
+No sidebar is displayed on this page.
+THe collectiosn selector can be removed from the app header as we are using routes to navigate to each collections page.
 
-
-
+Once a collection is selected, the user is navigated to the collection's page.
+The collectiosn page shou;d contain a backlink to collections page(home page).
+The collectiosn page shoudl contain the following:
+Collection sidebar - as used in layout.tsx
+Collection content -  tokens/config/settings
+Each collection should have its own config and sync settings.
+Form selectiosn for config and setting need to be saved to the database.
 
 
