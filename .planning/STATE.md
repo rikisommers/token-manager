@@ -10,11 +10,11 @@ See: .planning/PROJECT.md (updated 2026-02-28)
 ## Current Position
 
 Phase: 03-update-app-layout-to-improve-ux
-Plan: 2/4 complete
-Status: IN PROGRESS — 03-02 Tokens page refactor complete
-Last activity: 2026-03-11 — 03-02 Tokens page refactored (collection actions top bar, Generate Tokens primary)
+Plan: 3/4 complete
+Status: IN PROGRESS — 03-03 Configuration + Settings pages complete
+Last activity: 2026-03-11 — 03-03 Configuration/Settings pages created; BuildTokensPanel inline component added
 
-Progress: [████░░░░░░] 50% — Phase 3 plan 2/4 done
+Progress: [███████░░░] 75% — Phase 3 plan 3/4 done
 
 ## Accumulated Context
 
@@ -25,6 +25,12 @@ Progress: [████░░░░░░] 50% — Phase 3 plan 2/4 done
 - Phase 3 (v1.1) added: Update app layout to improve UX — sidebar, scoped config/status pages
 
 ### Decisions
+
+**03-03 (Configuration + Settings pages):**
+- BuildTokensPanel is a standalone component — does not import BuildTokensModal; logic duplicated to keep files independent
+- alwaysOpen prop in FigmaConfig and GitHubConfig: when true, initializes isOpen=true and renders form inline (no modal overlay)
+- GitHubConfig uses shared formContent JSX variable to avoid markup duplication between inline and modal render paths
+- Configuration page reads atui-selected-collection-id from localStorage — same key used by AppSidebar
 
 **03-02 (Tokens page refactor):**
 - View Tokens section preserved as hidden div — code intact, not navigable via sidebar
@@ -76,5 +82,5 @@ Pre-existing TypeScript error in src/services/token.service.ts line 131 (string 
 ## Session Continuity
 
 Last session: 2026-03-11
-Stopped at: Phase 3, Plan 02 complete. Tokens page refactored — collection actions top bar, Generate Tokens as primary content.
+Stopped at: Phase 3, Plan 03 complete. Configuration and Settings pages created — BuildTokensPanel inline, FigmaConfig and GitHubConfig always-expanded.
 Resume file: None

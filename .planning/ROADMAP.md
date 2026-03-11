@@ -28,7 +28,7 @@ See: `.planning/milestones/v1.0-ROADMAP.md` for full phase details.
 |-------|-----------|----------------|--------|-----------|
 | 1. Database Foundation | v1.0 | 3/3 | Complete | 2026-02-25 |
 | 2. View Integration | v1.0 | 2/2 | Complete | 2026-02-25 |
-| 3. Generator Form | 2/4 | In Progress|  | 2026-02-26 |
+| 3. Generator Form | 3/4 | In Progress|  | 2026-02-26 |
 | 4. Collection Management | v1.0 | 3/3 | Complete | 2026-02-26 |
 | 5. Export Style Dictionary | v1.0 | 2/2 | Complete | 2026-02-26 |
 | 6. Collection UX Improvements | v1.0 | 3/3 | Complete | 2026-02-28 |
@@ -65,7 +65,7 @@ Plans:
 
 **Goal:** Restructure app navigation with a persistent left sidebar (app name, collection selector, 3 nav items), make Generate Tokens the primary Tokens page, move Build Tokens to an inline Configuration page, and move Figma/GitHub config to an always-expanded Settings page.
 **Depends on:** Phase 2
-**Plans:** 2/4 plans executed
+**Plans:** 3/4 plans executed
 
 Plans:
 - [ ] 03-01-PLAN.md — Create AppSidebar component and update root layout to sidebar + main-content shell
