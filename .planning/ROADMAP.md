@@ -35,7 +35,7 @@ See: `.planning/milestones/v1.0-ROADMAP.md` for full phase details.
 | 7. Fix Figma Integration | v1.0 | 6/6 | Complete | 2026-02-28 |
 | 1. shadcn UI Components | v1.1 | 5/5 | Complete | 2026-03-09 |
 | 2. Test ATUI Component Library | v1.1 | 1/1 | Complete | 2026-03-01 |
-| 3. App Layout UX (sidebar + scoped pages) | v1.1 | 0/? | Not planned | - |
+| 3. App Layout UX (sidebar + scoped pages) | v1.1 | 0/4 | In progress | - |
 
 ### 🚧 v1.1 shadcn UI
 
@@ -63,9 +63,12 @@ Plans:
 
 ### Phase 3: Update app layout to improve UX (sidebar + scoped config/status pages)
 
-**Goal:** [To be planned]
+**Goal:** Restructure app navigation with a persistent left sidebar (app name, collection selector, 3 nav items), make Generate Tokens the primary Tokens page, move Build Tokens to an inline Configuration page, and move Figma/GitHub config to an always-expanded Settings page.
 **Depends on:** Phase 2
-**Plans:** 0 plans
+**Plans:** 4 plans
 
 Plans:
-- [ ] TBD (run /gsd:plan-phase 3 to break down)
+- [ ] 03-01-PLAN.md — Create AppSidebar component and update root layout to sidebar + main-content shell
+- [ ] 03-02-PLAN.md — Refactor Tokens page: collection actions top bar, Generate Tokens primary, remove old header/tabs
+- [ ] 03-03-PLAN.md — Create Configuration page (inline Build Tokens) and Settings page (always-expanded Figma/GitHub forms)
+- [ ] 03-04-PLAN.md — Final build check and human visual verification checkpoint
