@@ -22,6 +22,12 @@ export async function GET(
         name: doc.name as string,
         tokens: doc.tokens,
         sourceMetadata: (doc.sourceMetadata as Record<string, unknown> | null | undefined) ?? null,
+        description: (doc.description as string | null | undefined) ?? null,
+        tags: (doc.tags as string[] | undefined) ?? [],
+        figmaToken: (doc.figmaToken as string | null | undefined) ?? null,
+        figmaFileId: (doc.figmaFileId as string | null | undefined) ?? null,
+        githubRepo: (doc.githubRepo as string | null | undefined) ?? null,
+        githubBranch: (doc.githubBranch as string | null | undefined) ?? null,
       },
     });
   } catch (error) {
@@ -43,7 +49,13 @@ export async function PUT(
     if (
       body.name === undefined &&
       body.tokens === undefined &&
-      body.sourceMetadata === undefined
+      body.sourceMetadata === undefined &&
+      body.description === undefined &&
+      body.tags === undefined &&
+      body.figmaToken === undefined &&
+      body.figmaFileId === undefined &&
+      body.githubRepo === undefined &&
+      body.githubBranch === undefined
     ) {
       return NextResponse.json({ error: 'Nothing to update' }, { status: 400 });
     }

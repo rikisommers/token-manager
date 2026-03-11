@@ -1,17 +1,28 @@
 import { NextResponse } from 'next/server';
 import dbConnect from '@/lib/mongodb';
 import TokenCollection from '@/lib/db/models/TokenCollection';
+import type { CollectionCardData } from '@/types/collection.types';
 
 export async function GET() {
   try {
     await dbConnect();
 
-    const docs = await TokenCollection.find({}, { name: 1, createdAt: 1 }).lean();
+    const docs = await TokenCollection.find(
+      {},
+      { name: 1, description: 1, tags: 1, tokens: 1, figmaToken: 1, figmaFileId: 1, githubRepo: 1, githubBranch: 1, updatedAt: 1 }
+    )
+      .sort({ updatedAt: -1 })
+      .lean();
 
-    const collections = docs.map((doc) => ({
+    const collections: CollectionCardData[] = docs.map((doc) => ({
       _id: doc._id.toString(),
       name: doc.name as string,
-      createdAt: (doc.createdAt as Date).toISOString(),
+      description: (doc.description as string | null | undefined) ?? null,
+      tags: (doc.tags as string[] | undefined) ?? [],
+      tokenCount: Object.keys((doc.tokens as Record<string, unknown>) ?? {}).length,
+      updatedAt: (doc.updatedAt as Date).toISOString(),
+      figmaConfigured: !!((doc.figmaToken as string | null | undefined) && (doc.figmaFileId as string | null | undefined)),
+      githubConfigured: !!(doc.githubRepo as string | null | undefined),
     }));
 
     return NextResponse.json({ collections });
