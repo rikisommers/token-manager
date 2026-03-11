@@ -72,3 +72,12 @@ Plans:
 - [ ] 03-02-PLAN.md — Refactor Tokens page: collection actions top bar, Generate Tokens primary, remove old header/tabs
 - [ ] 03-03-PLAN.md — Create Configuration page (inline Build Tokens) and Settings page (always-expanded Figma/GitHub forms)
 - [ ] 03-04-PLAN.md — Final build check and human visual verification checkpoint
+
+### Phase 4: Collection Management — grid of collections, collection-scoped pages with sidebar, tokens/config/settings per collection, config persisted to DB
+
+**Goal:** [To be planned]
+**Depends on:** Phase 3
+**Plans:** 0 plans
+
+Plans:
+- [ ] TBD (run /gsd:plan-phase 4 to break down)

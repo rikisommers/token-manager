@@ -23,6 +23,7 @@ Progress: [███████░░░] 75% — Phase 3 plan 3/4 done
 - Phase 1 (v1.1) added: shadcn UI components (buttons, tabs, modals) + color picker inputs for all color token fields
 - Phase 2 (v1.1) added: Test ATUI component library — confirm Button can be imported and used
 - Phase 3 (v1.1) added: Update app layout to improve UX — sidebar, scoped config/status pages
+- Phase 4 (v1.1) added: Collection Management — grid of collections, collection-scoped pages with sidebar, tokens/config/settings per collection, config persisted to DB
 
 ### Decisions
 
