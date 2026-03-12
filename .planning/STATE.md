@@ -10,24 +10,24 @@ See: .planning/PROJECT.md (updated 2026-03-12)
 ## Current Position
 
 Phase: 5 of 7 (Tree Data Model)
-Plan: 0 of TBD in current phase
-Status: Ready to plan
-Last activity: 2026-03-12 — v1.2 roadmap created (3 phases, 10 requirements mapped)
+Plan: 2 of 2 in current phase
+Status: Phase 5 complete — ready for Phase 6 planning
+Last activity: 2026-03-13 — Phase 5 complete (05-01, 05-02 done)
 
-Progress: [░░░░░░░░░░] 0% (v1.2)
+Progress: [██░░░░░░░░] 20% (v1.2)
 
 ## Performance Metrics
 
 **Velocity:**
-- Total plans completed (v1.2): 0
-- Average duration: —
-- Total execution time: —
+- Total plans completed (v1.2): 2
+- Average duration: ~15 min
+- Total execution time: ~30 min
 
 **By Phase:**
 
 | Phase | Plans | Total | Avg/Plan |
 |-------|-------|-------|----------|
-| - | - | - | - |
+| 5. Tree Data Model | 2 | ~30 min | ~15 min |
 
 *Updated after each plan completion*
 
@@ -43,16 +43,22 @@ Progress: [░░░░░░░░░░] 0% (v1.2)
 
 All decisions logged in PROJECT.md Key Decisions table.
 
+**Phase 5 key decisions:**
+- Flat-node rendering for TokenGroupTree (FlatNode[] list, not nested JSX recursion)
+- No expand/collapse toggle in Phase 5 — all nodes always visible (overrides TREE-05; deferred)
+- Dynamic indent via inline style (paddingLeft), not Tailwind (Tailwind cannot compute runtime values)
+- Add-group sidebar UI deferred to Phase 7 (Mutations)
+
 ### Pending Todos
 
 None.
 
 ### Blockers/Concerns
 
-- onGroupsChange currently passes flat `{ id, name }[]` to the page — Phase 5 must upgrade this to full `TokenGroup[]` with children to support tree rendering.
+None — Phase 5 complete. Blocker resolved: onGroupsChange now emits full TokenGroup[] with children (05-01).
 
 ## Session Continuity
 
-Last session: 2026-03-12
-Stopped at: v1.2 roadmap created, ready to plan Phase 5
+Last session: 2026-03-13
+Stopped at: Phase 5 complete (05-02 done, human-verified)
 Resume file: None
