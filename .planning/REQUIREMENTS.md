@@ -15,8 +15,8 @@
 
 ### Breadcrumbs
 
-- [ ] **BREAD-01**: Content area shows breadcrumb trail reflecting the selected group's full path (e.g. `Brand2 / Color`)
-- [ ] **BREAD-02**: Each breadcrumb segment is clickable and selects the corresponding ancestor group
+- [x] **BREAD-01**: Content area shows breadcrumb trail reflecting the selected group's full path (e.g. `Brand2 / Color`)
+- [x] **BREAD-02**: Each breadcrumb segment is clickable and selects the corresponding ancestor group
 
 ### Content Area
 
@@ -44,8 +44,8 @@
 | TREE-02 | Phase 5 | Pending |
 | TREE-05 | Phase 5 | Pending |
 | TREE-03 | Phase 6 | Pending |
-| BREAD-01 | Phase 6 | Pending |
-| BREAD-02 | Phase 6 | Pending |
+| BREAD-01 | Phase 6 | Complete |
+| BREAD-02 | Phase 6 | Complete |
 | CONT-01 | Phase 6 | Pending |
 | TREE-04 | Phase 7 | Pending |
 | CONT-02 | Phase 7 | Pending |

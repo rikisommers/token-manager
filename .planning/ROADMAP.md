@@ -96,7 +96,7 @@ Plans:
 | 3. Generator Form | v1.0 | 4/4 | Complete | 2026-02-26 |
 | 4. Collection Management | v1.0 | 3/3 | Complete | 2026-02-26 |
 | 5. Export Style Dictionary | v1.0 | 2/2 | Complete | 2026-02-26 |
-| 6. Collection UX Improvements | v1.0 | 3/3 | Complete | 2026-02-28 |
+| 6. Collection UX Improvements | 2/3 | In Progress|  | 2026-02-28 |
 | 7. Fix Figma Integration | v1.0 | 6/6 | Complete | 2026-02-28 |
 | 1. shadcn UI Components | v1.1 | 5/5 | Complete | 2026-03-09 |
 | 2. Test ATUI Component Library | v1.1 | 1/1 | Complete | 2026-03-01 |

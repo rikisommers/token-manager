@@ -5,29 +5,30 @@
 See: .planning/PROJECT.md (updated 2026-03-12)
 
 **Core value:** Token collections are always available and editable — accessible via collection-scoped URLs, with per-collection Figma/GitHub config persisted to MongoDB, full CRUD from a card grid, and Figma import/export integrated.
-**Current focus:** v1.2 — Phase 5: Tree Data Model
+**Current focus:** v1.2 — Phase 6: Selection, Breadcrumbs, Content Scoping
 
 ## Current Position
 
-Phase: 5 of 7 (Tree Data Model)
-Plan: 2 of 2 in current phase
-Status: Phase 5 complete — ready for Phase 6 planning
-Last activity: 2026-03-13 — Phase 5 complete (05-01, 05-02 done)
+Phase: 6 of 7 (Selection, Breadcrumbs, Content Scoping)
+Plan: 2 of 3 in current phase
+Status: 06-02 complete — GroupBreadcrumb component built and TypeScript-clean
+Last activity: 2026-03-13 — Phase 6 Plan 02 complete (GroupBreadcrumb created)
 
 Progress: [██░░░░░░░░] 20% (v1.2)
 
 ## Performance Metrics
 
 **Velocity:**
-- Total plans completed (v1.2): 2
-- Average duration: ~15 min
-- Total execution time: ~30 min
+- Total plans completed (v1.2): 3
+- Average duration: ~10 min
+- Total execution time: ~35 min
 
 **By Phase:**
 
 | Phase | Plans | Total | Avg/Plan |
 |-------|-------|-------|----------|
 | 5. Tree Data Model | 2 | ~30 min | ~15 min |
+| 6. Selection + Breadcrumbs (so far) | 1 | ~5 min | ~5 min |
 
 *Updated after each plan completion*
 
@@ -48,6 +49,8 @@ All decisions logged in PROJECT.md Key Decisions table.
 - No expand/collapse toggle in Phase 5 — all nodes always visible (overrides TREE-05; deferred)
 - Dynamic indent via inline style (paddingLeft), not Tailwind (Tailwind cannot compute runtime values)
 - Add-group sidebar UI deferred to Phase 7 (Mutations)
+- [Phase 06-selection-breadcrumbs-content-scoping]: Used local findAncestors helper instead of findGroupById — findGroupById returns only the node, not its ancestors
+- [Phase 06-selection-breadcrumbs-content-scoping]: GroupBreadcrumb display labels derived from last segment of parseGroupPath(group.name) — consistent with TokenGroupTree FlatNode.displayLabel
 
 ### Pending Todos
 
@@ -60,5 +63,5 @@ None — Phase 5 complete. Blocker resolved: onGroupsChange now emits full Token
 ## Session Continuity
 
 Last session: 2026-03-13
-Stopped at: Phase 5 complete (05-02 done, human-verified)
+Stopped at: Completed 06-02-PLAN.md (GroupBreadcrumb component)
 Resume file: None
