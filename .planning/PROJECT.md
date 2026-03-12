@@ -2,11 +2,11 @@
 
 ## What This Is
 
-A Next.js design token management tool for the Allied Telesis ATUI design system. It allows designers and developers to view, create, edit, and persist design tokens — importing from GitHub repositories and Figma, storing collections in MongoDB for durable access, and exporting to GitHub PRs, Figma, and multiple CSS/JS format files (CSS, SCSS, LESS, JS, TS, JSON).
+A Next.js design token management tool for the Allied Telesis ATUI design system. It allows designers and developers to view, create, edit, and persist design tokens — importing from GitHub repositories and Figma, storing collections in MongoDB for durable access, and exporting to GitHub PRs, Figma, and multiple CSS/JS format files (CSS, SCSS, LESS, JS, TS, JSON). Collections are browseable in a card grid and each collection has its own scoped pages (Tokens, Config, Settings) with per-collection Figma/GitHub config persisted to MongoDB.
 
 ## Core Value
 
-Token collections are always available and editable: stored in MongoDB, loadable into the generator form, and visible on the view page — with Figma import/export and GitHub PR export fully integrated.
+Token collections are always available and editable: stored in MongoDB, accessible via collection-scoped URLs, with per-collection Figma/GitHub config, full CRUD from the collections grid, and Figma import/export fully integrated.
 
 ## Requirements
 
@@ -33,6 +33,13 @@ Token collections are always available and editable: stored in MongoDB, loadable
 - ✓ View and Generate are unified into a single tabbed interface at `/` — v1.0
 - ✓ User can import a Figma variable collection and save it as a MongoDB token collection — v1.0
 - ✓ User can see which upstream source (GitHub or Figma) a collection came from — v1.0
+- ✓ UI uses shadcn/ui components (buttons, tabs, modals, inputs, selects) throughout — v1.1
+- ✓ Color token fields use native color picker inputs — v1.1
+- ✓ App has persistent left sidebar with collection selector and nav items (Tokens, Config, Settings) — v1.1
+- ✓ Collections are browseable in a card grid at `/collections` with CRUD (rename, delete, duplicate) — v1.1
+- ✓ Each collection has scoped pages at `/collections/[id]/tokens`, `/collections/[id]/config`, `/collections/[id]/settings` — v1.1
+- ✓ Per-collection Figma and GitHub config fields are persisted to MongoDB — v1.1
+- ✓ Per-collection Settings page auto-saves config to MongoDB with debounce — v1.1
 
 ### Active
 
@@ -46,23 +53,25 @@ Token collections are always available and editable: stored in MongoDB, loadable
 - Angular / Stencil / Vite workspaces — explicitly excluded; Angular port is a future milestone
 - GitHub API caching — performance improvement, deferred
 - CORS / CSRF protection — localhost dev tool; security hardening deferred
+- ATUI Stencil components replacing shadcn/ui — integration pattern established in v1.1 (Phase 2) but full replacement deferred
 
 ## Context
 
-- **Shipped:** v1.0 on 2026-02-28 — 7 phases, 23 plans, 3-day build
-- **Codebase:** ~16,868 LOC TypeScript; Next.js 13.5.6 + Mongoose + Style Dictionary v5 + JSZip
-- **Brownfield:** Existing tool with GitHub import/export already working; MongoDB layer added on top
-- **Monorepo:** Yarn 3 workspaces; Angular, Stencil, Vite variants exist but are out of scope
+- **Shipped:** v1.1 on 2026-03-12 — 4 phases, 16 plans, 4-day build
+- **Prior:** v1.0 on 2026-02-28 — 7 phases, 23 plans, 3-day build
+- **Codebase:** ~12,000 LOC TypeScript; Next.js 13.5.6 + Mongoose + Style Dictionary v5 + JSZip + shadcn/ui (Radix UI)
+- **Brownfield:** Existing tool with GitHub import/export; MongoDB layer added in v1.0; UI modernized and routing restructured in v1.1
+- **Monorepo:** Yarn 3 workspaces; Angular, Stencil, Vite variants exist but are out of scope (excluded from root tsconfig)
 - **Token format:** W3C Design Token Specification; two structure variants
-- **Architecture:** API routes in `src/app/api/`; Mongoose models in `src/lib/db/models/`; UI components in `src/components/`
+- **Architecture:** API routes in `src/app/api/`; Mongoose models in `src/lib/db/models/`; UI components in `src/components/`; shadcn primitives in `src/components/ui/`; collection-scoped routes in `src/app/collections/[id]/`
 - **Angular parity doc:** `.planning/ANGULAR_PARITY.md` documents all new API routes and UI patterns for future Angular port
-- **Known issues:** Pre-existing TypeScript errors in `token.service.ts` and `ui.utils.ts` — not introduced in v1.0; out of scope
+- **Known issues:** Pre-existing TypeScript errors resolved — yarn build now passes cleanly
 
 ## Constraints
 
 - **Tech stack:** Next.js 13.5.6 + TypeScript; must not require framework upgrade
 - **Database:** MongoDB via Mongoose; connection string via environment variable `MONGODB_URI`
-- **Styling:** Tailwind CSS only — no new CSS-in-JS or additional UI libraries
+- **Styling:** Tailwind CSS + shadcn/ui (Radix UI primitives) — no additional UI libraries
 - **Scope:** Next.js app only — do not touch Angular, Stencil, or Vite workspaces
 
 ## Key Decisions
@@ -77,10 +86,19 @@ Token collections are always available and editable: stored in MongoDB, loadable
 | Mongoose ODM over native driver | Schema validation + model layer convenience | ✓ Good — used across all API routes |
 | Schema.Types.Mixed for tokens field | W3C DTCG format is arbitrary nested JSON | ✓ Good — no issues with arbitrary token structures |
 | flattenMongoTokens() inline in page.tsx | Single consumer; avoid premature abstraction | ✓ Good — stayed simple |
-| Unified tabbed page (`/`) | Avoid route split between view and generate | ✓ Good — SharedCollectionHeader works cleanly across tabs |
+| Unified tabbed page (`/`) | Avoid route split between view and generate | ✓ Good (v1.0); superseded by collection-scoped routing in v1.1 |
 | FigmaConfig before GitHubConfig in header | Locked decision per CONTEXT.md | ✓ Good — consistent layout |
 | Dynamic import of dbConnect in export route | Avoids top-level module coupling | ✓ Good — consistent with Next.js patterns |
 | hidden CSS class for tabs (not unmount) | Preserve TokenGeneratorFormNew state across tab switches | ✓ Good — no state loss on tab switch |
+| shadcn/ui components manually created | CLI requires interactive input; used canonical source directly | ✓ Good — no hand-rolled implementations, matches shadcn docs |
+| shadcn Tabs as UI-only (not TabsContent) | Preserves form state across tab switches | ✓ Good — consistent with v1.0 hidden-tab pattern |
+| ATUI Stencil: `next/dynamic` + `ssr:false` | Avoids hydration mismatch in App Router | ✓ Good — established integration pattern for future ATUI adoption |
+| `LayoutShell` as 'use client' component | Keeps root layout.tsx as server component (required for metadata export) | ✓ Good — clean server/client boundary |
+| `pathname.startsWith('/collections')` in LayoutShell | Suppresses root sidebar for all collection-scoped routes | ✓ Good — clean conditional layout without duplication |
+| `CollectionLayoutClient` for collection name fetch | Keeps collection layout.tsx as server component | ✓ Good — proper App Router pattern |
+| Per-collection config in MongoDB | Config scoped to collection — no cross-collection leakage | ✓ Good — removes localStorage ambiguity for multi-collection setup |
+| `didMountRef` in Settings page | Prevents auto-save firing during initial data load | ✓ Good — avoids overwriting DB data with empty form on mount |
+| Exclude sub-workspaces from root tsconfig | Angular/Stencil/Vite TS errors blocked yarn build | ✓ Good — build clean; sub-projects have own TS configs |
 
 ---
-*Last updated: 2026-02-28 after v1.0 milestone*
+*Last updated: 2026-03-12 after v1.1 milestone*
