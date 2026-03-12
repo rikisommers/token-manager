@@ -6,8 +6,8 @@ import { parseGroupPath } from '@/utils';
 interface TokenGroupTreeProps {
   groups: TokenGroup[];        // The full tree (top-level nodes)
   namespace?: string;          // Optional — shown as read-only label above tree
-  selectedGroupId?: string;    // Not used in Phase 5 (no selection UI yet)
-  onGroupSelect?: (groupId: string) => void;  // Reserved for Phase 6
+  selectedGroupId?: string;    // Highlighted node ID — bg-gray-200 on match
+  onGroupSelect?: (groupId: string) => void;  // Called on node click to update selection
 }
 
 interface FlatNode {
@@ -47,9 +47,14 @@ export function TokenGroupTree({ groups, namespace, selectedGroupId, onGroupSele
         <div
           key={group.id}
           style={{ paddingLeft: depth * 16 + 8 }}
-          className={`py-1 pr-3 text-sm text-gray-700 ${
+          className={`py-1 pr-3 text-sm cursor-pointer ${
+            group.id === selectedGroupId
+              ? 'bg-gray-200 text-gray-900'
+              : 'hover:bg-gray-100 text-gray-700'
+          } ${
             group.children && group.children.length > 0 ? 'font-semibold' : 'font-normal'
           }`}
+          onClick={() => onGroupSelect?.(group.id)}
         >
           {displayLabel}
         </div>
