@@ -54,7 +54,11 @@ See: `.planning/milestones/v1.1-ROADMAP.md` for full phase details.
   2. A group named `brands/brand2/color.json` renders in the tree as Brand2 > Color (segments split, extension stripped)
   3. Tree nodes with children have an expand/collapse toggle; nodes without children have none
   4. Expanding a parent reveals its children; collapsing hides them
-**Plans**: TBD
+**Plans**: 2 plans
+
+Plans:
+- [ ] 05-01-PLAN.md — Path-parsing utility + upgrade onGroupsChange to emit TokenGroup[]
+- [ ] 05-02-PLAN.md — TokenGroupTree component + wire into tokens page sidebar
 
 ### Phase 6: Selection + Breadcrumbs + Content Scoping
 **Goal**: Clicking any tree node selects it, shows a breadcrumb trail, and scopes the content area to that group's direct tokens only
