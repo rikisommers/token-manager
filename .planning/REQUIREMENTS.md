@@ -40,22 +40,22 @@
 
 | Requirement | Phase | Status |
 |-------------|-------|--------|
-| TREE-01 | TBD | Pending |
-| TREE-02 | TBD | Pending |
-| TREE-03 | TBD | Pending |
-| TREE-04 | TBD | Pending |
-| TREE-05 | TBD | Pending |
-| BREAD-01 | TBD | Pending |
-| BREAD-02 | TBD | Pending |
-| CONT-01 | TBD | Pending |
-| CONT-02 | TBD | Pending |
-| CONT-03 | TBD | Pending |
+| TREE-01 | Phase 5 | Pending |
+| TREE-02 | Phase 5 | Pending |
+| TREE-05 | Phase 5 | Pending |
+| TREE-03 | Phase 6 | Pending |
+| BREAD-01 | Phase 6 | Pending |
+| BREAD-02 | Phase 6 | Pending |
+| CONT-01 | Phase 6 | Pending |
+| TREE-04 | Phase 7 | Pending |
+| CONT-02 | Phase 7 | Pending |
+| CONT-03 | Phase 7 | Pending |
 
 **Coverage:**
 - v1 requirements: 10 total
-- Mapped to phases: 0 (roadmap not yet created)
-- Unmapped: 10 ⚠️
+- Mapped to phases: 10
+- Unmapped: 0 ✓
 
 ---
 *Requirements defined: 2026-03-12*
-*Last updated: 2026-03-12 after initial definition*
+*Last updated: 2026-03-12 — traceability mapped to v1.2 phases 5-7*
