@@ -1,7 +1,7 @@
 'use client';
 
 import { useEffect, useState } from 'react';
-import { CollectionSidebar } from '@/components/CollectionSidebar';
+import { CollectionSidebar } from '@/components/collections/CollectionSidebar';
 
 interface CollectionLayoutClientProps {
   id: string;

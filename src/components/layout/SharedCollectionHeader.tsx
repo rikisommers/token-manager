@@ -1,7 +1,7 @@
 'use client';
 
-import { CollectionSelector } from './CollectionSelector';
-import { CollectionActions } from './CollectionActions';
+import { CollectionSelector } from '@/components/collections/CollectionSelector';
+import { CollectionActions } from '@/components/collections/CollectionActions';
 import { Button } from '@/components/ui/button';
 
 interface SharedCollectionHeaderProps {

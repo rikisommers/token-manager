@@ -2,6 +2,8 @@
 
 import { useEffect, useState } from 'react';
 import Link from 'next/link';
+import { usePathname } from 'next/navigation';
+import { ChevronLeft } from 'lucide-react';
 import { DATABASE_PROVIDERS } from '@/types/database.types';
 
 type ConnectionState = 'connected' | 'local' | 'loading';
@@ -43,12 +45,25 @@ function useDbStatus(): DbStatus {
 
 export function OrgHeader() {
   const db = useDbStatus();
+  const pathname = usePathname();
+  const isCollections = pathname.startsWith('/collections');
 
   return (
     <header className="flex items-center justify-between px-5 py-3 border-b border-gray-200 bg-white flex-shrink-0">
-      <Link href="/collections" className="text-sm font-semibold text-gray-900 tracking-wide hover:text-gray-700 transition-colors">
-        ATUI Tokens
-      </Link>
+      <div className="flex items-center gap-3">
+        {isCollections && (
+          <Link
+            href="/org"
+            className="flex items-center gap-1 text-xs text-gray-500 hover:text-gray-800 transition-colors"
+          >
+            <ChevronLeft size={14} />
+            Org
+          </Link>
+        )}
+        <Link href="/collections" className="text-sm font-semibold text-gray-900 tracking-wide hover:text-gray-700 transition-colors">
+          ATUI Tokens
+        </Link>
+      </div>
 
       <DbPill status={db} />
     </header>

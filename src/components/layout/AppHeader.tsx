@@ -3,7 +3,7 @@
 import { useState } from 'react';
 import { PlusCircle, RefreshCw } from 'lucide-react';
 import { useCollection } from '@/context/CollectionContext';
-import { CollectionSelector } from '@/components/CollectionSelector';
+import { CollectionSelector } from '@/components/collections/CollectionSelector';
 import { Button } from '@/components/ui/button';
 
 export function AppHeader() {
