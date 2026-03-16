@@ -105,3 +105,17 @@ Plans:
 | 5. Tree Data Model | v1.2 | 2/2 | Complete | 2026-03-13 |
 | 6. Selection + Breadcrumbs + Content Scoping | v1.2 | 3/3 | Complete | 2026-03-13 |
 | 7. Mutations | v1.2 | 0/TBD | Not started | - |
+
+### Phase 8: Clean code
+
+**Goal:** Remove dead code, fix all TypeScript errors, reorganize components into feature domain folders, and enforce separation of concerns — leaving a clean, maintainable codebase with zero TS errors
+**Requirements**: CLEAN-01, CLEAN-02, CLEAN-03, CLEAN-04, CLEAN-05, CLEAN-06, CLEAN-07
+**Depends on:** Phase 7
+**Plans:** 5 plans
+
+Plans:
+- [ ] 08-01-PLAN.md — Dead code removal + TokenGeneratorFormNew → TokenGeneratorForm rename
+- [ ] 08-02-PLAN.md — Fix all TypeScript errors + AtuiDevTest shadcn migration
+- [ ] 08-03-PLAN.md — Component reorganization into feature domain folders + barrel exports
+- [ ] 08-04-PLAN.md — SRP audit: extract logic to utils/services, document DB factory, produce refactor suggestions
+- [ ] 08-05-PLAN.md — Final build verification + human end-to-end check

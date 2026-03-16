@@ -24,6 +24,16 @@
 - [ ] **CONT-02**: User can add tokens to the currently selected group
 - [ ] **CONT-03**: User can edit token values in the currently selected group
 
+## Phase 8 Requirements (Clean Code)
+
+- [ ] **CLEAN-01**: Dead form component `TokenGeneratorForm.tsx` (legacy) deleted; `TokenGeneratorFormNew.tsx` renamed to `TokenGeneratorForm.tsx`; all import sites updated
+- [ ] **CLEAN-02**: Legacy app routes (`/generate`, `/settings`, `/configuration`) deleted; `collections.tsx` audited and cleaned up
+- [ ] **CLEAN-03**: All TypeScript errors fixed with no suppressors (`@ts-ignore`, `as any`); `AtuiDevTest.tsx` migrated from broken ATUI stencil loader to shadcn
+- [ ] **CLEAN-04**: Components reorganized into feature domain subdirectories (`collections/`, `tokens/`, `layout/`, `figma/`, `github/`, `dev/`) each with `index.ts` barrel exports; `collectionHeader.tsx` renamed to `CollectionHeader.tsx`
+- [ ] **CLEAN-05**: `src/utils/` functions are pure and framework-agnostic (no React/Next.js imports); `get-repository.ts` documented as live factory entry point
+- [ ] **CLEAN-06**: SRP audit completed; non-rendering logic extracted from components to `src/utils/` or `src/services/`; `REFACTOR-SUGGESTIONS.md` created with out-of-scope ideas
+- [ ] **CLEAN-07**: Application verified end-to-end in browser after all refactoring; zero TypeScript errors
+
 ## v2 Requirements
 
 (none defined yet — milestone scope to be expanded via /gsd:add-phase)
@@ -50,12 +60,21 @@
 | TREE-04 | Phase 7 | Pending |
 | CONT-02 | Phase 7 | Pending |
 | CONT-03 | Phase 7 | Pending |
+| CLEAN-01 | Phase 8 | Pending |
+| CLEAN-02 | Phase 8 | Pending |
+| CLEAN-03 | Phase 8 | Pending |
+| CLEAN-04 | Phase 8 | Pending |
+| CLEAN-05 | Phase 8 | Pending |
+| CLEAN-06 | Phase 8 | Pending |
+| CLEAN-07 | Phase 8 | Pending |
 
 **Coverage:**
 - v1 requirements: 10 total
 - Mapped to phases: 10
 - Unmapped: 0 ✓
+- Phase 8 (clean code) requirements: 7 total
+- Mapped to plans: 7 ✓
 
 ---
 *Requirements defined: 2026-03-12*
-*Last updated: 2026-03-13 — CONT-01 marked complete (Phase 6 Plan 03)*
+*Last updated: 2026-03-16 — CLEAN-01 through CLEAN-07 added for Phase 8 (Clean Code)*
