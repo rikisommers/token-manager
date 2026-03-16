@@ -39,6 +39,7 @@ Progress: [████░░░░░░] 40% (v1.2)
 - v1.0 (Phases 1-7): MongoDB persistence, collection CRUD, Figma integration, unified tabbed UI
 - v1.1 (Phases 1-4): shadcn/ui migration, sidebar layout restructure, collection card grid, collection-scoped routing, per-collection config persistence to MongoDB
 - v1.2 (Phases 5-7): Token groups tree in sidebar, breadcrumb navigation, content scoped to selected group
+- Phase 8 added: Clean code
 
 ### Decisions
 
