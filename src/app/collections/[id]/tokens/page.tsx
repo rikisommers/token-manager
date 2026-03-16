@@ -189,9 +189,9 @@ export default function CollectionTokensPage({ params }: TokensPageProps) {
   };
 
   // ── Keep refs in sync so keyboard shortcut reads fresh values ──────────
-  const handleTokensChange = useCallback((tokens: Record<string, unknown>) => {
-    setGenerateTabTokens(tokens);
-    generateTabTokensRef.current = tokens;
+  const handleTokensChange = useCallback((tokens: Record<string, unknown> | null, _namespace: string, _collectionName: string) => {
+    setGenerateTabTokens(tokens ?? {});
+    generateTabTokensRef.current = tokens ?? {};
   }, []);
 
   const handleGraphStateChange = useCallback((groupId: string, state: GraphGroupState) => {
