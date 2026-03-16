@@ -3,12 +3,12 @@ gsd_state_version: 1.0
 milestone: v1.2
 milestone_name: Token Groups Tree
 status: unknown
-last_updated: "2026-03-16T03:43:25.879Z"
+last_updated: "2026-03-16T03:49:17.942Z"
 progress:
   total_phases: 6
   completed_phases: 4
   total_plans: 23
-  completed_plans: 20
+  completed_plans: 21
 ---
 
 # Project State
@@ -23,9 +23,9 @@ See: .planning/PROJECT.md (updated 2026-03-12)
 ## Current Position
 
 Phase: 8 of 8 (Clean Code)
-Plan: 2 of 2 in current phase
-Status: 08-03 complete — components reorganized into 6 domain subdirectories with barrel exports
-Last activity: 2026-03-16 — Phase 8 Plan 03 complete (domain reorganization, barrel exports, all import sites updated)
+Plan: 4 of 4 in current phase (complete)
+Status: 08-04 complete — SRP pass, utils extraction, DB factory docs, REFACTOR-SUGGESTIONS captured
+Last activity: 2026-03-16 — Phase 8 Plan 04 complete (parseTokenValue/countTokensRecursive extracted, get-repository documented, REFACTOR-SUGGESTIONS.md created)
 
 Progress: [██████████] 100% (v1.2)
 
@@ -47,6 +47,7 @@ Progress: [██████████] 100% (v1.2)
 | Phase 08-clean-code P01 | 1 | 2 tasks | 8 files |
 | Phase 08-clean-code P02 | 8 | 2 tasks | 4 files |
 | Phase 08-clean-code P03 | 3 min | 2 tasks | 12 files |
+| Phase 08-clean-code P04 | 8 | 2 tasks | 4 files |
 
 ## Accumulated Context
 
@@ -78,6 +79,7 @@ All decisions logged in PROJECT.md Key Decisions table.
 - [Phase 08-clean-code]: handleTokensChange uses tokens ?? {} to handle null from onTokensChange, keeping downstream state non-null
 - [Phase 08-clean-code]: DatabaseConfig placed in dev/ per user confirmation in CONTEXT.md
 - [Phase 08-clean-code]: Barrel exports use absolute @/components/[domain] paths for cross-domain imports
+- [Phase 08-clean-code]: parseTokenValue and countTokensRecursive extracted from TokenGeneratorForm to token.utils.ts — both are pure functions with no React/state dependencies
 
 ### Pending Todos
 
@@ -90,5 +92,5 @@ None — Phase 5 complete. Blocker resolved: onGroupsChange now emits full Token
 ## Session Continuity
 
 Last session: 2026-03-16
-Stopped at: Completed 08-03-PLAN.md (component domain reorganization with barrel exports) — Phase 8 complete
+Stopped at: Completed 08-04-PLAN.md (SRP pass, utils extraction, DB factory docs, REFACTOR-SUGGESTIONS.md) — Phase 8 complete
 Resume file: None
