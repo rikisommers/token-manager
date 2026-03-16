@@ -45,7 +45,9 @@ import {
   getAllGroups,
   getValuePlaceholder,
   validateTokenPath,
-  validateTokenValue
+  validateTokenValue,
+  parseTokenValue,
+  countTokensRecursive,
 } from '../../utils';
 import { createToast, createLoadingState } from '../../utils';
 
@@ -394,11 +396,6 @@ export function TokenGeneratorForm({
     // groups (e.g. { colors: { brand: { primary: {$value} } } } → root group has 0 direct
     // tokens but child groups have tokens). Without recursion, allTokens would always be 0
     // for nested structures and the button would stay disabled after loading a collection.
-    const countTokensRecursive = (groups: typeof tokenGroups): number =>
-      groups.reduce((sum, g) => {
-        const childCount = g.children ? countTokensRecursive(g.children) : 0;
-        return sum + g.tokens.length + childCount;
-      }, 0);
     const allTokens = countTokensRecursive(tokenGroups);
     if (allTokens === 0) {
       onTokensChange(null, globalNamespace, collectionName);
@@ -826,36 +823,6 @@ export function TokenGeneratorForm({
 
     setTokenGroups(updateGroup(tokenGroups));
     setIsDirty(true);
-  };
-
-  const parseTokenValue = (value: string, type: string): any => {
-    if (!value) return '';
-
-    switch (type) {
-      case 'color':
-        return value;
-      case 'dimension':
-        return value;
-      case 'fontWeight':
-        return isNaN(Number(value)) ? value : Number(value);
-      case 'duration':
-        return value;
-      case 'number':
-        return Number(value);
-      case 'cubicBezier':
-      case 'fontFamily':
-      case 'shadow':
-      case 'border':
-      case 'gradient':
-      case 'typography':
-        try {
-          return JSON.parse(value);
-        } catch {
-          return value;
-        }
-      default:
-        return value;
-    }
   };
 
   const generateTokenSet = () => {

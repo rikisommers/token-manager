@@ -336,3 +336,47 @@ export const sortTokensByPath = (
 ): Array<{ token: GeneratedToken; group: TokenGroup; fullPath: string }> => {
   return tokens.sort((a, b) => a.fullPath.localeCompare(b.fullPath));
 };
+
+/**
+ * Parse a raw string value into the appropriate type for a given token type.
+ * Pure function — no React or Next.js dependencies.
+ */
+export const parseTokenValue = (value: string, type: string): unknown => {
+  if (!value) return '';
+
+  switch (type) {
+    case 'color':
+      return value;
+    case 'dimension':
+      return value;
+    case 'fontWeight':
+      return isNaN(Number(value)) ? value : Number(value);
+    case 'duration':
+      return value;
+    case 'number':
+      return Number(value);
+    case 'cubicBezier':
+    case 'fontFamily':
+    case 'shadow':
+    case 'border':
+    case 'gradient':
+    case 'typography':
+      try {
+        return JSON.parse(value);
+      } catch {
+        return value;
+      }
+    default:
+      return value;
+  }
+};
+
+/**
+ * Count tokens recursively across all groups and their children.
+ * Pure function — no React or Next.js dependencies.
+ */
+export const countTokensRecursive = (groups: TokenGroup[]): number =>
+  groups.reduce((sum, g) => {
+    const childCount = g.children ? countTokensRecursive(g.children) : 0;
+    return sum + g.tokens.length + childCount;
+  }, 0);
