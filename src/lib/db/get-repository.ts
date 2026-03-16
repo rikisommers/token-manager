@@ -3,11 +3,13 @@ import type { ICollectionRepository } from './repository';
 import { MongoCollectionRepository } from './mongo-repository';
 
 /**
- * Factory that returns the correct repository implementation
- * based on the current database configuration.
+ * Database repository factory — the single entry point for all database access.
  *
- * Result is cached per-process to avoid re-reading config on every request.
- * When the provider changes (via settings UI), a server restart picks up the new provider.
+ * All API routes MUST use getRepository() from this file.
+ * Do NOT import MongoCollectionRepository or SupabaseCollectionRepository directly.
+ *
+ * Provider selection: reads from db config (set via Settings UI).
+ * Result is cached per-process; restart server after changing provider.
  */
 
 declare global {
