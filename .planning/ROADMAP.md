@@ -125,7 +125,7 @@ Plans:
 **Goal:** Add a per-collection Themes system — a dedicated Themes page where users create/manage named themes and assign each token group a Disabled/Enabled/Source state, plus a theme selector on the Tokens page that filters the group tree to show only active groups
 **Depends on:** Phase 8
 **Requirements:** MODE-01, MODE-02, MODE-03, MODE-04, MODE-05
-**Plans:** 3/4 plans executed
+**Plans:** 4/4 plans complete
 
 Plans:
 - [ ] 09-01-PLAN.md — Theme types + MongoDB schema extension + CRUD API routes
