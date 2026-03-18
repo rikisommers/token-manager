@@ -3,7 +3,7 @@ gsd_state_version: 1.0
 milestone: v1.3
 milestone_name: Add Tokens Modes
 status: in-progress
-last_updated: "2026-03-19T02:03:19Z"
+last_updated: "2026-03-19T18:38:18Z"
 progress:
   total_phases: 7
   completed_phases: 4
@@ -23,9 +23,9 @@ See: .planning/PROJECT.md (updated 2026-03-12)
 ## Current Position
 
 Phase: 9 of 9 (Add Tokens Modes)
-Plan: 1 of 4 in current phase (complete)
-Status: 09-01 complete — Theme types, Mongoose schema extension, and full CRUD API delivered
-Last activity: 2026-03-19 — Phase 9 Plan 01 complete (ITheme type + GET/POST/PUT/DELETE routes at /api/collections/[id]/themes)
+Plan: 2 of 4 in current phase (complete)
+Status: 09-02 complete — Themes page UI with ThemeList, ThemeGroupMatrix, and /collections/[id]/themes route delivered
+Last activity: 2026-03-19 — Phase 9 Plan 02 complete (Themes page, ThemeList, ThemeGroupMatrix components)
 
 Progress: [██████████] 100% (v1.2) | Phase 9 in progress (1/4 plans)
 
@@ -49,6 +49,7 @@ Progress: [██████████] 100% (v1.2) | Phase 9 in progress (1/
 | Phase 08-clean-code P03 | 3 min | 2 tasks | 12 files |
 | Phase 08-clean-code P04 | 8 | 2 tasks | 4 files |
 | Phase 09-add-tokens-modes P01 | 7 min | 2 tasks | 7 files |
+| Phase 09-add-tokens-modes P02 | 2 min | 2 tasks | 4 files |
 
 ## Accumulated Context
 
@@ -86,6 +87,10 @@ All decisions logged in PROJECT.md Key Decisions table.
 - [09-01]: Themes schema uses Schema.Types.Mixed (not array notation) — same pattern as graphState for flexible object arrays
 - [09-01]: GET uses repository layer; POST/PUT/DELETE use direct TokenCollection model — repository interface lacks $push/$pull semantics
 - [09-01]: First theme creation sets all groups to 'enabled'; subsequent themes default to 'disabled'
+**Phase 9 key decisions (09-02):**
+- [09-02]: Group list for matrix derived from top-level token keys (non-$ object entries) — avoids duplicating TokenGeneratorForm group parsing logic
+- [09-02]: handleStateChange uses optimistic update + revert on error for snappy UI
+- [09-02]: ThemeList inline add flow: isAdding boolean, input ref auto-focused, Enter/blur confirms, Escape cancels
 
 ### Pending Todos
 
@@ -98,5 +103,5 @@ None — Phase 5 complete. Blocker resolved: onGroupsChange now emits full Token
 ## Session Continuity
 
 Last session: 2026-03-19
-Stopped at: Completed 09-01-PLAN.md — Theme types, schema, and CRUD API delivered; ready for 09-02 (Themes page UI)
+Stopped at: Completed 09-02-PLAN.md — Themes page UI delivered (ThemeList, ThemeGroupMatrix, /collections/[id]/themes route); ready for 09-03
 Resume file: None

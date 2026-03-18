@@ -38,7 +38,7 @@
 
 - [x] **MODE-01**: User can create and manage named themes per collection on a dedicated Themes page
 - [x] **MODE-02**: Each theme assigns every token group a state: Disabled, Enabled, or Source
-- [ ] **MODE-03**: Themes page is accessible via a Themes nav tab in the collection sidebar (same shell as other collection pages)
+- [x] **MODE-03**: Themes page is accessible via a Themes nav tab in the collection sidebar (same shell as other collection pages)
 - [ ] **MODE-04**: A theme selector dropdown on the Tokens page filters the group tree to show only Enabled/Source groups when a theme is active
 - [x] **MODE-05**: Default state logic — first theme sets all groups to Enabled; subsequent themes set all groups to Disabled; deleting a theme does not affect token data
 
@@ -77,7 +77,7 @@
 | CLEAN-07 | Phase 8 | Complete |
 | MODE-01 | Phase 9 | Complete |
 | MODE-02 | Phase 9 | Complete |
-| MODE-03 | Phase 9 | Pending |
+| MODE-03 | Phase 9 | Complete |
 | MODE-04 | Phase 9 | Pending |
 | MODE-05 | Phase 9 | Complete |
 
