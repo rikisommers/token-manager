@@ -34,6 +34,14 @@
 - [x] **CLEAN-06**: SRP audit completed; non-rendering logic extracted from components to `src/utils/` or `src/services/`; `REFACTOR-SUGGESTIONS.md` created with out-of-scope ideas
 - [x] **CLEAN-07**: Application verified end-to-end in browser after all refactoring; zero TypeScript errors
 
+## Phase 9 Requirements (Add Tokens Modes)
+
+- [ ] **MODE-01**: User can create and manage named themes per collection on a dedicated Themes page
+- [ ] **MODE-02**: Each theme assigns every token group a state: Disabled, Enabled, or Source
+- [ ] **MODE-03**: Themes page is accessible via a Themes nav tab in the collection sidebar (same shell as other collection pages)
+- [ ] **MODE-04**: A theme selector dropdown on the Tokens page filters the group tree to show only Enabled/Source groups when a theme is active
+- [ ] **MODE-05**: Default state logic — first theme sets all groups to Enabled; subsequent themes set all groups to Disabled; deleting a theme does not affect token data
+
 ## v2 Requirements
 
 (none defined yet — milestone scope to be expanded via /gsd:add-phase)
@@ -67,6 +75,11 @@
 | CLEAN-05 | Phase 8 | Complete |
 | CLEAN-06 | Phase 8 | Complete |
 | CLEAN-07 | Phase 8 | Complete |
+| MODE-01 | Phase 9 | Pending |
+| MODE-02 | Phase 9 | Pending |
+| MODE-03 | Phase 9 | Pending |
+| MODE-04 | Phase 9 | Pending |
+| MODE-05 | Phase 9 | Pending |
 
 **Coverage:**
 - v1 requirements: 10 total
@@ -74,7 +87,9 @@
 - Unmapped: 0 ✓
 - Phase 8 (clean code) requirements: 7 total
 - Mapped to plans: 7 ✓
+- Phase 9 (add tokens modes) requirements: 5 total
+- Mapped to plans: 5 ✓
 
 ---
 *Requirements defined: 2026-03-12*
-*Last updated: 2026-03-16 — CLEAN-01 through CLEAN-07 added for Phase 8 (Clean Code)*
+*Last updated: 2026-03-19 — MODE-01 through MODE-05 added for Phase 9 (Add Tokens Modes)*

@@ -119,3 +119,16 @@ Plans:
 - [ ] 08-03-PLAN.md — Component reorganization into feature domain folders + barrel exports
 - [ ] 08-04-PLAN.md — SRP audit: extract logic to utils/services, document DB factory, produce refactor suggestions
 - [ ] 08-05-PLAN.md — Final build verification + human end-to-end check
+
+### Phase 9: Add tokens modes
+
+**Goal:** Add a per-collection Themes system — a dedicated Themes page where users create/manage named themes and assign each token group a Disabled/Enabled/Source state, plus a theme selector on the Tokens page that filters the group tree to show only active groups
+**Depends on:** Phase 8
+**Requirements:** MODE-01, MODE-02, MODE-03, MODE-04, MODE-05
+**Plans:** 4 plans
+
+Plans:
+- [ ] 09-01-PLAN.md — Theme types + MongoDB schema extension + CRUD API routes
+- [ ] 09-02-PLAN.md — Themes page UI (ThemeList + ThemeGroupMatrix components + route)
+- [ ] 09-03-PLAN.md — CollectionSidebar Themes nav item + Tokens page theme selector
+- [ ] 09-04-PLAN.md — Build verification + human end-to-end checkpoint
