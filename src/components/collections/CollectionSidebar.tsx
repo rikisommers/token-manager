@@ -3,7 +3,7 @@
 import { useState } from 'react';
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
-import { ChevronLeft, ChevronRight, Palette, Settings2, SlidersHorizontal } from 'lucide-react';
+import { ChevronLeft, ChevronRight, Layers, Palette, Settings2, SlidersHorizontal } from 'lucide-react';
 
 interface CollectionSidebarProps {
   collectionId: string;
@@ -16,6 +16,7 @@ export function CollectionSidebar({ collectionId, collectionName }: CollectionSi
 
   const navItems = [
     { href: `/collections/${collectionId}/tokens`, label: 'Tokens', icon: Palette },
+    { href: `/collections/${collectionId}/themes`, label: 'Themes', icon: Layers },
     { href: `/collections/${collectionId}/config`, label: 'Config', icon: Settings2 },
     { href: `/collections/${collectionId}/settings`, label: 'Settings', icon: SlidersHorizontal },
   ];
