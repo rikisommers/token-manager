@@ -18,6 +18,9 @@
 **/token-manager-*/.env.local
 env.local
 
+# Database config (contains connection credentials)
+.db-config.json
+
 # Yarn files
 **/yarn.lock
 **/.yarnrc.yaml
