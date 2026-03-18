@@ -36,11 +36,11 @@
 
 ## Phase 9 Requirements (Add Tokens Modes)
 
-- [ ] **MODE-01**: User can create and manage named themes per collection on a dedicated Themes page
-- [ ] **MODE-02**: Each theme assigns every token group a state: Disabled, Enabled, or Source
+- [x] **MODE-01**: User can create and manage named themes per collection on a dedicated Themes page
+- [x] **MODE-02**: Each theme assigns every token group a state: Disabled, Enabled, or Source
 - [ ] **MODE-03**: Themes page is accessible via a Themes nav tab in the collection sidebar (same shell as other collection pages)
 - [ ] **MODE-04**: A theme selector dropdown on the Tokens page filters the group tree to show only Enabled/Source groups when a theme is active
-- [ ] **MODE-05**: Default state logic — first theme sets all groups to Enabled; subsequent themes set all groups to Disabled; deleting a theme does not affect token data
+- [x] **MODE-05**: Default state logic — first theme sets all groups to Enabled; subsequent themes set all groups to Disabled; deleting a theme does not affect token data
 
 ## v2 Requirements
 
@@ -75,11 +75,11 @@
 | CLEAN-05 | Phase 8 | Complete |
 | CLEAN-06 | Phase 8 | Complete |
 | CLEAN-07 | Phase 8 | Complete |
-| MODE-01 | Phase 9 | Pending |
-| MODE-02 | Phase 9 | Pending |
+| MODE-01 | Phase 9 | Complete |
+| MODE-02 | Phase 9 | Complete |
 | MODE-03 | Phase 9 | Pending |
 | MODE-04 | Phase 9 | Pending |
-| MODE-05 | Phase 9 | Pending |
+| MODE-05 | Phase 9 | Complete |
 
 **Coverage:**
 - v1 requirements: 10 total

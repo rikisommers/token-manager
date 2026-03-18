@@ -1,14 +1,14 @@
 ---
 gsd_state_version: 1.0
-milestone: v1.2
-milestone_name: Token Groups Tree
-status: unknown
-last_updated: "2026-03-16T03:49:17.942Z"
+milestone: v1.3
+milestone_name: Add Tokens Modes
+status: in-progress
+last_updated: "2026-03-19T02:03:19Z"
 progress:
-  total_phases: 6
+  total_phases: 7
   completed_phases: 4
-  total_plans: 23
-  completed_plans: 21
+  total_plans: 27
+  completed_plans: 22
 ---
 
 # Project State
@@ -18,16 +18,16 @@ progress:
 See: .planning/PROJECT.md (updated 2026-03-12)
 
 **Core value:** Token collections are always available and editable — accessible via collection-scoped URLs, with per-collection Figma/GitHub config persisted to MongoDB, full CRUD from a card grid, and Figma import/export integrated.
-**Current focus:** v1.2 — Phase 8: Clean Code
+**Current focus:** v1.3 — Phase 9: Add Tokens Modes
 
 ## Current Position
 
-Phase: 8 of 8 (Clean Code)
-Plan: 5 of 5 in current phase (complete)
-Status: 08-05 complete — Human end-to-end verification approved; Phase 8 fully complete
-Last activity: 2026-03-16 — Phase 8 Plan 05 complete (all 8 automated checks passed, browser verification approved by user)
+Phase: 9 of 9 (Add Tokens Modes)
+Plan: 1 of 4 in current phase (complete)
+Status: 09-01 complete — Theme types, Mongoose schema extension, and full CRUD API delivered
+Last activity: 2026-03-19 — Phase 9 Plan 01 complete (ITheme type + GET/POST/PUT/DELETE routes at /api/collections/[id]/themes)
 
-Progress: [██████████] 100% (v1.2)
+Progress: [██████████] 100% (v1.2) | Phase 9 in progress (1/4 plans)
 
 ## Performance Metrics
 
@@ -48,6 +48,7 @@ Progress: [██████████] 100% (v1.2)
 | Phase 08-clean-code P02 | 8 | 2 tasks | 4 files |
 | Phase 08-clean-code P03 | 3 min | 2 tasks | 12 files |
 | Phase 08-clean-code P04 | 8 | 2 tasks | 4 files |
+| Phase 09-add-tokens-modes P01 | 7 min | 2 tasks | 7 files |
 
 ## Accumulated Context
 
@@ -81,6 +82,10 @@ All decisions logged in PROJECT.md Key Decisions table.
 - [Phase 08-clean-code]: DatabaseConfig placed in dev/ per user confirmation in CONTEXT.md
 - [Phase 08-clean-code]: Barrel exports use absolute @/components/[domain] paths for cross-domain imports
 - [Phase 08-clean-code]: parseTokenValue and countTokensRecursive extracted from TokenGeneratorForm to token.utils.ts — both are pure functions with no React/state dependencies
+**Phase 9 key decisions (09-01):**
+- [09-01]: Themes schema uses Schema.Types.Mixed (not array notation) — same pattern as graphState for flexible object arrays
+- [09-01]: GET uses repository layer; POST/PUT/DELETE use direct TokenCollection model — repository interface lacks $push/$pull semantics
+- [09-01]: First theme creation sets all groups to 'enabled'; subsequent themes default to 'disabled'
 
 ### Pending Todos
 
@@ -92,6 +97,6 @@ None — Phase 5 complete. Blocker resolved: onGroupsChange now emits full Token
 
 ## Session Continuity
 
-Last session: 2026-03-16
-Stopped at: Completed 08-05-PLAN.md (human end-to-end verification approved) — Phase 8 and v1.2 milestone fully complete
+Last session: 2026-03-19
+Stopped at: Completed 09-01-PLAN.md — Theme types, schema, and CRUD API delivered; ready for 09-02 (Themes page UI)
 Resume file: None
