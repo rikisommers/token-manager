@@ -9,10 +9,10 @@ Requirements for milestone v1.4 — Theme Token Sets. Phases start at Phase 10.
 
 ### Theme Data Model
 
-- [ ] **THEME-01**: Each theme stores a full copy of all collection token data embedded in the theme document
-- [ ] **THEME-02**: Theme creation initializes embedded token data as a 1:1 deep copy of the collection's current tokens
+- [x] **THEME-01**: Each theme stores a full copy of all collection token data embedded in the theme document
+- [x] **THEME-02**: Theme creation initializes embedded token data as a 1:1 deep copy of the collection's current tokens
 - [ ] **THEME-03**: Pre-existing themes without token data are migrated via a one-time script before any reading code ships
-- [ ] **THEME-04**: Theme creation enforces a maximum of 10 themes per collection to prevent MongoDB document size overflow
+- [x] **THEME-04**: Theme creation enforces a maximum of 10 themes per collection to prevent MongoDB document size overflow
 
 ### Token Editing
 
@@ -57,10 +57,10 @@ Which phases cover which requirements. Updated during roadmap creation.
 
 | Requirement | Phase | Status |
 |-------------|-------|--------|
-| THEME-01 | Phase 10 | Pending |
-| THEME-02 | Phase 10 | Pending |
+| THEME-01 | Phase 10 | Complete |
+| THEME-02 | Phase 10 | Complete |
 | THEME-03 | Phase 10 | Pending |
-| THEME-04 | Phase 10 | Pending |
+| THEME-04 | Phase 10 | Complete |
 | EDIT-01 | Phase 11 | Pending |
 | EDIT-02 | Phase 11 | Pending |
 | EDIT-03 | Phase 11 | Pending |

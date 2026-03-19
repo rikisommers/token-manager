@@ -2,13 +2,13 @@
 gsd_state_version: 1.0
 milestone: v1.4
 milestone_name: Theme Token Sets
-status: roadmap_complete
-last_updated: "2026-03-20T00:00:00Z"
+status: in_progress
+last_updated: "2026-03-20T11:58:17Z"
 progress:
   total_phases: 3
   completed_phases: 0
   total_plans: 0
-  completed_plans: 0
+  completed_plans: 1
 ---
 
 # Project State
@@ -18,16 +18,16 @@ progress:
 See: .planning/PROJECT.md (updated 2026-03-19)
 
 **Core value:** Token collections are always available and editable: stored in MongoDB, accessible via collection-scoped URLs, with per-collection Figma/GitHub config, full CRUD from the collections grid, Figma import/export fully integrated, and a Themes system for filtering active token groups.
-**Current focus:** v1.4 Theme Token Sets — Phase 10 ready to plan
+**Current focus:** v1.4 Theme Token Sets — Phase 10 plan 01 complete
 
 ## Current Position
 
 Phase: 10 of 12 (Data Model Foundation)
-Plan: — (not yet planned)
-Status: Ready to plan
-Last activity: 2026-03-20 — v1.4 roadmap created (Phases 10-12)
+Plan: 01 complete
+Status: In progress
+Last activity: 2026-03-20 — 10-01 complete: ITheme.tokens field, toDoc() normalization, 10-theme cap
 
-Progress: [░░░░░░░░░░] 0% (v1.4 not started)
+Progress: [█░░░░░░░░░] ~10% (1 plan complete)
 
 ## Performance Metrics
 
@@ -61,8 +61,9 @@ All decisions logged in PROJECT.md Key Decisions table.
 
 Key decisions relevant to v1.4:
 - Whole-array `$set: { themes: updatedArray }` for all theme mutations — positional `$set` on Mixed-typed arrays is unreliable (Mongoose bugs #14595, #12530)
-- `ITheme.tokens` is optional — backward compat with pre-v1.4 documents; all read sites guard with `?? {}`
-- Theme count limit (max 10) enforced in POST handler before BSON document size becomes a problem
+- `ITheme.tokens` is required (not optional) — backward compat handled solely in `toDoc()` normalization with `?? []`; consuming code stays clean
+- Theme count limit (max 10) enforced in POST handler (HTTP 422) before BSON document size becomes a problem
+- Store full `groupTree` as `theme.tokens` (not `flattenAllGroups` result) — flat list strips children hierarchy needed by Phase 11
 - PATCH `/api/collections/[id]/themes/[themeId]/tokens` built in Phase 11 alongside the editing UI (tightly coupled)
 
 ### Pending Todos
@@ -77,5 +78,5 @@ None.
 ## Session Continuity
 
 Last session: 2026-03-20
-Stopped at: v1.4 roadmap created — ROADMAP.md, STATE.md, REQUIREMENTS.md traceability written; Phase 10 ready to plan
+Stopped at: Completed 10-01-PLAN.md — ITheme.tokens field, toDoc() normalization, 10-theme cap (422), groupTree embed
 Resume file: None
