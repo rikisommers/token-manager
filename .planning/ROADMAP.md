@@ -77,11 +77,11 @@ See: `.planning/milestones/v1.3-ROADMAP.md` for archived roadmap details.
   2. A one-time migration script runs against MongoDB and seeds `tokens` on all pre-existing theme documents that lack the field
   3. Attempting to create an 11th theme on a collection returns an error; the UI surfaces it and the theme is not created
   4. All code reading `theme.tokens` handles the `undefined` case without crashing (pre-migration guard)
-**Plans**: TBD
+**Plans**: 2 plans
 
 Plans:
-- [ ] 10-01: TBD
-- [ ] 10-02: TBD
+- [ ] 10-01-PLAN.md — Extend ITheme type, normalize toDoc(), embed tokens in POST handler, enforce 10-theme API cap
+- [ ] 10-02-PLAN.md — UI 10-theme limit guard in ThemeList + one-time migration script
 
 ### Phase 11: Inline Token Editing UI
 **Goal**: Users can edit token values inline on the Tokens page when an Enabled group is active under a selected theme, and changes persist to that theme's embedded token data
