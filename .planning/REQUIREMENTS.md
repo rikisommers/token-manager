@@ -18,7 +18,7 @@ Requirements for milestone v1.4 — Theme Token Sets. Phases start at Phase 10.
 
 - [ ] **EDIT-01**: Group state controls token display when a theme is active: Enabled shows theme token values (editable), Source shows collection-default values (read-only), Disabled hides the group from the tree
 - [ ] **EDIT-02**: User can edit token values inline on the Tokens page when an Enabled group is selected under an active theme
-- [ ] **EDIT-03**: Inline token edits are saved to the active theme's embedded token data (not the master collection)
+- [x] **EDIT-03**: Inline token edits are saved to the active theme's embedded token data (not the master collection)
 - [ ] **EDIT-04**: Tokens whose values differ from the collection default are visually indicated (override indicator)
 
 ### Export
@@ -63,7 +63,7 @@ Which phases cover which requirements. Updated during roadmap creation.
 | THEME-04 | Phase 10 | Complete |
 | EDIT-01 | Phase 11 | Pending |
 | EDIT-02 | Phase 11 | Pending |
-| EDIT-03 | Phase 11 | Pending |
+| EDIT-03 | Phase 11 | Complete |
 | EDIT-04 | Phase 11 | Pending |
 | EXPORT-01 | Phase 12 | Pending |
 | EXPORT-02 | Phase 12 | Pending |

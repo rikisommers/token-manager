@@ -3,12 +3,12 @@ gsd_state_version: 1.0
 milestone: v1.4
 milestone_name: Theme Token Sets
 status: in_progress
-last_updated: "2026-03-20T12:03:19Z"
+last_updated: "2026-03-19T23:13:55Z"
 progress:
   total_phases: 3
   completed_phases: 0
   total_plans: 0
-  completed_plans: 2
+  completed_plans: 3
 ---
 
 # Project State
@@ -18,16 +18,16 @@ progress:
 See: .planning/PROJECT.md (updated 2026-03-19)
 
 **Core value:** Token collections are always available and editable: stored in MongoDB, accessible via collection-scoped URLs, with per-collection Figma/GitHub config, full CRUD from the collections grid, Figma import/export fully integrated, and a Themes system for filtering active token groups.
-**Current focus:** v1.4 Theme Token Sets — Phase 10 plan 02 complete
+**Current focus:** v1.4 Theme Token Sets — Phase 11 plan 01 complete
 
 ## Current Position
 
-Phase: 10 of 12 (Data Model Foundation)
-Plan: 02 complete
+Phase: 11 of 12 (Inline Token Editing UI)
+Plan: 01 complete
 Status: In progress
-Last activity: 2026-03-20 — 10-02 complete: ThemeList atLimit guard, migrate-theme-tokens.ts, npm migrate:themes
+Last activity: 2026-03-19 — 11-01 complete: PATCH /api/collections/[id]/themes/[themeId]/tokens route
 
-Progress: [██░░░░░░░░] ~20% (2 plans complete)
+Progress: [███░░░░░░░] ~30% (3 plans complete)
 
 ## Performance Metrics
 
@@ -44,6 +44,7 @@ Progress: [██░░░░░░░░] ~20% (2 plans complete)
 | 9. Add Tokens Modes | 4 | ~21 min | ~5 min |
 
 *Updated after each plan completion*
+| Phase 11-inline-token-editing-ui P01 | 2 | 1 tasks | 1 files |
 
 ## Accumulated Context
 
@@ -64,9 +65,11 @@ Key decisions relevant to v1.4:
 - `ITheme.tokens` is required (not optional) — backward compat handled solely in `toDoc()` normalization with `?? []`; consuming code stays clean
 - Theme count limit (max 10) enforced in POST handler (HTTP 422) before BSON document size becomes a problem
 - Store full `groupTree` as `theme.tokens` (not `flattenAllGroups` result) — flat list strips children hierarchy needed by Phase 11
-- PATCH `/api/collections/[id]/themes/[themeId]/tokens` built in Phase 11 alongside the editing UI (tightly coupled)
+- PATCH `/api/collections/[id]/themes/[themeId]/tokens` built in Phase 11 plan 01 — whole-array $set, source-group 422 guard on root-level group IDs only
 - Cast `.lean()` result through `unknown` before narrowing to `Record<string,unknown>[]` — TypeScript strict overlap check rejects direct cast from typed Mongoose document arrays
 - `atLimit` UI guard pattern: `disabled={atLimit}` + title tooltip + `disabled:opacity-40 disabled:cursor-not-allowed` Tailwind classes
+- Root-level source-group guard only (not recursive) — theme.groups maps root-level group IDs; children governed by parent
+- [Phase 11-inline-token-editing-ui]: Root-level source-group guard only (not recursive) — theme.groups maps root-level group IDs; children governed by parent
 
 ### Pending Todos
 
@@ -79,6 +82,6 @@ None.
 
 ## Session Continuity
 
-Last session: 2026-03-20
-Stopped at: Completed 10-02-PLAN.md — ThemeList atLimit guard, migrate-theme-tokens.ts, npm migrate:themes
+Last session: 2026-03-19
+Stopped at: Completed 11-01-PLAN.md — PATCH /api/collections/[id]/themes/[themeId]/tokens route
 Resume file: None
