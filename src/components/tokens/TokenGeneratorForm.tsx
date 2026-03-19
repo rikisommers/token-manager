@@ -2,7 +2,7 @@
 
 import React, { useState, useEffect, useRef, useCallback } from 'react';
 import { HexColorPicker, HexColorInput } from 'react-colorful';
-import { ChevronDown, ChevronUp, Trash2 } from 'lucide-react';
+import { ChevronDown, ChevronUp, Trash2, RotateCcw } from 'lucide-react';
 import { GitHubDirectoryPicker } from '@/components/github/GitHubDirectoryPicker';
 import { LoadingIndicator } from '@/components/layout/LoadingIndicator';
 import { ToastNotification } from '@/components/layout/ToastNotification';
@@ -68,6 +68,9 @@ interface TokenTableRowProps {
   resolveRef: (value: string) => string;
   getFullPath: (group: TokenGroup, tokenPath: string) => string;
   parseValue: (raw: string, type: TokenType) => unknown;
+  isReadOnly?: boolean;
+  masterValue?: string;
+  onResetToDefault?: (groupId: string, tokenId: string, masterValue: string) => void;
 }
 
 /** Upsert incoming tokens into an existing list, matching by path. Updates value/type of
@@ -88,6 +91,7 @@ function TokenTableRow({
   token, group, tokenGroups, selectedTokenId, isExpanded,
   onTokenSelect, onUpdateToken, onDeleteToken, onToggleExpansion,
   onUpdateAttribute, onRemoveAttribute, resolveRef, getFullPath, parseValue,
+  isReadOnly, masterValue, onResetToDefault,
 }: TokenTableRowProps) {
   const [editingField, setEditingField] = useState<string | null>(null);
   const [colorPickerOpen, setColorPickerOpen] = useState(false);
@@ -133,8 +137,8 @@ function TokenTableRow({
             />
           ) : (
             <div
-              className="h-9 flex items-center px-4 cursor-text font-mono text-sm text-gray-700"
-              onClick={enterEdit('path')}
+              className={`h-9 flex items-center px-4 font-mono text-sm text-gray-700 ${isReadOnly ? 'cursor-default' : 'cursor-text'}`}
+              onClick={isReadOnly ? undefined : enterEdit('path')}
             >
               <span className="truncate">{token.path || <span className="text-gray-300">—</span>}</span>
             </div>
@@ -162,8 +166,8 @@ function TokenTableRow({
             </Select>
           ) : (
             <div
-              className="h-9 flex items-center px-3 cursor-pointer"
-              onClick={enterEdit('type')}
+              className={`h-9 flex items-center px-3 ${isReadOnly ? 'cursor-default' : 'cursor-pointer'}`}
+              onClick={isReadOnly ? undefined : enterEdit('type')}
             >
               <span className="text-[11px] px-1.5 py-0.5 rounded bg-gray-100 text-gray-600 font-medium">{token.type}</span>
             </div>
@@ -213,11 +217,27 @@ function TokenTableRow({
               />
             ) : (
               <div
-                className="flex-1 cursor-text text-sm font-mono text-gray-700 truncate"
-                onClick={enterEdit('value')}
+                className={`flex-1 text-sm font-mono text-gray-700 truncate ${isReadOnly ? 'cursor-default' : 'cursor-text'}`}
+                onClick={isReadOnly ? undefined : enterEdit('value')}
               >
                 {token.value?.toString() || <span className="text-gray-300">{getValuePlaceholder(token.type)}</span>}
               </div>
+            )}
+
+            {/* Reset to collection default button */}
+            {!isReadOnly && masterValue !== undefined && onResetToDefault &&
+              String(token.value ?? '') !== masterValue && (
+              <button
+                type="button"
+                title="Reset to collection default"
+                onClick={(e) => {
+                  e.stopPropagation();
+                  onResetToDefault(group.id, token.id, masterValue);
+                }}
+                className="text-gray-400 hover:text-indigo-600 flex-shrink-0 focus:outline-none"
+              >
+                <RotateCcw size={12} />
+              </button>
             )}
 
             {/* Reference picker */}
@@ -244,8 +264,8 @@ function TokenTableRow({
             />
           ) : (
             <div
-              className="h-9 flex items-center px-4 cursor-text text-sm text-gray-500 truncate"
-              onClick={enterEdit('description')}
+              className={`h-9 flex items-center px-4 text-sm text-gray-500 truncate ${isReadOnly ? 'cursor-default' : 'cursor-text'}`}
+              onClick={isReadOnly ? undefined : enterEdit('description')}
             >
               {token.description || <span className="text-gray-300">—</span>}
             </div>
@@ -264,15 +284,17 @@ function TokenTableRow({
             >
               {isExpanded ? <ChevronUp size={12} /> : <ChevronDown size={12} />}
             </Button>
-            <Button
-              variant="ghost"
-              size="sm"
-              className="h-6 w-6 p-0 text-gray-400 hover:text-red-600"
-              onClick={e => { e.stopPropagation(); onDeleteToken(group.id, token.id); }}
-              title="Delete token"
-            >
-              <Trash2 size={12} />
-            </Button>
+            {!isReadOnly && (
+              <Button
+                variant="ghost"
+                size="sm"
+                className="h-6 w-6 p-0 text-gray-400 hover:text-red-600"
+                onClick={e => { e.stopPropagation(); onDeleteToken(group.id, token.id); }}
+                title="Delete token"
+              >
+                <Trash2 size={12} />
+              </Button>
+            )}
           </div>
         </td>
       </tr>
@@ -353,6 +375,11 @@ interface TokenGeneratorFormProps {
   onBulkInsertProcessed?: () => void;
   pendingGroupAction?: { type: 'delete' | 'addSub'; groupId: string } | null;
   onGroupActionProcessed?: () => void;
+  themeTokens?: TokenGroup[];
+  onThemeTokensChange?: (tokens: TokenGroup[]) => void;
+  isReadOnly?: boolean;
+  findMasterValue?: (groupId: string, tokenPath: string) => string | undefined;
+  onResetToDefault?: (groupId: string, tokenId: string, masterValue: string) => void;
 }
 
 export function TokenGeneratorForm({
@@ -374,6 +401,11 @@ export function TokenGeneratorForm({
   onBulkInsertProcessed,
   pendingGroupAction,
   onGroupActionProcessed,
+  themeTokens,
+  onThemeTokensChange,
+  isReadOnly,
+  findMasterValue,
+  onResetToDefault,
 }: TokenGeneratorFormProps) {
   const [tokenGroups, setTokenGroups] = useState<TokenGroup[]>([
     { id: '1', name: 'colors', tokens: [], level: 0, expanded: true }
@@ -746,7 +778,7 @@ export function TokenGeneratorForm({
 
 
   const updateToken = (groupId: string, tokenId: string, field: keyof GeneratedToken, value: any) => {
-    const updateGroup = (groups: TokenGroup[]): TokenGroup[] => {
+    const applyUpdate = (groups: TokenGroup[]): TokenGroup[] => {
       return groups.map(group => {
         if (group.id === groupId) {
           return {
@@ -757,14 +789,19 @@ export function TokenGeneratorForm({
           };
         }
         if (group.children && group.children.length > 0) {
-          return { ...group, children: updateGroup(group.children) };
+          return { ...group, children: applyUpdate(group.children) };
         }
         return group;
       });
     };
 
-    setTokenGroups(updateGroup(tokenGroups));
-    setIsDirty(true);
+    // When theme mode is active, route edits to theme tokens instead of master collection
+    if (themeTokens && themeTokens.length > 0 && onThemeTokensChange) {
+      onThemeTokensChange(applyUpdate(themeTokens));
+    } else {
+      setTokenGroups(applyUpdate(tokenGroups));
+      setIsDirty(true);
+    }
   };
 
   const toggleTokenExpansion = (tokenId: string) => {
@@ -1130,6 +1167,9 @@ export function TokenGeneratorForm({
                       resolveRef={resolveTokenReference}
                       getFullPath={buildTokenPath}
                       parseValue={parseTokenValue}
+                      isReadOnly={isReadOnly}
+                      masterValue={findMasterValue?.(group.id, token.path)}
+                      onResetToDefault={onResetToDefault}
                     />
                   ))}
                 </tbody>
@@ -1273,17 +1313,19 @@ export function TokenGeneratorForm({
         </div>
       ) : (
         <>
-          {/* Render selected group */}
+          {/* Render selected group — use themeTokens as source when in theme mode */}
           {(() => {
-            const topLevel = tokenGroups.find(g => g.id === selectedGroupId);
+            const sourceGroups = (themeTokens && themeTokens.length > 0) ? themeTokens : tokenGroups;
+            const topLevel = sourceGroups.find(g => g.id === selectedGroupId);
             if (topLevel) return renderGroup(topLevel);
-            const found = findGroupById(tokenGroups, selectedGroupId);
+            const found = findGroupById(sourceGroups, selectedGroupId);
             return found ? renderGroup(found) : null;
           })()}
           {/* No tokens empty state */}
           {(() => {
-            const found = findGroupById(tokenGroups, selectedGroupId)
-                       ?? tokenGroups.find(g => g.id === selectedGroupId);
+            const sourceGroups = (themeTokens && themeTokens.length > 0) ? themeTokens : tokenGroups;
+            const found = findGroupById(sourceGroups, selectedGroupId)
+                       ?? sourceGroups.find(g => g.id === selectedGroupId);
             if (found && found.tokens.length === 0) {
               return <p className="p-6 text-sm text-gray-400 text-center">No tokens in this group</p>;
             }
