@@ -339,13 +339,13 @@ export default function CollectionTokensPage({ params }: TokensPageProps) {
             <label className="text-sm text-gray-600 whitespace-nowrap">Theme:</label>
             <Select
               value={activeThemeId ?? '__all__'}
-              onValueChange={(v) => setActiveThemeId(v === '__all__' ? null : v)}
+              onValueChange={(v) => handleThemeChange(v === '__all__' ? null : v)}
             >
               <SelectTrigger className="w-36 h-8 text-sm">
-                <SelectValue placeholder="All groups" />
+                <SelectValue placeholder="Default" />
               </SelectTrigger>
               <SelectContent>
-                <SelectItem value="__all__">All groups</SelectItem>
+                <SelectItem value="__all__">Default</SelectItem>
                 {themes.map(t => (
                   <SelectItem key={t.id} value={t.id}>{t.name}</SelectItem>
                 ))}
