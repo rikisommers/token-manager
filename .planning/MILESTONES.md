@@ -40,3 +40,31 @@
 
 ---
 
+
+## v1.3 Add Tokens Modes (Shipped: 2026-03-19)
+
+**Phases completed:** 2 phases (8-9), 9 plans
+**Timeline:** 2026-03-13 → 2026-03-19 (4 active days)
+**Source files changed:** 86 files, ~3,063 insertions / 1,278 deletions
+**Codebase:** ~22,000 LOC TypeScript
+
+**Key accomplishments:**
+1. Deleted 5 legacy files and renamed `TokenGeneratorFormNew` → `TokenGeneratorForm` — eliminated duplicate component naming and stale app routes
+2. Fixed all TypeScript errors and replaced broken ATUI Stencil loader in `AtuiDevTest` with a working shadcn Button sandbox
+3. Reorganized 35+ components into 6 feature domain subdirectories (`collections/`, `tokens/`, `layout/`, `figma/`, `github/`, `dev/`) with barrel exports and all import sites updated
+4. SRP pass: extracted `parseTokenValue` and `countTokensRecursive` to `token.utils.ts`; documented DB factory; produced `REFACTOR-SUGGESTIONS.md`; Phase 8 verified e2e with zero regressions
+5. Themes data model (`ITheme`, `ThemeGroupState`), MongoDB schema extension, and full CRUD REST API at `/api/collections/[id]/themes` with first-theme/subsequent-theme default state logic
+6. Themes page UI (`ThemeList` + `ThemeGroupMatrix`), Themes nav item (Layers icon) in collection sidebar, and theme selector on Tokens page filtering the group tree — full feature verified e2e across 14 steps
+
+**Delivered:** Clean, well-organized codebase with zero TypeScript errors, feature-domain component folders, and a full per-collection Themes system — users can create named themes, assign per-group Disabled/Enabled/Source states, and filter the token group tree on the Tokens page by selecting an active theme.
+
+### Known Gaps
+
+Deferred from v1.2 Phase 7 (Mutations) — never executed:
+- **TREE-04**: Add group from tree sidebar (child of any node, or at root level)
+- **TREE-05**: Tree nodes expand/collapse toggle (explicitly deferred in Phase 5)
+- **CONT-02**: Add tokens to the currently selected group
+- **CONT-03**: Edit token values inline in the selected group
+
+---
+

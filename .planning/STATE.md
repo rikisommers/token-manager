@@ -1,33 +1,32 @@
 ---
 gsd_state_version: 1.0
-milestone: v1.3
-milestone_name: Add Tokens Modes
-status: in-progress
-last_updated: "2026-03-19T18:38:18Z"
+milestone: v1.4
+milestone_name: TBD
+status: planning
+last_updated: "2026-03-19T00:00:00Z"
 progress:
-  total_phases: 7
-  completed_phases: 4
-  total_plans: 27
-  completed_plans: 22
+  total_phases: 0
+  completed_phases: 0
+  total_plans: 0
+  completed_plans: 0
 ---
 
 # Project State
 
 ## Project Reference
 
-See: .planning/PROJECT.md (updated 2026-03-12)
+See: .planning/PROJECT.md (updated 2026-03-19)
 
-**Core value:** Token collections are always available and editable — accessible via collection-scoped URLs, with per-collection Figma/GitHub config persisted to MongoDB, full CRUD from a card grid, and Figma import/export integrated.
-**Current focus:** v1.3 — Phase 9: Add Tokens Modes
+**Core value:** Token collections are always available and editable: stored in MongoDB, accessible via collection-scoped URLs, with per-collection Figma/GitHub config, full CRUD from the collections grid, Figma import/export fully integrated, and a Themes system for filtering active token groups.
+**Current focus:** Planning next milestone (v1.4) — run `/gsd:new-milestone`
 
 ## Current Position
 
-Phase: 9 of 9 (Add Tokens Modes)
-Plan: 4 of 4 in current phase (complete)
-Status: 09-04 complete — Full Themes feature end-to-end verified in browser; all 14 verification steps passed; Phase 9 complete
-Last activity: 2026-03-19 — Phase 9 Plan 04 complete (build verification, bug fixes, human e2e approval)
+Phase: — (between milestones)
+Status: v1.3 shipped — all 9 plans complete; full Themes feature delivered and verified e2e
+Last activity: 2026-03-19 — v1.3 milestone archived
 
-Progress: [██████████] 100% (v1.2) | Phase 9 in progress (1/4 plans)
+Progress: [██████████] 100% (v1.3 complete)
 
 ## Performance Metrics
 
@@ -59,42 +58,12 @@ Progress: [██████████] 100% (v1.2) | Phase 9 in progress (1/
 
 - v1.0 (Phases 1-7): MongoDB persistence, collection CRUD, Figma integration, unified tabbed UI
 - v1.1 (Phases 1-4): shadcn/ui migration, sidebar layout restructure, collection card grid, collection-scoped routing, per-collection config persistence to MongoDB
-- v1.2 (Phases 5-7): Token groups tree in sidebar, breadcrumb navigation, content scoped to selected group
-- Phase 8 added: Clean code
-- Phase 9 added: Add tokens modes
+- v1.2 (Phases 5-6): Token groups tree in sidebar, breadcrumb navigation, content scoped to selected group (Phase 7 Mutations deferred)
+- v1.3 (Phases 8-9): Clean code + Add Tokens Modes (Themes feature)
 
 ### Decisions
 
 All decisions logged in PROJECT.md Key Decisions table.
-
-**Phase 5 key decisions:**
-- Flat-node rendering for TokenGroupTree (FlatNode[] list, not nested JSX recursion)
-- No expand/collapse toggle in Phase 5 — all nodes always visible (overrides TREE-05; deferred)
-- Dynamic indent via inline style (paddingLeft), not Tailwind (Tailwind cannot compute runtime values)
-- Add-group sidebar UI deferred to Phase 7 (Mutations)
-**Phase 6 key decisions:**
-- [06-01]: Background-only highlight (bg-gray-200) on selected node — no left border (user decision)
-- [06-01]: onGroupSelect uses optional chaining (onGroupSelect?.) so TokenGroupTree works standalone without a handler
-- [06-02]: Used local findAncestors helper instead of findGroupById — findGroupById returns only the node, not its ancestors
-- [06-02]: GroupBreadcrumb display labels derived from last segment of parseGroupPath(group.name) — consistent with TokenGroupTree FlatNode.displayLabel
-- [06-03]: Recursive group resolution in TokenGeneratorFormNew: fast path for top-level, findGroupById fallback for nested nodes
-- [06-03]: Empty state checks found.tokens.length === 0 regardless of children — parent-only groups show "No tokens in this group"
-- [Phase 08-clean-code]: TokenGeneratorFormNew renamed to TokenGeneratorForm; legacy routes generate/settings/configuration deleted
-- [Phase 08-clean-code]: AtuiDevTest replaced with shadcn Button sandbox — stencil loader module path not exported by package
-- [Phase 08-clean-code]: handleTokensChange uses tokens ?? {} to handle null from onTokensChange, keeping downstream state non-null
-- [Phase 08-clean-code]: DatabaseConfig placed in dev/ per user confirmation in CONTEXT.md
-- [Phase 08-clean-code]: Barrel exports use absolute @/components/[domain] paths for cross-domain imports
-- [Phase 08-clean-code]: parseTokenValue and countTokensRecursive extracted from TokenGeneratorForm to token.utils.ts — both are pure functions with no React/state dependencies
-**Phase 9 key decisions (09-01):**
-- [09-01]: Themes schema uses Schema.Types.Mixed (not array notation) — same pattern as graphState for flexible object arrays
-- [09-01]: GET uses repository layer; POST/PUT/DELETE use direct TokenCollection model — repository interface lacks $push/$pull semantics
-- [09-01]: First theme creation sets all groups to 'enabled'; subsequent themes default to 'disabled'
-**Phase 9 key decisions (09-02):**
-- [09-02]: Group list for matrix derived from top-level token keys (non-$ object entries) — avoids duplicating TokenGeneratorForm group parsing logic
-- [09-02]: handleStateChange uses optimistic update + revert on error for snappy UI
-- [09-02]: ThemeList inline add flow: isAdding boolean, input ref auto-focused, Enter/blur confirms, Escape cancels
-- [Phase 09-add-tokens-modes]: [09-03]: Themes nav uses Layers icon inserted between Tokens and Config nav items; filteredGroups defaults to masterGroups when no theme active; groups without explicit state entry default to disabled
-- [Phase 09-add-tokens-modes]: [09-04]: Build verification revealed two bugs: path-based group ID derivation fixed via tokenService; first-theme default state guard added so only first theme gets all-enabled default
 
 ### Pending Todos
 
@@ -102,10 +71,10 @@ None.
 
 ### Blockers/Concerns
 
-None — Phase 5 complete. Blocker resolved: onGroupsChange now emits full TokenGroup[] with children (05-01).
+None.
 
 ## Session Continuity
 
 Last session: 2026-03-19
-Stopped at: Completed 09-04-PLAN.md — Full Themes feature verified end-to-end; Phase 9 complete; v1.3 milestone delivered
+Stopped at: v1.3 milestone complete — archived; PROJECT.md evolved; ROADMAP.md reorganized; git tag pending
 Resume file: None

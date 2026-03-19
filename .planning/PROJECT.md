@@ -2,21 +2,11 @@
 
 ## What This Is
 
-A Next.js design token management tool for the Allied Telesis ATUI design system. It allows designers and developers to view, create, edit, and persist design tokens — importing from GitHub repositories and Figma, storing collections in MongoDB for durable access, and exporting to GitHub PRs, Figma, and multiple CSS/JS format files (CSS, SCSS, LESS, JS, TS, JSON). Collections are browseable in a card grid and each collection has its own scoped pages (Tokens, Config, Settings) with per-collection Figma/GitHub config persisted to MongoDB.
+A Next.js design token management tool for the Allied Telesis ATUI design system. It allows designers and developers to view, create, edit, and persist design tokens — importing from GitHub repositories and Figma, storing collections in MongoDB for durable access, and exporting to GitHub PRs, Figma, and multiple CSS/JS format files (CSS, SCSS, LESS, JS, TS, JSON). Collections are browseable in a card grid; each collection has scoped pages (Tokens, Themes, Config, Settings) with per-collection Figma/GitHub config persisted to MongoDB. The Tokens page shows all groups as a hierarchical tree with breadcrumb navigation and supports per-collection Themes to filter which groups are active.
 
 ## Core Value
 
-Token collections are always available and editable: stored in MongoDB, accessible via collection-scoped URLs, with per-collection Figma/GitHub config, full CRUD from the collections grid, and Figma import/export fully integrated.
-
-## Current Milestone: v1.2 Token Groups Tree
-
-**Goal:** Refactor the token generator page to display all groups as a navigable tree in the master sidebar, with breadcrumbs in the content area and content scoped to the selected group's direct tokens.
-
-**Target features:**
-- Hierarchical tree sidebar (all groups, parsed from path names, collapsible)
-- Breadcrumb navigation above the content area
-- Content area scoped to direct tokens of the selected group
-- Add group from any node in the tree
+Token collections are always available and editable: stored in MongoDB, accessible via collection-scoped URLs, with per-collection Figma/GitHub config, full CRUD from the collections grid, Figma import/export fully integrated, and a Themes system for filtering active token groups.
 
 ## Requirements
 
@@ -50,13 +40,25 @@ Token collections are always available and editable: stored in MongoDB, accessib
 - ✓ Each collection has scoped pages at `/collections/[id]/tokens`, `/collections/[id]/config`, `/collections/[id]/settings` — v1.1
 - ✓ Per-collection Figma and GitHub config fields are persisted to MongoDB — v1.1
 - ✓ Per-collection Settings page auto-saves config to MongoDB with debounce — v1.1
+- ✓ Token groups sidebar displays a hierarchical tree built from parsed path names — v1.2
+- ✓ Tree node display names parsed from group path (segments split, `.json` stripped) — v1.2
+- ✓ Selecting a tree node highlights it and scopes content area to that group's direct tokens — v1.2
+- ✓ Breadcrumb trail above content area reflects full path; each segment navigates to ancestor — v1.2
+- ✓ Codebase has zero TypeScript errors; no `@ts-ignore`/`as any` suppressors — v1.3
+- ✓ Components organized into feature domain subdirectories with barrel exports — v1.3
+- ✓ Dead code and legacy routes removed; single canonical form component — v1.3
+- ✓ User can create and manage named themes per collection on a dedicated Themes page — v1.3
+- ✓ Each theme assigns every token group a state: Disabled, Enabled, or Source — v1.3
+- ✓ Themes page is accessible via a Themes nav tab in the collection sidebar — v1.3
+- ✓ Theme selector on Tokens page filters the group tree to show only Enabled/Source groups — v1.3
+- ✓ First new theme defaults all groups to Enabled; subsequent themes default to Disabled — v1.3
 
 ### Active
 
-- [ ] Token groups sidebar shows hierarchical tree of all groups (parsed from path names)
-- [ ] Content area scoped to direct tokens of selected group only
-- [ ] Breadcrumb navigation reflects selected group's path
-- [ ] User can add groups as children of any tree node
+- [ ] Tree nodes can be expanded and collapsed (expand/collapse toggle per node)
+- [ ] User can add a new group from the tree sidebar (as a child of any node, or at root level)
+- [ ] User can add tokens to the currently selected group
+- [ ] User can edit token values inline in the currently selected group
 
 ### Out of Scope
 
@@ -66,19 +68,23 @@ Token collections are always available and editable: stored in MongoDB, accessib
 - Angular / Stencil / Vite workspaces — explicitly excluded; Angular port is a future milestone
 - GitHub API caching — performance improvement, deferred
 - CORS / CSRF protection — localhost dev tool; security hardening deferred
-- ATUI Stencil components replacing shadcn/ui — integration pattern established in v1.1 (Phase 2) but full replacement deferred
+- ATUI Stencil components replacing shadcn/ui — integration pattern established in v1.1 but full replacement deferred
 
 ## Context
 
-- **Shipped:** v1.1 on 2026-03-12 — 4 phases, 16 plans, 4-day build
+- **Shipped:** v1.3 on 2026-03-19 — 2 phases (8-9), 9 plans, 86 source files changed
+- **Prior:** v1.2 phases (5-6) on 2026-03-13 — tree sidebar + breadcrumbs shipped; Phase 7 (Mutations) deferred
+- **Prior:** v1.1 on 2026-03-12 — 4 phases, 16 plans, 4-day build
 - **Prior:** v1.0 on 2026-02-28 — 7 phases, 23 plans, 3-day build
-- **Codebase:** ~12,000 LOC TypeScript; Next.js 13.5.6 + Mongoose + Style Dictionary v5 + JSZip + shadcn/ui (Radix UI)
+- **Codebase:** ~22,000 LOC TypeScript; Next.js 13.5.6 + Mongoose + Style Dictionary v5 + JSZip + shadcn/ui (Radix UI)
+- **Component structure:** Feature domain folders: `collections/`, `tokens/`, `layout/`, `figma/`, `github/`, `dev/` — each with `index.ts` barrel exports
 - **Brownfield:** Existing tool with GitHub import/export; MongoDB layer added in v1.0; UI modernized and routing restructured in v1.1
 - **Monorepo:** Yarn 3 workspaces; Angular, Stencil, Vite variants exist but are out of scope (excluded from root tsconfig)
 - **Token format:** W3C Design Token Specification; two structure variants
-- **Architecture:** API routes in `src/app/api/`; Mongoose models in `src/lib/db/models/`; UI components in `src/components/`; shadcn primitives in `src/components/ui/`; collection-scoped routes in `src/app/collections/[id]/`
+- **Architecture:** API routes in `src/app/api/`; Mongoose models in `src/lib/db/models/`; UI components in `src/components/[domain]/`; shadcn primitives in `src/components/ui/`; collection-scoped routes in `src/app/collections/[id]/`; Themes API at `src/app/api/collections/[id]/themes/`
 - **Angular parity doc:** `.planning/ANGULAR_PARITY.md` documents all new API routes and UI patterns for future Angular port
-- **Known issues:** Pre-existing TypeScript errors resolved — yarn build now passes cleanly
+- **Refactor backlog:** `.planning/phases/08-clean-code/REFACTOR-SUGGESTIONS.md` — out-of-scope ideas from Phase 8 SRP audit
+- **Build:** Zero TypeScript errors; `yarn build` passes cleanly
 
 ## Constraints
 
@@ -112,6 +118,18 @@ Token collections are always available and editable: stored in MongoDB, accessib
 | Per-collection config in MongoDB | Config scoped to collection — no cross-collection leakage | ✓ Good — removes localStorage ambiguity for multi-collection setup |
 | `didMountRef` in Settings page | Prevents auto-save firing during initial data load | ✓ Good — avoids overwriting DB data with empty form on mount |
 | Exclude sub-workspaces from root tsconfig | Angular/Stencil/Vite TS errors blocked yarn build | ✓ Good — build clean; sub-projects have own TS configs |
+| Flat-node rendering for TokenGroupTree | FlatNode[] list, not nested JSX recursion | ✓ Good — simpler to maintain; dynamic indent via inline paddingLeft |
+| No expand/collapse in Phase 5 | All nodes always visible; deferred toggle to later milestone | ⚠ Revisit — TREE-05 still open; tree gets long with many groups |
+| Background-only highlight for selected node | User decision: bg-gray-200, no left border | ✓ Good — clean minimal styling |
+| Recursive group resolution in tokens page | Fast path for top-level, findGroupById fallback for nested | ✓ Good — handles both cases without code duplication |
+| Feature domain component folders | collections/, tokens/, layout/, figma/, github/, dev/ each with barrel | ✓ Good — cross-domain imports use absolute @/components/[domain] paths |
+| Pure utils in src/utils/ | No React/Next.js imports; framework-agnostic | ✓ Good — parseTokenValue, countTokensRecursive moved cleanly |
+| Schema.Types.Mixed for themes array | Same pattern as graphState; avoids TS errors from array notation | ✓ Good — works correctly with default: [] |
+| Repository layer bypass for theme mutations | ICollectionRepository lacks $push/$pull; direct TokenCollection import | ✓ Good — pragmatic; GET still uses repository for portability |
+| First theme defaults all groups to enabled | Clear onboarding — everything visible on first theme creation | ✓ Good — fixed by guard in 09-04 so only first theme gets this treatment |
+| tokenService for path-based group IDs | Canonical group key derivation consistent across all theme operations | ✓ Good — fixed in 09-04; prevents key mismatch bugs |
+| Themes nav item: Layers icon between Tokens and Config | Visual metaphor for themes/modes; consistent nav ordering | ✓ Good — clean sidebar layout |
+| filteredGroups falls back to masterGroups when no theme active | Preserves "all groups" default; no empty state when theme deselected | ✓ Good — seamless UX |
 
 ---
-*Last updated: 2026-03-12 after v1.2 milestone start*
+*Last updated: 2026-03-19 after v1.3 milestone*
