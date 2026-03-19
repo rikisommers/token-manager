@@ -93,12 +93,12 @@ Plans:
   3. When a theme is active and the selected group is Disabled, the group does not appear in the tree
   4. Token cells where the active theme's value differs from the collection default show a visible override indicator
   5. PATCH `/api/collections/[id]/themes/[themeId]/tokens` accepts full token replacement using whole-array `$set`; Source-group writes are rejected with 422
-**Plans**: TBD
+**Plans**: 3 plans
 
 Plans:
-- [ ] 11-01: TBD
-- [ ] 11-02: TBD
-- [ ] 11-03: TBD
+- [ ] 11-01-PLAN.md — PATCH /api/collections/[id]/themes/[themeId]/tokens route (source-group guard + whole-array $set)
+- [ ] 11-02-PLAN.md — Theme selector UX (Default label, hide-when-empty) + activeThemeTokens state + debounced PATCH save
+- [ ] 11-03-PLAN.md — TokenGeneratorForm read-only + reset button (RotateCcw) + full wiring + human verify
 
 ### Phase 12: Theme-Aware Export
 **Goal**: Export is targeted at a specific theme or the collection default, and Figma export represents each enabled theme as a variable mode
