@@ -62,7 +62,7 @@ See: `.planning/milestones/v1.3-ROADMAP.md` for archived roadmap details.
 
 **Milestone Goal:** Themes become actual token value sets — each theme embeds a full copy of token data, group states control edit permissions, inline editing on the Tokens page writes to the active theme's embedded data, and export is theme-aware.
 
-- [ ] **Phase 10: Data Model Foundation** — Extend ITheme with embedded tokens, deep-copy on creation, migration script, theme count guard
+- [x] **Phase 10: Data Model Foundation** — Extend ITheme with embedded tokens, deep-copy on creation, migration script, theme count guard (completed 2026-03-19)
 - [ ] **Phase 11: Inline Token Editing UI** — PATCH API endpoint + ThemeTokenEditor component, group-state-aware save routing, override indicator
 - [ ] **Phase 12: Theme-Aware Export** — Config page theme selector, SD export uses theme tokens, Figma export generates one mode per enabled theme
 
@@ -137,6 +137,6 @@ Phases execute in numeric order: 10 → 11 → 12
 | 7. Mutations | v1.4 | 0/TBD | Deferred | - |
 | 8. Clean Code | v1.3 | 5/5 | Complete | 2026-03-16 |
 | 9. Add Tokens Modes | v1.3 | 4/4 | Complete | 2026-03-19 |
-| 10. Data Model Foundation | 1/2 | In Progress|  | - |
+| 10. Data Model Foundation | 2/2 | Complete   | 2026-03-19 | - |
 | 11. Inline Token Editing UI | v1.4 | 0/TBD | Not started | - |
 | 12. Theme-Aware Export | v1.4 | 0/TBD | Not started | - |
