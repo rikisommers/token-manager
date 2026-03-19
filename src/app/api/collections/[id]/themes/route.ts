@@ -59,13 +59,21 @@ export async function POST(
     const groupIds = flattenAllGroups(groupTree).map(g => g.id);
 
     const existingThemes = (collection.themes as ITheme[]) ?? [];
-    void existingThemes; // unused after removing first/subsequent distinction
+
+    if (existingThemes.length >= 10) {
+      return NextResponse.json(
+        { error: 'Maximum 10 themes per collection' },
+        { status: 422 }
+      );
+    }
+
     const defaultState = 'enabled';
 
     const theme: ITheme = {
       id: crypto.randomUUID(),
       name: body.name.trim(),
       groups: Object.fromEntries(groupIds.map((gid) => [gid, defaultState])),
+      tokens: groupTree,  // full tree snapshot — not the flat list
     };
 
     const updated = await TokenCollection.findByIdAndUpdate(

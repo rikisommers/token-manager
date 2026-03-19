@@ -2,6 +2,7 @@ import dbConnect from '@/lib/mongodb';
 import TokenCollection from '@/lib/db/models/TokenCollection';
 import type { UpdateTokenCollectionInput, ISourceMetadata } from '@/types/collection.types';
 import type { ITheme } from '@/types/theme.types';
+import type { TokenGroup } from '@/types/token.types';
 import type { CollectionDoc, CreateCollectionInput, ICollectionRepository } from './repository';
 
 function toDoc(raw: Record<string, unknown>): CollectionDoc {
@@ -18,7 +19,10 @@ function toDoc(raw: Record<string, unknown>): CollectionDoc {
     githubRepo: (raw.githubRepo as string | null) ?? null,
     githubBranch: (raw.githubBranch as string | null) ?? null,
     graphState: (raw.graphState as CollectionDoc['graphState']) ?? null,
-    themes: (raw.themes as ITheme[]) ?? [],
+    themes: ((raw.themes as Array<Record<string, unknown>>) ?? []).map((t) => ({
+      ...t,
+      tokens: (t.tokens as TokenGroup[]) ?? [],
+    })) as ITheme[],
     createdAt: (raw.createdAt as Date).toISOString(),
     updatedAt: (raw.updatedAt as Date).toISOString(),
   };
