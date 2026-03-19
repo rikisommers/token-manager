@@ -46,6 +46,7 @@ Progress: [████░░░░░░] ~40% (4 plans complete)
 *Updated after each plan completion*
 | Phase 11-inline-token-editing-ui P01 | 2 | 1 tasks | 1 files |
 | Phase 11-inline-token-editing-ui P02 | 3 | 2 tasks | 1 files |
+| Phase 11-inline-token-editing-ui P03 | 5 | 2 tasks | 2 files |
 
 ## Accumulated Context
 
@@ -73,6 +74,8 @@ Key decisions relevant to v1.4:
 - [Phase 11-inline-token-editing-ui]: Root-level source-group guard only (not recursive) — theme.groups maps root-level group IDs; children governed by parent
 - [Phase 11-02]: activeThemeTokens uses JSON.parse/stringify deep copy — sufficient for plain TokenGroup data objects
 - [Phase 11-02]: handleThemeTokenChange is silent on fetch error — mirrors existing graph auto-save pattern
+- [Phase 11-inline-token-editing-ui]: themeTokens overlay (not state replacement) in TokenGeneratorForm keeps master collection clean; updateToken routes through onThemeTokensChange when overlay active
+- [Phase 11-inline-token-editing-ui]: updateGroupToken is a pure recursive helper outside component; handleResetToDefault maps activeThemeTokens through it then calls handleThemeTokenChange
 
 ### Pending Todos
 
