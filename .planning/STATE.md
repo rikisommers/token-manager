@@ -3,12 +3,12 @@ gsd_state_version: 1.0
 milestone: v1.4
 milestone_name: Theme Token Sets
 status: in_progress
-last_updated: "2026-03-19T23:13:55Z"
+last_updated: "2026-03-20T12:14:54Z"
 progress:
   total_phases: 3
   completed_phases: 0
   total_plans: 0
-  completed_plans: 3
+  completed_plans: 4
 ---
 
 # Project State
@@ -18,16 +18,16 @@ progress:
 See: .planning/PROJECT.md (updated 2026-03-19)
 
 **Core value:** Token collections are always available and editable: stored in MongoDB, accessible via collection-scoped URLs, with per-collection Figma/GitHub config, full CRUD from the collections grid, Figma import/export fully integrated, and a Themes system for filtering active token groups.
-**Current focus:** v1.4 Theme Token Sets — Phase 11 plan 01 complete
+**Current focus:** v1.4 Theme Token Sets — Phase 11 plan 02 complete
 
 ## Current Position
 
 Phase: 11 of 12 (Inline Token Editing UI)
-Plan: 01 complete
+Plan: 02 complete
 Status: In progress
-Last activity: 2026-03-19 — 11-01 complete: PATCH /api/collections/[id]/themes/[themeId]/tokens route
+Last activity: 2026-03-20 — 11-02 complete: theme selector Default label, activeThemeTokens state, handleThemeChange group fallback, debounced PATCH auto-save
 
-Progress: [███░░░░░░░] ~30% (3 plans complete)
+Progress: [████░░░░░░] ~40% (4 plans complete)
 
 ## Performance Metrics
 
@@ -45,6 +45,7 @@ Progress: [███░░░░░░░] ~30% (3 plans complete)
 
 *Updated after each plan completion*
 | Phase 11-inline-token-editing-ui P01 | 2 | 1 tasks | 1 files |
+| Phase 11-inline-token-editing-ui P02 | 3 | 2 tasks | 1 files |
 
 ## Accumulated Context
 
@@ -70,6 +71,8 @@ Key decisions relevant to v1.4:
 - `atLimit` UI guard pattern: `disabled={atLimit}` + title tooltip + `disabled:opacity-40 disabled:cursor-not-allowed` Tailwind classes
 - Root-level source-group guard only (not recursive) — theme.groups maps root-level group IDs; children governed by parent
 - [Phase 11-inline-token-editing-ui]: Root-level source-group guard only (not recursive) — theme.groups maps root-level group IDs; children governed by parent
+- [Phase 11-02]: activeThemeTokens uses JSON.parse/stringify deep copy — sufficient for plain TokenGroup data objects
+- [Phase 11-02]: handleThemeTokenChange is silent on fetch error — mirrors existing graph auto-save pattern
 
 ### Pending Todos
 
@@ -82,6 +85,6 @@ None.
 
 ## Session Continuity
 
-Last session: 2026-03-19
-Stopped at: Completed 11-01-PLAN.md — PATCH /api/collections/[id]/themes/[themeId]/tokens route
+Last session: 2026-03-20
+Stopped at: Completed 11-02-PLAN.md — theme selector Default label, activeThemeTokens state, handleThemeChange group fallback, debounced PATCH auto-save
 Resume file: None
