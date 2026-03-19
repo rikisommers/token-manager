@@ -2,7 +2,7 @@
 
 import React, { useState, useEffect, useRef, useCallback } from 'react';
 import { HexColorPicker, HexColorInput } from 'react-colorful';
-import { ChevronDown, ChevronUp, Trash2, RotateCcw } from 'lucide-react';
+import { ChevronDown, ChevronUp, Trash2, RotateCcw, Lock } from 'lucide-react';
 import { GitHubDirectoryPicker } from '@/components/github/GitHubDirectoryPicker';
 import { LoadingIndicator } from '@/components/layout/LoadingIndicator';
 import { ToastNotification } from '@/components/layout/ToastNotification';
@@ -284,7 +284,11 @@ function TokenTableRow({
             >
               {isExpanded ? <ChevronUp size={12} /> : <ChevronDown size={12} />}
             </Button>
-            {!isReadOnly && (
+            {isReadOnly ? (
+              <span title="Source group — read only" className="h-6 w-6 flex items-center justify-center text-gray-300">
+                <Lock size={12} />
+              </span>
+            ) : (
               <Button
                 variant="ghost"
                 size="sm"

@@ -356,6 +356,8 @@ export default function CollectionTokensPage({ params }: TokensPageProps) {
   const handleThemeTokenChange = useCallback((updatedTokens: TokenGroup[]) => {
     setActiveThemeTokens(updatedTokens);
     if (!activeThemeId) return;
+    // Keep themes state in sync so switching away and back preserves edits
+    setThemes(prev => prev.map(t => t.id === activeThemeId ? { ...t, tokens: updatedTokens } : t));
     if (themeTokenSaveTimerRef.current) clearTimeout(themeTokenSaveTimerRef.current);
     themeTokenSaveTimerRef.current = setTimeout(async () => {
       try {
