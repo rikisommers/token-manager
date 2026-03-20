@@ -112,9 +112,9 @@ Plans:
 
 Plans:
 - [x] 12-01-PLAN.md — themeTokenMerge helper + BuildTokensRequest.themeLabel extension + SD build comment injection
-- [ ] 12-02-PLAN.md — Config page theme fetch + "Export theme:" selector + BuildTokensPanel themeLabel wiring + Figma Enterprise note
-- [ ] 12-03-PLAN.md — Figma export route rewrite: multi-mode payload (variableModes + variableModeValues)
-- [ ] 12-04-PLAN.md — Human verify: theme selector, SD comment header, Figma Enterprise note
+- [x] 12-02-PLAN.md — Config page theme fetch + "Export theme:" selector + BuildTokensPanel themeLabel wiring + Figma Enterprise note
+- [x] 12-03-PLAN.md — Figma export route rewrite: multi-mode payload (variableModes + variableModeValues)
+- [x] 12-04-PLAN.md — Human verify: theme selector, SD comment header, Figma Enterprise note
 
 ## Progress
 
