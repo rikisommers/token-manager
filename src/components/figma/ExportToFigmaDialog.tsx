@@ -250,22 +250,27 @@ export function ExportToFigmaDialog({
               )}
             </div>
 
-            <DialogFooter>
-              <Button
-                variant="outline"
-                onClick={onClose}
-                disabled={exporting}
-              >
-                Cancel
-              </Button>
-              <Button
-                onClick={handleExport}
-                disabled={!selectedCollectionId || exporting}
-                className="bg-purple-600 hover:bg-purple-700"
-              >
-                {exporting ? 'Exporting...' : 'Export'}
-              </Button>
-            </DialogFooter>
+            <div className="flex flex-col gap-2 w-full">
+              <p className="text-xs text-gray-500">
+                Figma Variables API requires Enterprise plan.
+              </p>
+              <DialogFooter>
+                <Button
+                  variant="outline"
+                  onClick={onClose}
+                  disabled={exporting}
+                >
+                  Cancel
+                </Button>
+                <Button
+                  onClick={handleExport}
+                  disabled={!selectedCollectionId || exporting}
+                  className="bg-purple-600 hover:bg-purple-700"
+                >
+                  {exporting ? 'Exporting...' : 'Export'}
+                </Button>
+              </DialogFooter>
+            </div>
           </>
         )}
       </DialogContent>
