@@ -26,6 +26,7 @@ interface TokenGroupTreeProps {
   onDeleteGroup?: (groupId: string) => void;
   onAddSubGroup?: (parentGroupId: string) => void;
   onGroupsReordered?: (newGroups: TokenGroup[], activeId: string, overId: string) => void;
+  onRenameGroup?: (groupId: string, newLabel: string) => void;
 }
 
 export function TokenGroupTree({
@@ -37,6 +38,7 @@ export function TokenGroupTree({
   onDeleteGroup,
   onAddSubGroup,
   onGroupsReordered,
+  onRenameGroup,
 }: TokenGroupTreeProps) {
   const [activeNode, setActiveNode] = useState<FlatNode | null>(null);
 
@@ -97,6 +99,7 @@ export function TokenGroupTree({
                 onSelect={id => onGroupSelect?.(id)}
                 onDeleteGroup={onDeleteGroup}
                 onAddSubGroup={onAddSubGroup}
+                onRenameGroup={onRenameGroup}
               />
             ))}
           </SortableContext>

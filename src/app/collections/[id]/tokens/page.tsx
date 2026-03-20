@@ -25,7 +25,7 @@ import type { CollectionGraphState, GraphGroupState } from '@/types/graph-state.
 import type { FlatToken, FlatGroup } from '@/types/graph-nodes.types';
 import type { ITheme } from '@/types/theme.types';
 import { getAllGroups, findGroupById, generateId } from '@/utils';
-import { applyGroupMove } from '@/utils/groupMove';
+import { applyGroupMove, applyGroupRename } from '@/utils/groupMove';
 import {
   getTokenPathsFromGraphState,
   compareTokenPaths,
@@ -335,6 +335,35 @@ export default function CollectionTokensPage({ params }: TokensPageProps) {
         // Silent — mirrors existing auto-save error handling pattern
       }
     }, 300);
+  }, [masterGroups, themes, id, globalNamespace]);
+
+  // ── Group rename handler ────────────────────────────────────────────────
+  const handleRenameGroup = useCallback(async (groupId: string, newLabel: string) => {
+    const nonDefaultThemes = themes.filter(t => t.id !== DEFAULT_THEME_ID);
+    const { groups: newGroups, themes: updatedThemes } = applyGroupRename(
+      masterGroups,
+      groupId,
+      newLabel,
+      nonDefaultThemes,
+    );
+
+    setMasterGroups(newGroups);
+    setThemes(prev => prev.map(t =>
+      t.id === DEFAULT_THEME_ID ? t : (updatedThemes.find(u => u.id === t.id) ?? t)
+    ));
+
+    try {
+      const rawTokens = tokenService.generateStyleDictionaryOutput(newGroups, globalNamespace);
+      await fetch(`/api/collections/${id}`, {
+        method: 'PUT',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ tokens: rawTokens, themes: updatedThemes }),
+      });
+      rawCollectionTokensRef.current = rawTokens as Record<string, unknown>;
+      setRawCollectionTokens(rawTokens as Record<string, unknown>);
+    } catch {
+      setToast({ message: 'Failed to save rename', type: 'error' });
+    }
   }, [masterGroups, themes, id, globalNamespace]);
 
   // Persist graph state to the correct theme (per theme > group)
@@ -801,6 +830,7 @@ export default function CollectionTokensPage({ params }: TokensPageProps) {
                 onDeleteGroup={(groupId) => setPendingGroupAction({ type: 'delete', groupId })}
                 onAddSubGroup={(groupId) => setPendingGroupAction({ type: 'addSub', groupId })}
                 onGroupsReordered={handleGroupsReordered}
+                onRenameGroup={handleRenameGroup}
               />
               {/* Collapse toggle at bottom */}
               <div className="mt-auto p-2 border-t border-gray-200">

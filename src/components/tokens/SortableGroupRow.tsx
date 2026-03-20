@@ -1,8 +1,9 @@
 'use client';
 
+import { useRef, useState } from 'react';
 import { useSortable } from '@dnd-kit/sortable';
 import { CSS } from '@dnd-kit/utilities';
-import { GripVertical, MoreHorizontal, Plus, Trash2 } from 'lucide-react';
+import { GripVertical, MoreHorizontal, Pencil, Plus, Trash2 } from 'lucide-react';
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -22,6 +23,7 @@ interface SortableGroupRowProps {
   onSelect: (groupId: string) => void;
   onDeleteGroup?: (groupId: string) => void;
   onAddSubGroup?: (parentGroupId: string) => void;
+  onRenameGroup?: (groupId: string, newLabel: string) => void;
   isDragOverlay?: boolean;
 }
 
@@ -39,16 +41,81 @@ function rowClassName(node: FlatNode, isSelected: boolean): string {
   return `${base} ${selected} ${weight}`;
 }
 
+// ---------------------------------------------------------------------------
+// Inline rename input
+// ---------------------------------------------------------------------------
+
+interface InlineLabelProps {
+  displayLabel: string;
+  isEditing: boolean;
+  editValue: string;
+  onEditValueChange: (v: string) => void;
+  onCommit: () => void;
+  onCancel: () => void;
+  onStartEdit: () => void;
+}
+
+function InlineLabel({
+  displayLabel,
+  isEditing,
+  editValue,
+  onEditValueChange,
+  onCommit,
+  onCancel,
+  onStartEdit,
+}: InlineLabelProps) {
+  const inputRef = useRef<HTMLInputElement>(null);
+
+  if (isEditing) {
+    return (
+      <input
+        ref={inputRef}
+        className="flex-1 py-0.5 px-1 text-xs rounded border border-indigo-400 bg-white outline-none min-w-0"
+        value={editValue}
+        autoFocus
+        onClick={e => e.stopPropagation()}
+        onChange={e => onEditValueChange(e.target.value)}
+        onBlur={onCommit}
+        onKeyDown={e => {
+          if (e.key === 'Enter') { e.preventDefault(); onCommit(); }
+          if (e.key === 'Escape') { e.preventDefault(); onCancel(); }
+          e.stopPropagation();
+        }}
+      />
+    );
+  }
+
+  return (
+    <span
+      className="flex-1 py-1.5 truncate text-xs"
+      onDoubleClick={e => { e.stopPropagation(); onStartEdit(); }}
+    >
+      {displayLabel}
+    </span>
+  );
+}
+
+// ---------------------------------------------------------------------------
+// Group actions dropdown
+// ---------------------------------------------------------------------------
+
+interface GroupActionsProps {
+  node: FlatNode;
+  onDeleteGroup?: (groupId: string) => void;
+  onAddSubGroup?: (parentGroupId: string) => void;
+  onRenameGroup?: (groupId: string, newLabel: string) => void;
+  onStartRename: () => void;
+}
+
 function GroupActions({
   node,
   onDeleteGroup,
   onAddSubGroup,
-}: {
-  node: FlatNode;
-  onDeleteGroup?: (groupId: string) => void;
-  onAddSubGroup?: (parentGroupId: string) => void;
-}) {
-  if (!onDeleteGroup && !onAddSubGroup) return null;
+  onRenameGroup,
+  onStartRename,
+}: GroupActionsProps) {
+  const hasActions = onDeleteGroup || onAddSubGroup || onRenameGroup;
+  if (!hasActions) return null;
 
   return (
     <DropdownMenu>
@@ -62,6 +129,15 @@ function GroupActions({
         </button>
       </DropdownMenuTrigger>
       <DropdownMenuContent align="end" className="w-44" onClick={e => e.stopPropagation()}>
+        {onRenameGroup && (
+          <DropdownMenuItem
+            className="gap-2 text-xs"
+            onClick={() => onStartRename()}
+          >
+            <Pencil size={12} /> Rename
+          </DropdownMenuItem>
+        )}
+        {onRenameGroup && onAddSubGroup && <DropdownMenuSeparator />}
         {onAddSubGroup && (
           <DropdownMenuItem
             className="gap-2 text-xs"
@@ -71,6 +147,7 @@ function GroupActions({
           </DropdownMenuItem>
         )}
         {onAddSubGroup && onDeleteGroup && <DropdownMenuSeparator />}
+        {!onAddSubGroup && onRenameGroup && onDeleteGroup && <DropdownMenuSeparator />}
         {onDeleteGroup && (
           <DropdownMenuItem
             className="gap-2 text-xs text-red-600 focus:text-red-700"
@@ -94,6 +171,7 @@ export function SortableGroupRow({
   onSelect,
   onDeleteGroup,
   onAddSubGroup,
+  onRenameGroup,
   isDragOverlay = false,
 }: SortableGroupRowProps) {
   // Static overlay version — no sortable hooks, no transform
@@ -115,6 +193,7 @@ export function SortableGroupRow({
     onSelect={onSelect}
     onDeleteGroup={onDeleteGroup}
     onAddSubGroup={onAddSubGroup}
+    onRenameGroup={onRenameGroup}
   />;
 }
 
@@ -125,7 +204,11 @@ function SortableRowInner({
   onSelect,
   onDeleteGroup,
   onAddSubGroup,
+  onRenameGroup,
 }: Omit<SortableGroupRowProps, 'isDragOverlay'>) {
+  const [isEditing, setIsEditing] = useState(false);
+  const [editValue, setEditValue] = useState('');
+
   const {
     attributes,
     listeners,
@@ -142,33 +225,63 @@ function SortableRowInner({
     opacity: isDragging ? 0.4 : 1,
   };
 
+  function startEdit() {
+    setEditValue(node.displayLabel);
+    setIsEditing(true);
+  }
+
+  function commitEdit() {
+    const trimmed = editValue.trim();
+    if (trimmed && trimmed !== node.displayLabel && onRenameGroup) {
+      onRenameGroup(node.group.id, trimmed);
+    }
+    setIsEditing(false);
+  }
+
+  function cancelEdit() {
+    setIsEditing(false);
+  }
+
   return (
     <div
       ref={setNodeRef}
       style={style}
       className={rowClassName(node, isSelected)}
       {...attributes}
-      onClick={e => { e.stopPropagation(); onSelect(node.group.id); }}
+      onClick={e => { e.stopPropagation(); if (!isEditing) onSelect(node.group.id); }}
     >
-      {/* Drag handle */}
+      {/* Drag handle — hidden while editing */}
       <button
-        {...listeners}
-        className="cursor-grab p-1 text-gray-300 hover:text-gray-500 flex-shrink-0"
+        {...(isEditing ? {} : listeners)}
+        className={`p-1 text-gray-300 flex-shrink-0 ${isEditing ? 'pointer-events-none opacity-0' : 'cursor-grab hover:text-gray-500'}`}
         title="Drag to reorder"
         tabIndex={-1}
+        aria-hidden={isEditing}
       >
         <GripVertical size={12} />
       </button>
 
-      {/* Label */}
-      <span className="flex-1 py-1.5 truncate text-xs">{node.displayLabel}</span>
-
-      {/* Per-item actions menu */}
-      <GroupActions
-        node={node}
-        onDeleteGroup={onDeleteGroup}
-        onAddSubGroup={onAddSubGroup}
+      {/* Label / inline input */}
+      <InlineLabel
+        displayLabel={node.displayLabel}
+        isEditing={isEditing}
+        editValue={editValue}
+        onEditValueChange={setEditValue}
+        onCommit={commitEdit}
+        onCancel={cancelEdit}
+        onStartEdit={startEdit}
       />
+
+      {/* Per-item actions menu — hidden while editing */}
+      {!isEditing && (
+        <GroupActions
+          node={node}
+          onDeleteGroup={onDeleteGroup}
+          onAddSubGroup={onAddSubGroup}
+          onRenameGroup={onRenameGroup}
+          onStartRename={startEdit}
+        />
+      )}
     </div>
   );
 }

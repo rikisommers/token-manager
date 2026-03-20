@@ -1,8 +1,8 @@
 /**
  * groupMove.ts
- * Pure utility for drag-and-drop group reordering with full cascade.
+ * Pure utility for drag-and-drop group reordering and renaming with full cascade.
  *
- * Exports: FlatNode, flattenTree, buildTreeFromFlat, applyGroupMove
+ * Exports: FlatNode, flattenTree, buildTreeFromFlat, applyGroupMove, applyGroupRename
  */
 
 import { TokenGroup, GeneratedToken } from '@/types/token.types';
@@ -394,4 +394,130 @@ function syncThemeTokenOrder(
  */
 function escapeRegex(str: string): string {
   return str.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+}
+
+// ---------------------------------------------------------------------------
+// applyGroupRename
+// ---------------------------------------------------------------------------
+
+export interface ApplyGroupRenameResult {
+  groups: TokenGroup[];
+  themes: ITheme[];
+}
+
+/**
+ * Derive the new slash-based ID prefix for a group being renamed.
+ *
+ * A group's `name` is its full slash-separated path (e.g. "parent/child").
+ * Renaming replaces only the last segment.
+ */
+function buildRenamedPrefix(oldId: string, newLeaf: string): string {
+  const parts = oldId.split('/');
+  parts[parts.length - 1] = newLeaf.toLowerCase().replace(/\s+/g, '-');
+  return parts.join('/');
+}
+
+/**
+ * Rewrite `group.name` for a subtree when the root segment changes.
+ * Only the root group receives a fully rewritten name; descendants get
+ * their paths updated to replace the old root segment with the new one.
+ */
+function rewriteSubtreeName(
+  group: TokenGroup,
+  oldPrefix: string,
+  newPrefix: string
+): TokenGroup {
+  const newName = group.name.startsWith(oldPrefix)
+    ? newPrefix + group.name.slice(oldPrefix.length)
+    : group.name;
+
+  const newChildren = (group.children ?? []).map(child =>
+    rewriteSubtreeName(child, oldPrefix, newPrefix)
+  );
+
+  return { ...group, name: newName, children: newChildren };
+}
+
+/**
+ * Apply a group rename with full cascade:
+ * - Rewrites `group.name` (and descendant names) to reflect new segment
+ * - Rewrites group `id`, `path`, `parent` fields and token `id` fields
+ * - Rewrites alias references across the entire tree
+ * - Propagates all rewrites to theme token arrays and theme group key maps
+ *
+ * @param groups     Master collection groups
+ * @param groupId    ID of the group to rename
+ * @param newLabel   New user-facing label (e.g. "New Name")
+ * @param themes     Custom themes to sync (exclude the synthetic __default__)
+ */
+export function applyGroupRename(
+  groups: TokenGroup[],
+  groupId: string,
+  newLabel: string,
+  themes: ITheme[] = []
+): ApplyGroupRenameResult {
+  const targetGroup = findGroupInTree(groups, groupId);
+  if (!targetGroup) return { groups, themes };
+
+  const newLeafSlug = newLabel.toLowerCase().replace(/\s+/g, '-');
+  const oldSlashPrefix = targetGroup.id;
+  const newSlashPrefix = buildRenamedPrefix(oldSlashPrefix, newLeafSlug);
+
+  if (oldSlashPrefix === newSlashPrefix) return { groups, themes };
+
+  // Collision check: ensure no sibling already owns the new ID
+  const parentId = oldSlashPrefix.includes('/')
+    ? oldSlashPrefix.slice(0, oldSlashPrefix.lastIndexOf('/'))
+    : null;
+  const siblings = getSiblings(groups, parentId);
+  if (siblings.some(s => s.id === newSlashPrefix)) {
+    return { groups, themes };
+  }
+
+  // Step 1: Rewrite name segments in the subtree
+  const namedGroup = rewriteSubtreeName(targetGroup, oldSlashPrefix, newSlashPrefix);
+
+  // Step 2: Rewrite IDs, token IDs, paths, parents in the subtree
+  const rewrittenGroup = rewriteSubtreeIds(namedGroup, oldSlashPrefix, newSlashPrefix);
+
+  // Step 3: Replace in master tree
+  const groupsWithRewrite = replaceGroupInTree(groups, groupId, rewrittenGroup);
+
+  // Step 4: Rewrite alias references in the entire master tree
+  const oldDotPrefix = oldSlashPrefix.replaceAll('/', '.');
+  const newDotPrefix = newSlashPrefix.replaceAll('/', '.');
+  const finalGroups = rewriteAliasesInTree(groupsWithRewrite, oldDotPrefix, newDotPrefix);
+
+  // Step 5: Propagate to each theme
+  const updatedThemes = themes.map(theme => {
+    const namedTokens = rewriteSubtreeNamesInArray(theme.tokens, oldSlashPrefix, newSlashPrefix);
+    const rewrittenTokens = rewriteSubtreeIdsInArray(namedTokens, oldSlashPrefix, newSlashPrefix);
+    const aliasedTokens = rewriteAliasesInTree(rewrittenTokens, oldDotPrefix, newDotPrefix);
+    const migratedTheme = migrateThemeGroupKeys(theme, oldSlashPrefix, newSlashPrefix);
+    return { ...migratedTheme, tokens: aliasedTokens };
+  });
+
+  return { groups: finalGroups, themes: updatedThemes };
+}
+
+/**
+ * Rewrite `group.name` fields in a root-level array, matching by ID prefix.
+ */
+function rewriteSubtreeNamesInArray(
+  groups: TokenGroup[],
+  oldPrefix: string,
+  newPrefix: string
+): TokenGroup[] {
+  return groups.map(group => {
+    if (group.id === oldPrefix || group.id.startsWith(oldPrefix + '/')) {
+      return rewriteSubtreeName(group, oldPrefix, newPrefix);
+    }
+    if (group.children?.length) {
+      return {
+        ...group,
+        children: rewriteSubtreeNamesInArray(group.children, oldPrefix, newPrefix),
+      };
+    }
+    return group;
+  });
 }
