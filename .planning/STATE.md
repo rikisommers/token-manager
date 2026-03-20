@@ -3,7 +3,7 @@ gsd_state_version: 1.0
 milestone: v1.4
 milestone_name: Theme Token Sets
 status: complete
-last_updated: "2026-03-20T05:35:00Z"
+last_updated: "2026-03-20T05:43:35Z"
 progress:
   total_phases: 3
   completed_phases: 0
@@ -18,16 +18,16 @@ progress:
 See: .planning/PROJECT.md (updated 2026-03-19)
 
 **Core value:** Token collections are always available and editable: stored in MongoDB, accessible via collection-scoped URLs, with per-collection Figma/GitHub config, full CRUD from the collections grid, Figma import/export fully integrated, and a Themes system for filtering active token groups.
-**Current focus:** v1.4 Theme Token Sets — Phase 11 complete; Phase 12 next
+**Current focus:** Phase 13 Groups Ordering Drag and Drop — Plan 01 complete
 
 ## Current Position
 
-Phase: 12 of 12 (Theme-Aware Export) — Complete
-Plan: 04 complete (human-verify approved — all 6 scenarios passed)
-Status: Complete
-Last activity: 2026-03-20 — 12-04 human-verify approved; Phase 12 theme-aware export complete
+Phase: 13 of 13 (Groups Ordering Drag and Drop) — In Progress
+Plan: 01 complete — @dnd-kit installed, applyGroupMove utility and SortableGroupRow component delivered
+Status: In Progress
+Last activity: 2026-03-20 — 13-01 complete; dnd-kit foundation delivered
 
-Progress: [██████████] 100% (all plans complete)
+Progress: [█░░░░] Plan 01/N complete
 
 ## Performance Metrics
 
@@ -51,6 +51,7 @@ Progress: [██████████] 100% (all plans complete)
 | Phase 12-theme-aware-export P02 | ~2 min | 2 tasks | 3 files |
 | Phase 12-theme-aware-export P03 | ~2 min | 1 tasks | 1 files |
 | Phase 12-theme-aware-export P04 | 1 | 0 tasks | 0 files |
+| Phase 13-groups-ordering-drag-and-drop P01 | ~3 min | 2 tasks | 3 files |
 
 ## Accumulated Context
 
@@ -87,6 +88,9 @@ Key decisions relevant to v1.4:
 - [Phase 12-03]: Route fetches themes from MongoDB itself using mongoCollectionId — no changes required in ExportToFigmaDialog caller
 - [Phase 12-03]: Figma export always includes ALL enabled themes as modes — ignores Config page theme selector entirely
 - [Phase 12-theme-aware-export]: Human verification gate for Phase 12 complete feature set — all 6 scenarios approved by user on 2026-03-20
+- [Phase 13-01]: applyGroupMove returns { groups, themes } tuple — callers receive updated tree and theme snapshots atomically
+- [Phase 13-01]: isDragOverlay split into SortableRowInner — hook calls stay unconditional, overlay uses plain div
+- [Phase 13-01]: resolveCollisionFreeId increments suffix -2..-10 then falls back to timestamp — prevents duplicate IDs on reparent
 
 ### Pending Todos
 
@@ -100,5 +104,5 @@ None.
 ## Session Continuity
 
 Last session: 2026-03-20
-Stopped at: Phase 12 plan 04 complete — human verification approved, Phase 12 theme-aware export fully complete
+Stopped at: Phase 13 plan 01 complete — @dnd-kit installed, applyGroupMove and SortableGroupRow delivered
 Resume file: None
