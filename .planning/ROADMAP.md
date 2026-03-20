@@ -111,7 +111,7 @@ Plans:
 **Plans**: 4 plans
 
 Plans:
-- [ ] 12-01-PLAN.md — themeTokenMerge helper + BuildTokensRequest.themeLabel extension + SD build comment injection
+- [x] 12-01-PLAN.md — themeTokenMerge helper + BuildTokensRequest.themeLabel extension + SD build comment injection
 - [ ] 12-02-PLAN.md — Config page theme fetch + "Export theme:" selector + BuildTokensPanel themeLabel wiring + Figma Enterprise note
 - [ ] 12-03-PLAN.md — Figma export route rewrite: multi-mode payload (variableModes + variableModeValues)
 - [ ] 12-04-PLAN.md — Human verify: theme selector, SD comment header, Figma Enterprise note
@@ -141,4 +141,4 @@ Phases execute in numeric order: 10 → 11 → 12
 | 9. Add Tokens Modes | v1.3 | 4/4 | Complete | 2026-03-19 |
 | 10. Data Model Foundation | 2/2 | Complete    | 2026-03-19 | - |
 | 11. Inline Token Editing UI | 3/3 | Complete    | 2026-03-19 | - |
-| 12. Theme-Aware Export | v1.4 | 0/TBD | Not started | - |
+| 12. Theme-Aware Export | v1.4 | 1/4 | In progress | - |

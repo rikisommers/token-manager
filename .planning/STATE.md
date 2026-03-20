@@ -22,12 +22,12 @@ See: .planning/PROJECT.md (updated 2026-03-19)
 
 ## Current Position
 
-Phase: 11 of 12 (Inline Token Editing UI) — COMPLETE
-Plan: 03 complete (all plans done)
+Phase: 12 of 12 (Theme-Aware Export) — In progress
+Plan: 01 complete
 Status: In progress
-Last activity: 2026-03-20 — 11-03 complete: TokenTableRow isReadOnly + RotateCcw reset button; themeTokens overlay wired in tokens/page.tsx; all 6 human-verify scenarios approved
+Last activity: 2026-03-20 — 12-01 complete: themeTokenMerge pure helper + BuildTokensRequest.themeLabel + comment header injection in build-tokens route
 
-Progress: [█████░░░░░] ~50% (5 plans complete)
+Progress: [██████░░░░] ~60% (6 plans complete)
 
 ## Performance Metrics
 
@@ -47,6 +47,7 @@ Progress: [█████░░░░░] ~50% (5 plans complete)
 | Phase 11-inline-token-editing-ui P01 | 2 | 1 tasks | 1 files |
 | Phase 11-inline-token-editing-ui P02 | 3 | 2 tasks | 1 files |
 | Phase 11-inline-token-editing-ui P03 | 5 | 2 tasks | 2 files |
+| Phase 12-theme-aware-export P01 | ~2 min | 2 tasks | 3 files |
 
 ## Accumulated Context
 
@@ -76,6 +77,8 @@ Key decisions relevant to v1.4:
 - [Phase 11-02]: handleThemeTokenChange is silent on fetch error — mirrors existing graph auto-save pattern
 - [Phase 11-inline-token-editing-ui]: themeTokens overlay (not state replacement) in TokenGeneratorForm keeps master collection clean; updateToken routes through onThemeTokensChange when overlay active; switching themes or turning off theme resets to master without any state cleanup
 - [Phase 11-inline-token-editing-ui]: updateGroupToken is a pure recursive helper outside component; handleResetToDefault maps activeThemeTokens through it then calls handleThemeTokenChange
+- [Phase 12-01]: mergeThemeTokens is a pure helper — merge is done before calling the route; route only reads themeLabel for comment injection (style-dictionary.service.ts stays pure)
+- [Phase 12-01]: COMMENT_FORMATS covers css/scss/less/js/ts only — JSON format excluded (JSON spec forbids comments)
 
 ### Pending Todos
 
@@ -89,5 +92,5 @@ None.
 ## Session Continuity
 
 Last session: 2026-03-20
-Stopped at: Completed 11-03-PLAN.md — TokenTableRow isReadOnly + RotateCcw reset button; themeTokens overlay; all 6 human-verify scenarios approved; Phase 11 complete
+Stopped at: Completed 12-01-PLAN.md — themeTokenMerge pure helper; BuildTokensRequest.themeLabel; comment header injection in build-tokens route
 Resume file: None
