@@ -3,7 +3,7 @@ gsd_state_version: 1.0
 milestone: v1.4
 milestone_name: Theme Token Sets
 status: in_progress
-last_updated: "2026-03-20T12:14:54Z"
+last_updated: "2026-03-20T05:30:00Z"
 progress:
   total_phases: 3
   completed_phases: 0
@@ -23,11 +23,11 @@ See: .planning/PROJECT.md (updated 2026-03-19)
 ## Current Position
 
 Phase: 12 of 12 (Theme-Aware Export) — In progress
-Plan: 01 complete
+Plan: 03 complete
 Status: In progress
-Last activity: 2026-03-20 — 12-01 complete: themeTokenMerge pure helper + BuildTokensRequest.themeLabel + comment header injection in build-tokens route
+Last activity: 2026-03-20 — 12-03 complete: multi-mode Figma Variables export (variableModes + variableModeValues, one mode per theme)
 
-Progress: [██████░░░░] ~60% (6 plans complete)
+Progress: [████████░░] ~80% (8 plans complete)
 
 ## Performance Metrics
 
@@ -48,6 +48,7 @@ Progress: [██████░░░░] ~60% (6 plans complete)
 | Phase 11-inline-token-editing-ui P02 | 3 | 2 tasks | 1 files |
 | Phase 11-inline-token-editing-ui P03 | 5 | 2 tasks | 2 files |
 | Phase 12-theme-aware-export P01 | ~2 min | 2 tasks | 3 files |
+| Phase 12-theme-aware-export P03 | ~2 min | 1 tasks | 1 files |
 
 ## Accumulated Context
 
@@ -79,6 +80,8 @@ Key decisions relevant to v1.4:
 - [Phase 11-inline-token-editing-ui]: updateGroupToken is a pure recursive helper outside component; handleResetToDefault maps activeThemeTokens through it then calls handleThemeTokenChange
 - [Phase 12-01]: mergeThemeTokens is a pure helper — merge is done before calling the route; route only reads themeLabel for comment injection (style-dictionary.service.ts stays pure)
 - [Phase 12-01]: COMMENT_FORMATS covers css/scss/less/js/ts only — JSON format excluded (JSON spec forbids comments)
+- [Phase 12-03]: Route fetches themes from MongoDB itself using mongoCollectionId — no changes required in ExportToFigmaDialog caller
+- [Phase 12-03]: Figma export always includes ALL enabled themes as modes — ignores Config page theme selector entirely
 
 ### Pending Todos
 
@@ -92,5 +95,5 @@ None.
 ## Session Continuity
 
 Last session: 2026-03-20
-Stopped at: Completed 12-01-PLAN.md — themeTokenMerge pure helper; BuildTokensRequest.themeLabel; comment header injection in build-tokens route
+Stopped at: Completed 12-03-PLAN.md — multi-mode Figma Variables export; variableModes + variableModeValues payload; one mode per theme
 Resume file: None

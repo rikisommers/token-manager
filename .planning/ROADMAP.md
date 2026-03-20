@@ -141,4 +141,4 @@ Phases execute in numeric order: 10 → 11 → 12
 | 9. Add Tokens Modes | v1.3 | 4/4 | Complete | 2026-03-19 |
 | 10. Data Model Foundation | 2/2 | Complete    | 2026-03-19 | - |
 | 11. Inline Token Editing UI | 3/3 | Complete    | 2026-03-19 | - |
-| 12. Theme-Aware Export | v1.4 | 1/4 | In progress | - |
+| 12. Theme-Aware Export | 3/4 | In Progress|  | - |
