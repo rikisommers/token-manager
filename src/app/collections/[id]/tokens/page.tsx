@@ -466,6 +466,31 @@ export default function CollectionTokensPage({ params }: TokensPageProps) {
         if (prev && groups.some(g => g.id === prev)) return prev;
         return prev; // keep empty — show default overview when nothing selected
       });
+
+      // Sync theme groups maps: register any newly added group IDs so they
+      // are not hidden by the filteredGroups filter (which defaults to 'disabled').
+      // Default theme: new groups are 'enabled'; custom themes: 'source' (read-only).
+      setThemes(prevThemes => {
+        if (prevThemes.length === 0) return prevThemes;
+
+        function flattenGroupIds(g: TokenGroup): string[] {
+          const ids = [g.id];
+          if (g.children?.length) g.children.forEach(c => ids.push(...flattenGroupIds(c)));
+          return ids;
+        }
+        const allGroupIds = groups.flatMap(flattenGroupIds);
+
+        return prevThemes.map(theme => {
+          const newEntries: Record<string, 'enabled' | 'source'> = {};
+          for (const gid of allGroupIds) {
+            if (!(gid in theme.groups)) {
+              newEntries[gid] = theme.id === DEFAULT_THEME_ID ? 'enabled' : 'source';
+            }
+          }
+          if (Object.keys(newEntries).length === 0) return theme;
+          return { ...theme, groups: { ...theme.groups, ...newEntries } };
+        });
+      });
     },
     []
   );
