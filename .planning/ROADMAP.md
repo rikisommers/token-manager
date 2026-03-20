@@ -143,11 +143,14 @@ Phases execute in numeric order: 10 → 11 → 12
 | 11. Inline Token Editing UI | 3/3 | Complete    | 2026-03-19 | - |
 | 12. Theme-Aware Export | 4/4 | Complete    | 2026-03-20 | - |
 
-### Phase 13: groups ordering drag and drop
+### Phase 13: Groups Ordering Drag and Drop
 
-**Goal:** [To be planned]
+**Goal:** Users can drag and drop token groups in the sidebar tree to reorder siblings and reparent groups; drag order persists to MongoDB, updates all theme snapshots, and becomes the canonical export sequence
 **Depends on:** Phase 12
-**Plans:** 0 plans
+**Requirements:** ORD-01, ORD-02, ORD-03, ORD-04
+**Plans:** 3 plans
 
 Plans:
-- [ ] TBD (run /gsd:plan-phase 13 to break down)
+- [ ] 13-01-PLAN.md — Install @dnd-kit packages + applyGroupMove cascade utility + SortableGroupRow component
+- [ ] 13-02-PLAN.md — Refactor TokenGroupTree with DndContext, SortableContext, DragOverlay
+- [ ] 13-03-PLAN.md — Page wiring: handleGroupsReordered + undo stack + MongoDB persist + human verify
