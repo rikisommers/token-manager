@@ -14,7 +14,6 @@ requires:
     provides: Figma multi-mode export route (variableModes + variableModeValues, one mode per theme)
 provides:
   - Human-verified gate for complete Phase 12 theme-aware export feature
-affects: []
 
 # Tech tracking
 tech-stack:
@@ -26,7 +25,7 @@ key-files:
   modified: []
 
 key-decisions:
-  - "Human verification gate for Phase 12 — awaiting user sign-off on full export flow"
+  - "Human verification gate for Phase 12 — all 6 scenarios approved by user on 2026-03-20"
 
 patterns-established: []
 
@@ -51,13 +50,20 @@ completed: 2026-03-20
 
 ## Accomplishments
 
-- Dev server confirmed running at http://localhost:3000 for user verification
-- All Phase 12 automated work (plans 01-03) is complete and ready for human walkthrough
-- Checkpoint presented with 6 specific verification scenarios
+- Human browser walkthrough completed — all 6 verification scenarios approved
+- Scenario 1: Export theme selector visible when collection has themes — PASSED
+- Scenario 2: Selector hidden when collection has no themes — PASSED
+- Scenario 3: Collection default build produces no comment header — PASSED
+- Scenario 4: Theme-selected build injects comment header in CSS/SCSS/JS/TS; JSON clean — PASSED
+- Scenario 5: Theme tokens reflected in SD output (merged values correct) — PASSED
+- Scenario 6: Figma Export dialog shows Enterprise plan note; Export button active — PASSED
+- Phase 12 theme-aware export feature fully verified and complete
 
 ## Task Commits
 
 No auto tasks — this plan is purely a human-verify checkpoint.
+
+| Checkpoint commit | c7c9456 | Checkpoint scaffolded + dev server confirmed running |
 
 ## Files Created/Modified
 
@@ -81,9 +87,15 @@ None - no external service configuration required.
 
 ## Next Phase Readiness
 
-- Phase 12 complete once human verification passes
-- All 3 requirements (EXPORT-01, EXPORT-02, EXPORT-03) implemented in plans 01-03
-- Awaiting human browser walkthrough to confirm end-to-end UX flow
+- Phase 12 complete — all 3 requirements (EXPORT-01, EXPORT-02, EXPORT-03) verified and approved
+- All plans 01-04 complete; theme-aware export feature fully shipped
+- No follow-on phases planned for v1.4
+
+## Self-Check: PASSED
+
+- SUMMARY.md: present and finalized with human verification outcome
+- Checkpoint commit c7c9456: confirmed in git log
+- Requirements EXPORT-01, EXPORT-02, EXPORT-03: all implemented across plans 01-03
 
 ---
 *Phase: 12-theme-aware-export*
