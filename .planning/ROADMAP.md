@@ -148,7 +148,7 @@ Phases execute in numeric order: 10 → 11 → 12
 **Goal:** Users can drag and drop token groups in the sidebar tree to reorder siblings and reparent groups; drag order persists to MongoDB, updates all theme snapshots, and becomes the canonical export sequence
 **Depends on:** Phase 12
 **Requirements:** ORD-01, ORD-02, ORD-03, ORD-04
-**Plans:** 1/3 plans executed
+**Plans:** 2/3 plans executed
 
 Plans:
 - [ ] 13-01-PLAN.md — Install @dnd-kit packages + applyGroupMove cascade utility + SortableGroupRow component

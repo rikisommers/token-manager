@@ -3,12 +3,12 @@ gsd_state_version: 1.0
 milestone: v1.4
 milestone_name: Theme Token Sets
 status: complete
-last_updated: "2026-03-20T05:43:35Z"
+last_updated: "2026-03-20T10:47:00Z"
 progress:
   total_phases: 3
   completed_phases: 0
   total_plans: 0
-  completed_plans: 4
+  completed_plans: 5
 ---
 
 # Project State
@@ -18,16 +18,16 @@ progress:
 See: .planning/PROJECT.md (updated 2026-03-19)
 
 **Core value:** Token collections are always available and editable: stored in MongoDB, accessible via collection-scoped URLs, with per-collection Figma/GitHub config, full CRUD from the collections grid, Figma import/export fully integrated, and a Themes system for filtering active token groups.
-**Current focus:** Phase 13 Groups Ordering Drag and Drop — Plan 01 complete
+**Current focus:** Phase 13 Groups Ordering Drag and Drop — Plan 02 complete
 
 ## Current Position
 
 Phase: 13 of 13 (Groups Ordering Drag and Drop) — In Progress
-Plan: 01 complete — @dnd-kit installed, applyGroupMove utility and SortableGroupRow component delivered
+Plan: 02 complete — TokenGroupTree refactored with DndContext + SortableContext + DragOverlay; onGroupsReordered callback wired
 Status: In Progress
-Last activity: 2026-03-20 — 13-01 complete; dnd-kit foundation delivered
+Last activity: 2026-03-20 — 13-02 complete; TokenGroupTree DnD UI delivered
 
-Progress: [█░░░░] Plan 01/N complete
+Progress: [██░░░] Plan 02/N complete
 
 ## Performance Metrics
 
@@ -52,6 +52,7 @@ Progress: [█░░░░] Plan 01/N complete
 | Phase 12-theme-aware-export P03 | ~2 min | 1 tasks | 1 files |
 | Phase 12-theme-aware-export P04 | 1 | 0 tasks | 0 files |
 | Phase 13-groups-ordering-drag-and-drop P01 | ~3 min | 2 tasks | 3 files |
+| Phase 13-groups-ordering-drag-and-drop P02 | ~1 min | 1 tasks | 1 files |
 
 ## Accumulated Context
 
@@ -91,6 +92,9 @@ Key decisions relevant to v1.4:
 - [Phase 13-01]: applyGroupMove returns { groups, themes } tuple — callers receive updated tree and theme snapshots atomically
 - [Phase 13-01]: isDragOverlay split into SortableRowInner — hook calls stay unconditional, overlay uses plain div
 - [Phase 13-01]: resolveCollisionFreeId increments suffix -2..-10 then falls back to timestamp — prevents duplicate IDs on reparent
+- [Phase 13-02]: DndContext placed inside overflow-y-auto div — DragOverlay portal renders at body level so ghost is never clipped by sidebar overflow
+- [Phase 13-02]: applyGroupMove called without themes in TokenGroupTree — theme sync delegated to page (Plan 03)
+- [Phase 13-02]: Local FlatNode + flattenTree removed from TokenGroupTree — @/utils/groupMove is canonical source
 
 ### Pending Todos
 
@@ -104,5 +108,5 @@ None.
 ## Session Continuity
 
 Last session: 2026-03-20
-Stopped at: Phase 13 plan 01 complete — @dnd-kit installed, applyGroupMove and SortableGroupRow delivered
+Stopped at: Phase 13 plan 02 complete — TokenGroupTree refactored with DndContext + SortableContext + DragOverlay
 Resume file: None
