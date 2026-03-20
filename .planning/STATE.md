@@ -61,6 +61,7 @@ Progress: [██████████] 100% (all plans complete)
 - v1.2 (Phases 5-6): Token groups tree in sidebar, breadcrumb navigation, content scoped to selected group (Phase 7 Mutations deferred)
 - v1.3 (Phases 8-9): Clean code + Add Tokens Modes (Themes feature)
 - v1.4 (Phases 10-12): Theme Token Sets — themes become actual value stores
+- Phase 13 added: groups ordering drag and drop
 
 ### Decisions
 
