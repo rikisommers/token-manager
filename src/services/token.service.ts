@@ -427,8 +427,9 @@ export class TokenService {
     const processGroup = (group: TokenGroup, pathPrefix: string[] = []) => {
       const currentPath = [...pathPrefix, group.name];
 
-      // Add tokens from this group
+      // Add tokens from this group (skip placeholder tokens with empty path or value)
       for (const token of group.tokens) {
+        if (!token.path || !token.value) continue;
         addTokenToOutput(token, currentPath);
       }
 

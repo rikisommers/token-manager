@@ -1334,7 +1334,9 @@ export function TokenGeneratorForm({
           <div className="px-4 py-3 border-b border-gray-100">
             <h3 className="text-sm font-semibold text-gray-700">All Groups</h3>
           </div>
-          {tokenGroups.length === 0 ? (
+          {(() => {
+            const overviewGroups = (themeTokens && themeTokens.length > 0) ? themeTokens : tokenGroups;
+            return overviewGroups.length === 0 ? (
             <p className="px-4 py-8 text-sm text-gray-400 text-center">No groups yet. Add a group below.</p>
           ) : (
             <table className="min-w-full">
@@ -1347,7 +1349,7 @@ export function TokenGeneratorForm({
                 </tr>
               </thead>
               <tbody className="divide-y divide-gray-100">
-                {tokenGroups.map(group => (
+                {overviewGroups.map(group => (
                   <tr
                     key={group.id}
                     className="hover:bg-gray-50 cursor-pointer transition-colors"
@@ -1369,7 +1371,8 @@ export function TokenGeneratorForm({
                 ))}
               </tbody>
             </table>
-          )}
+          );
+          })()}
         </div>
       ) : (
         <>

@@ -312,7 +312,7 @@ async function buildCombinedOutput(
  * emitted as a separate output file when non-globals brands exist.
  */
 export async function buildTokens(request: BuildTokensRequest): Promise<BuildTokensResult> {
-  const { tokens, namespace, collectionName, darkTokens } = request;
+  const { tokens, namespace, collectionName, darkTokens, colorMode } = request;
 
   const rawBrands = detectBrands(tokens);
 
@@ -343,6 +343,17 @@ export async function buildTokens(request: BuildTokensRequest): Promise<BuildTok
       }
     } else {
       builtFormats = await buildBrandTokens(brandTokens, namespace, brand);
+    }
+
+    // When a dark-mode theme is exported directly, replace :root { with the dark selector
+    if (colorMode === 'dark' && !darkTokens) {
+      const darkSelector = '[data-color-mode="dark"]';
+      for (const fmt of (['css', 'scss', 'less'] as Format[])) {
+        const content = builtFormats.get(fmt) ?? '';
+        if (content.includes(':root {')) {
+          builtFormats.set(fmt, content.replace(':root {', `${darkSelector} {`));
+        }
+      }
     }
 
     for (const fmt of FORMATS) {

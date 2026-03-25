@@ -133,6 +133,7 @@ export default function CollectionConfigPage({ params }: ConfigPageProps) {
             collectionName={collectionName}
             themeLabel={themeLabel}
             darkTokens={darkTokens}
+            colorMode={selectedTheme ? (selectedTheme.colorMode ?? 'light') : undefined}
           />
         </div>
       </div>

@@ -11,6 +11,7 @@ interface BuildTokensPanelProps {
   collectionName: string;
   themeLabel?: string;
   darkTokens?: Record<string, unknown> | null;
+  colorMode?: 'light' | 'dark';
 }
 
 const FORMAT_LABELS: Record<string, string> = {
@@ -31,6 +32,7 @@ export function BuildTokensPanel({
   collectionName,
   themeLabel,
   darkTokens,
+  colorMode,
 }: BuildTokensPanelProps) {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -50,7 +52,7 @@ export function BuildTokensPanel({
       const res = await fetch('/api/build-tokens', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ tokens, namespace, collectionName, ...(themeLabel ? { themeLabel } : {}), ...(darkTokens ? { darkTokens } : {}) }),
+        body: JSON.stringify({ tokens, namespace, collectionName, ...(themeLabel ? { themeLabel } : {}), ...(darkTokens ? { darkTokens } : {}), ...(colorMode ? { colorMode } : {}) }),
       });
 
       if (!res.ok) {
@@ -71,7 +73,7 @@ export function BuildTokensPanel({
     } finally {
       setLoading(false);
     }
-  }, [tokens, namespace, collectionName, themeLabel, darkTokens]);
+  }, [tokens, namespace, collectionName, themeLabel, darkTokens, colorMode]);
 
   // Auto-run build when tokens change
   useEffect(() => {
