@@ -3,12 +3,12 @@ gsd_state_version: 1.0
 milestone: v1.4
 milestone_name: Theme Token Sets
 status: complete
-last_updated: "2026-03-21T00:00:00Z"
+last_updated: "2026-03-25T00:00:00Z"
 progress:
   total_phases: 3
   completed_phases: 0
   total_plans: 0
-  completed_plans: 5
+  completed_plans: 6
 ---
 
 # Project State
@@ -18,16 +18,16 @@ progress:
 See: .planning/PROJECT.md (updated 2026-03-19)
 
 **Core value:** Token collections are always available and editable: stored in MongoDB, accessible via collection-scoped URLs, with per-collection Figma/GitHub config, full CRUD from the collections grid, Figma import/export fully integrated, and a Themes system for filtering active token groups.
-**Current focus:** Phase 13 Groups Ordering Drag and Drop — COMPLETE
+**Current focus:** Phase 14 Dark Mode Support — In Progress
 
 ## Current Position
 
-Phase: 13 of 13 (Groups Ordering Drag and Drop) — Complete
-Plan: 03 complete — all tasks done, human verification approved
-Status: Complete
-Last activity: 2026-03-21 — 13-03 Task 2 human verification approved; Phase 13 complete
+Phase: 14 of 14 (Dark Mode Support) — In Progress
+Plan: 01 complete — 2 tasks done
+Status: In Progress
+Last activity: 2026-03-25 — 14-01 complete: ColorMode type + ITheme.colorMode + POST/PUT colorMode support
 
-Progress: [█████] Phase 13 complete (3/3 plans done)
+Progress: [█▒▒▒] Phase 14 in progress (1/3 plans done)
 
 ## Performance Metrics
 
@@ -54,6 +54,7 @@ Progress: [█████] Phase 13 complete (3/3 plans done)
 | Phase 13-groups-ordering-drag-and-drop P01 | ~3 min | 2 tasks | 3 files |
 | Phase 13-groups-ordering-drag-and-drop P02 | ~1 min | 1 tasks | 1 files |
 | Phase 13-groups-ordering-drag-and-drop P03 | ~10min | 2 tasks | 2 files |
+| Phase 14-dark-mode-support P01 | ~2 min | 2 tasks | 3 files |
 
 ## Accumulated Context
 
@@ -102,6 +103,9 @@ Key decisions relevant to v1.4:
 - [Phase 13-03]: Undo stack via useRef (not useState) — no re-renders from stack mutations; max 20 steps
 - [Phase 13-03]: Two-call pattern: TokenGroupTree calls applyGroupMove without themes (optimistic UI), page re-calls with themes (authoritative cascade)
 - [Phase 13-groups-ordering-drag-and-drop]: Human verification gate for Phase 13 complete drag-and-drop feature set — all 8 scenarios approved by user on 2026-03-21
+- [Phase 14-01]: colorMode typed as non-optional (required) on ITheme — backward compat handled via ?? 'light' at DB read sites; no migration script needed
+- [Phase 14-01]: POST handler validates colorMode against ['light','dark'] allowlist, defaults to 'light' — graceful default, no 400 on omission
+- [Phase 14-01]: PUT handler does not add runtime colorMode validation — body type ColorMode constrains it at TypeScript level
 
 ### Pending Todos
 
@@ -114,6 +118,6 @@ None.
 
 ## Session Continuity
 
-Last session: 2026-03-21
-Stopped at: Completed Phase 13 plan 03 — human verification approved; Phase 13 Groups Ordering Drag and Drop complete
+Last session: 2026-03-25
+Stopped at: Completed Phase 14 plan 01 — ColorMode type and theme API colorMode support
 Resume file: None

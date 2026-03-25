@@ -161,7 +161,7 @@ Plans:
 **Goal:** Each theme carries a colorMode (light/dark), visible as a badge in the UI, selectable at theme creation, and used at export time to produce combined CSS files and Figma variable mode groupings
 **Depends on:** Phase 13
 **Requirements:** DARK-01, DARK-02, DARK-03, DARK-04, DARK-05, DARK-06
-**Plans:** 5 plans
+**Plans:** 1/5 plans executed
 
 Plans:
 - [ ] 14-01-PLAN.md — Add ColorMode type + colorMode field to ITheme; POST/PUT theme routes accept colorMode
