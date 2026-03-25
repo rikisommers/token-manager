@@ -23,11 +23,11 @@ See: .planning/PROJECT.md (updated 2026-03-19)
 ## Current Position
 
 Phase: 14 of 14 (Dark Mode Support) — In Progress
-Plan: 01 complete — 2 tasks done
+Plan: 04 complete — 1 task done
 Status: In Progress
-Last activity: 2026-03-25 — 14-01 complete: ColorMode type + ITheme.colorMode + POST/PUT colorMode support
+Last activity: 2026-03-25 — 14-04 complete: Figma export colorMode-aware Light/Dark mode pairing
 
-Progress: [█▒▒▒] Phase 14 in progress (1/3 plans done)
+Progress: [████] Phase 14 in progress (4/4 plans done)
 
 ## Performance Metrics
 
@@ -55,6 +55,7 @@ Progress: [█▒▒▒] Phase 14 in progress (1/3 plans done)
 | Phase 13-groups-ordering-drag-and-drop P02 | ~1 min | 1 tasks | 1 files |
 | Phase 13-groups-ordering-drag-and-drop P03 | ~10min | 2 tasks | 2 files |
 | Phase 14-dark-mode-support P01 | ~2 min | 2 tasks | 3 files |
+| Phase 14-dark-mode-support P04 | ~3 min | 1 tasks | 1 files |
 
 ## Accumulated Context
 
@@ -106,6 +107,9 @@ Key decisions relevant to v1.4:
 - [Phase 14-01]: colorMode typed as non-optional (required) on ITheme — backward compat handled via ?? 'light' at DB read sites; no migration script needed
 - [Phase 14-01]: POST handler validates colorMode against ['light','dark'] allowlist, defaults to 'light' — graceful default, no 400 on omission
 - [Phase 14-01]: PUT handler does not add runtime colorMode validation — body type ColorMode constrains it at TypeScript level
+- [Phase 14-04]: buildMultiModePayload uses first pair with both light+dark as primary — multiple pairs with different group structures not yet multi-collection (Figma API limitation)
+- [Phase 14-04]: buildSingleModePayload extracted from Phase 12 loop — formalized as named fallback for collections without paired themes
+- [Phase 14-04]: theme.colorMode ?? 'light' defensive fallback in pairThemesByColorMode — backward compat with existing DB documents lacking colorMode
 
 ### Pending Todos
 
@@ -119,5 +123,5 @@ None.
 ## Session Continuity
 
 Last session: 2026-03-25
-Stopped at: Completed Phase 14 plan 01 — ColorMode type and theme API colorMode support
+Stopped at: Completed Phase 14 plan 04 — Figma export colorMode-aware Light/Dark mode pairing
 Resume file: None
