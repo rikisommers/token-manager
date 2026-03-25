@@ -1,7 +1,7 @@
 import { NextResponse } from 'next/server';
 import dbConnect from '@/lib/mongodb';
 import TokenCollection from '@/lib/db/models/TokenCollection';
-import type { ITheme, ThemeGroupState } from '@/types/theme.types';
+import type { ITheme, ThemeGroupState, ColorMode } from '@/types/theme.types';
 import type { CollectionGraphState } from '@/types/graph-state.types';
 
 export async function PUT(
@@ -13,9 +13,10 @@ export async function PUT(
       name?: string;
       groups?: Record<string, ThemeGroupState>;
       graphState?: CollectionGraphState | null;
+      colorMode?: ColorMode;
     };
 
-    if (body.name === undefined && body.groups === undefined && body.graphState === undefined) {
+    if (body.name === undefined && body.groups === undefined && body.graphState === undefined && body.colorMode === undefined) {
       return NextResponse.json({ error: 'Nothing to update' }, { status: 400 });
     }
 
@@ -47,6 +48,7 @@ export async function PUT(
       ...(body.name !== undefined ? { name: body.name.trim() } : {}),
       ...(body.groups !== undefined ? { groups: body.groups } : {}),
       ...(body.graphState !== undefined ? { graphState: body.graphState } : {}),
+      ...(body.colorMode !== undefined ? { colorMode: body.colorMode } : {}),
     };
 
     const updatedThemes = [

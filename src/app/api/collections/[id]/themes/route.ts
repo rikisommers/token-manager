@@ -4,7 +4,7 @@ import dbConnect from '@/lib/mongodb';
 import TokenCollection from '@/lib/db/models/TokenCollection';
 import { tokenService } from '@/services/token.service';
 import type { TokenGroup } from '@/types';
-import type { ITheme } from '@/types/theme.types';
+import type { ITheme, ColorMode } from '@/types/theme.types';
 import type { CollectionGraphState } from '@/types/graph-state.types';
 import { remapGraphStateForTheme } from '@/lib/graphStateRemap';
 
@@ -32,7 +32,7 @@ export async function POST(
   { params }: { params: { id: string } }
 ) {
   try {
-    const body = await request.json() as { name?: string };
+    const body = await request.json() as { name?: string; colorMode?: string };
 
     if (!body.name || typeof body.name !== 'string' || body.name.trim() === '') {
       return NextResponse.json({ error: 'name is required' }, { status: 400 });
@@ -71,6 +71,13 @@ export async function POST(
 
     const defaultState = 'enabled';
 
+    const validColorModes = ['light', 'dark'] as const;
+    const colorMode: ColorMode = (
+      body.colorMode && validColorModes.includes(body.colorMode as ColorMode)
+        ? body.colorMode as ColorMode
+        : 'light'
+    );
+
     // Inherit graph state from collection default (deep clone) and remap node IDs
     // so each theme has unique graph nodes (themes are separate entities; groups linked by source)
     const collectionGraphState = (collection.graphState ?? {}) as CollectionGraphState;
@@ -83,6 +90,7 @@ export async function POST(
     const theme: ITheme = {
       id: themeId,
       name: body.name.trim(),
+      colorMode,
       groups: Object.fromEntries(groupIds.map((gid) => [gid, defaultState])),
       tokens: groupTree,  // full tree snapshot — not the flat list
       graphState,
