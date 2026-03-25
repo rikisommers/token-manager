@@ -204,6 +204,7 @@ export default function CollectionThemesPage({ params }: ThemesPageProps) {
                 theme={selectedTheme}
                 groups={masterGroups}
                 onStateChange={handleStateChange}
+                onColorModeChange={handleColorModeChange}
               />
             </>
           ) : (
