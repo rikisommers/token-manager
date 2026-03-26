@@ -2,7 +2,7 @@
 
 import { useState, useEffect, useRef, useCallback, useMemo } from 'react';
 import { useRouter } from 'next/navigation';
-import { Info, MoreHorizontal, RotateCcw, Save, Sun, Moon } from 'lucide-react';
+import { Info, MoreHorizontal, RotateCcw, Save, Sun, Moon, Eye, Download, EllipsisVertical } from 'lucide-react';
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuSeparator, DropdownMenuTrigger } from '@/components/ui/dropdown-menu';
 import { ToastNotification } from '@/components/layout/ToastNotification';
 import { SaveCollectionDialog } from '@/components/collections/SaveCollectionDialog';
@@ -16,6 +16,7 @@ import { GroupBreadcrumb } from '@/components/tokens/GroupBreadcrumb';
 import { TokenGraphPanel } from '@/components/graph/TokenGraphPanel';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
+import { Badge } from '@/components/ui/badge';
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 import { ResizablePanelGroup, ResizablePanel, ResizableHandle } from '@/components/ui/resizable';
 import { Select, SelectTrigger, SelectValue, SelectContent, SelectItem } from '@/components/ui/select';
@@ -31,7 +32,13 @@ import {
   compareTokenPaths,
   type TokenPathMismatch,
 } from '@/utils/graphTokenPaths';
-import { tokenService } from '@/services/token.service';
+import { tokenService, githubService, fileService } from '@/services';
+import { GitHubDirectoryPicker } from '@/components/github/GitHubDirectoryPicker';
+import { ExportToFigmaDialog } from '@/components/figma/ExportToFigmaDialog';
+import { LoadCollectionDialog } from '@/components/collections/LoadCollectionDialog';
+import { ClearFormDialog } from '@/components/tokens/ClearFormDialog';
+import { JsonPreviewDialog } from '@/components/dev/JsonPreviewDialog';
+import type { GitHubConfig } from '@/types';
 
 
 /** Pure helper: update a single token value within a recursive group tree */
@@ -83,8 +90,19 @@ export default function CollectionTokensPage({ params }: TokensPageProps) {
   const [importFigmaOpen, setImportFigmaOpen] = useState(false);
   const [deleteOpen, setDeleteOpen] = useState(false);
   const [renameOpen, setRenameOpen] = useState(false);
+  const [editOpen, setEditOpen] = useState(false);
   const [selectedSourceMetadata, setSelectedSourceMetadata] = useState<ISourceMetadata | null>(null);
   const [generateTabTokens, setGenerateTabTokens] = useState<Record<string, unknown> | null>(null);
+  
+  // GitHub and export/import state
+  const [showDirectoryPicker, setShowDirectoryPicker] = useState(false);
+  const [directoryPickerMode, setDirectoryPickerMode] = useState<'export' | 'import'>('export');
+  const [availableBranches, setAvailableBranches] = useState<string[]>([]);
+  const [showExportFigmaDialog, setShowExportFigmaDialog] = useState(false);
+  const [showLoadDialog, setShowLoadDialog] = useState(false);
+  const [showClearDialog, setShowClearDialog] = useState(false);
+  const [showJsonDialog, setShowJsonDialog] = useState(false);
+  const [githubConfig] = useState<GitHubConfig | null>(null); // TODO: Get from user settings/config
   const [collectionGraphState, setCollectionGraphState] = useState<CollectionGraphState>({});
   const [graphStateMap, setGraphStateMap] = useState<CollectionGraphState>({});
 
@@ -176,7 +194,7 @@ export default function CollectionTokensPage({ params }: TokensPageProps) {
   const [guideOpen, setGuideOpen] = useState(false);
   const [isAddingGroup, setIsAddingGroup] = useState(false);
   const [newGroupName, setNewGroupName] = useState('');
-  const [sidebarCollapsed, setSidebarCollapsed] = useState(true);
+  const [sidebarCollapsed, setSidebarCollapsed] = useState(false);
 
   const abortControllerRef = useRef<AbortController | null>(null);
 
@@ -259,6 +277,12 @@ export default function CollectionTokensPage({ params }: TokensPageProps) {
   const handleRenamed = (newName: string) => {
     setCollectionName(newName);
     setToast({ message: `Renamed to "${newName}"`, type: 'success' });
+  };
+
+  const handleEdited = (newName: string, newNamespace: string) => {
+    setCollectionName(newName);
+    setGlobalNamespace(newNamespace);
+    setToast({ message: `Updated collection settings`, type: 'success' });
   };
 
   const handleDuplicated = (newId: string, newName: string) => {
@@ -721,6 +745,192 @@ export default function CollectionTokensPage({ params }: TokensPageProps) {
     setIsAddingGroup(false);
   };
 
+  // ── GitHub and Export/Import Functions ─────────────────────────────────────
+
+  const generateTokenSet = () => {
+    const tokensPayload = generateTabTokens ?? rawCollectionTokens ?? {};
+    return tokensPayload;
+  };
+
+  const loadBranches = async () => {
+    if (!githubConfig) {
+      console.warn('No GitHub config available for loading branches');
+      return;
+    }
+
+    try {
+      console.log('Loading branches for repository:', githubConfig.repository);
+      const branches = await githubService.getBranches(
+        githubConfig.token,
+        githubConfig.repository,
+      );
+      const branchNames = branches.map((branch) => branch.name);
+      setAvailableBranches(branchNames);
+    } catch (error) {
+      console.error('Failed to load branches:', error);
+      throw error;
+    }
+  };
+
+  const exportToGitHub = async () => {
+    console.log('GitHub config check:', githubConfig);
+    if (!githubConfig) {
+      setToast({ message: 'Please configure GitHub connection first', type: 'error' });
+      return;
+    }
+
+    try {
+      await loadBranches();
+    } catch (error) {
+      console.warn('Failed to load branches, continuing with export:', error);
+      // Continue anyway - the directory picker can work with the configured branch
+      if (availableBranches.length === 0 && githubConfig.branch) {
+        setAvailableBranches([githubConfig.branch]);
+      }
+    }
+
+    setDirectoryPickerMode('export');
+    setShowDirectoryPicker(true);
+  };
+
+  const importFromGitHub = async () => {
+    console.log('GitHub config check:', githubConfig);
+    if (!githubConfig) {
+      setToast({ message: 'Please configure GitHub connection first', type: 'error' });
+      return;
+    }
+
+    try {
+      await loadBranches();
+    } catch (error) {
+      console.warn('Failed to load branches, continuing with import:', error);
+      // Continue anyway - the directory picker can work with the configured branch
+      if (availableBranches.length === 0 && githubConfig.branch) {
+        setAvailableBranches([githubConfig.branch]);
+      }
+    }
+
+    setDirectoryPickerMode('import');
+    setShowDirectoryPicker(true);
+  };
+
+  const exportToFigma = () => {
+    setShowExportFigmaDialog(true);
+  };
+
+  const handleDownloadJSON = () => {
+    const tokensPayload = generateTabTokens ?? rawCollectionTokens ?? {};
+    const content = JSON.stringify(tokensPayload, null, 2);
+    
+    // Create and trigger download
+    const blob = new Blob([content], { type: 'application/json' });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = 'design-tokens.json';
+    document.body.appendChild(a);
+    a.click();
+    document.body.removeChild(a);
+    URL.revokeObjectURL(url);
+    
+    setToast({ message: 'JSON downloaded successfully', type: 'success' });
+  };
+
+  const handleClearForm = () => {
+    // Reset to initial state with single color group
+    const initialTokens = {};
+    setGenerateTabTokens(initialTokens);
+    generateTabTokensRef.current = initialTokens;
+    setGlobalNamespace('');
+    setShowClearDialog(false);
+    setToast({ message: 'Form cleared successfully!', type: 'success' });
+  };
+
+  const handlePreviewJSON = () => {
+    setShowJsonDialog(true);
+  };
+
+  const handleDownloadJSONFromHeader = () => {
+    const tokensPayload = generateTabTokens ?? rawCollectionTokens ?? {};
+    const content = JSON.stringify(tokensPayload, null, 2);
+    
+    // Create and trigger download
+    const blob = new Blob([content], { type: 'application/json' });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = 'design-tokens.json';
+    document.body.appendChild(a);
+    a.click();
+    document.body.removeChild(a);
+    URL.revokeObjectURL(url);
+    
+    setToast({ message: 'JSON downloaded successfully', type: 'success' });
+  };
+
+  const handleDirectorySelect = async (selectedPath: string, selectedBranch: string) => {
+    setShowDirectoryPicker(false);
+
+    if (!githubConfig) return;
+
+    const isImportMode = directoryPickerMode === 'import';
+
+    try {
+      if (directoryPickerMode === 'export') {
+        // Export mode
+        const tokenSet = generateTokenSet();
+        const response = await fetch('/api/export/github', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            tokenSet,
+            repository: githubConfig.repository,
+            githubToken: githubConfig.token,
+            branch: selectedBranch,
+            path: selectedPath,
+          }),
+        });
+
+        if (response.ok) {
+          setToast({ message: 'Successfully exported to GitHub!', type: 'success' });
+        } else {
+          const error = await response.text();
+          setToast({ message: `Export failed: ${error}`, type: 'error' });
+        }
+      } else {
+        // Import mode
+        const response = await fetch('/api/import/github', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            repository: githubConfig.repository,
+            githubToken: githubConfig.token,
+            branch: selectedBranch,
+            path: selectedPath,
+          }),
+        });
+
+        if (response.ok) {
+          const { tokenSet } = await response.json();
+          
+          // Update the form with imported tokens
+          setGenerateTabTokens(tokenSet);
+          generateTabTokensRef.current = tokenSet;
+          
+          setToast({ message: 'Successfully imported from GitHub!', type: 'success' });
+        } else {
+          const error = await response.text();
+          setToast({ message: `Import failed: ${error}`, type: 'error' });
+        }
+      }
+    } catch (error) {
+      setToast({ 
+        message: `${isImportMode ? 'Import' : 'Export'} failed: ${error instanceof Error ? error.message : 'Unknown error'}`, 
+        type: 'error' 
+      });
+    }
+  };
+
   if (loading) {
     return (
       <div className="flex items-center justify-center h-full py-24">
@@ -732,32 +942,153 @@ export default function CollectionTokensPage({ params }: TokensPageProps) {
   return (
     <div className="flex flex-col h-screen overflow-hidden">
 
-      <header className="p-6 flex justify-between">
-        <h1 className="text-xl">{collectionName}</h1>
+      <header className="px-6 py-3 flex justify-between items-center border border-b border-gray-200">
+       <div className="flex items-center gap-2">  
+        <h1 className="text-xl">
+          {collectionName}
+       
+        </h1>
+        <Badge variant="secondary">Prefix:{globalNamespace}</Badge>
+        </div> 
+        <div className="flex gap-2 items-center">
+          {/* Info/Generator Guide button */}
+          <Button
+            variant="outline"
+            size="sm"
+            className="px-2"
+            onClick={() => setGuideOpen(true)}
+            title="Generator Guide"
+          >
+            <Info size={16} />
+          </Button>
 
-        <div className="flex flex-col gap-1">
-          <label className="text-xs text-black whitespace-nowrap">Namespace:</label>
-          <Input
-              value={globalNamespace}
-              onChange={(e) => setGlobalNamespace(e.target.value)}
-              className="w-32 h-8 text-sm"
-              placeholder="e.g. token"
-          />
+          {/* Preview JSON button */}
+          <Button
+            variant="outline"
+            size="sm"
+            className="px-2"
+            onClick={handlePreviewJSON}
+            title="Preview JSON"
+          >
+            <Eye size={16} />
+          </Button>
+
+          {/* Download JSON button */}
+          <Button
+            variant="outline"
+            size="sm"
+            className="px-2"
+            onClick={handleDownloadJSONFromHeader}
+            title="Download JSON"
+          >
+            <Download size={16} />
+          </Button>
+
+          {/* Save button */}
+          <Button 
+            onClick={handleSave} 
+            disabled={isSaving}
+            className="bg-blue-600 hover:bg-blue-700 text-white gap-1"
+            size="sm"
+          >
+            <Save size={14} />
+            {isSaving ? 'Saving…' : 'Save'}
+          </Button>
+
+          {/* More actions dropdown */}
+          <DropdownMenu>
+            <DropdownMenuTrigger asChild>
+              <Button variant="outline" size="sm" className="px-2">
+                <EllipsisVertical size={16} />
+              </Button>
+            </DropdownMenuTrigger>
+            <DropdownMenuContent align="end">
+              <DropdownMenuItem onClick={() => setSaveAsDialogOpen(true)}>
+                Save As
+              </DropdownMenuItem>
+              <DropdownMenuItem onClick={() => setShowLoadDialog(true)}>
+                Load from Database
+              </DropdownMenuItem>
+              <DropdownMenuSeparator />
+              <DropdownMenuItem onClick={() => setImportFigmaOpen(true)}>
+                Import from Figma
+              </DropdownMenuItem>
+              <DropdownMenuItem onClick={importFromGitHub}>
+                Import from GitHub
+              </DropdownMenuItem>
+              <DropdownMenuItem onClick={exportToGitHub}>
+                Push to GitHub
+              </DropdownMenuItem>
+              <DropdownMenuItem onClick={exportToFigma}>
+                Export to Figma
+              </DropdownMenuItem>
+              <DropdownMenuSeparator />
+            <DropdownMenuItem onClick={() => setEditOpen(true)}>
+              Edit
+            </DropdownMenuItem>
+              <DropdownMenuSeparator />
+              <DropdownMenuItem onClick={() => setShowClearDialog(true)} className="text-amber-600 focus:text-amber-600 focus:bg-amber-50">
+                Clear Form
+              </DropdownMenuItem>
+              <DropdownMenuItem
+                onClick={() => setDeleteOpen(true)}
+                className="text-red-600 focus:text-red-600 focus:bg-red-50"
+              >
+                Delete
+              </DropdownMenuItem>
+            </DropdownMenuContent>
+          </DropdownMenu>
         </div>
-
       </header>
 
-      <div className="flex items-center gap-2 border-b border-gray-200 px-6 py-3 flex-shrink-0">
 
-        {themes.length > 0 && (
-            <div className="flex items-center gap-2">
-              <label className="text-sm text-gray-600 whitespace-nowrap">Theme:</label>
+
+      {/* Dialogs driven by the dropdown */}
+      <CollectionActions
+        selectedId={id}
+        selectedName={collectionName}
+        selectedNamespace={globalNamespace}
+        collections={[{ _id: id, name: collectionName }]}
+        onDeleted={handleDeleted}
+        onRenamed={handleRenamed}
+        onEdited={handleEdited}
+        onDuplicated={handleDuplicated}
+        onError={(msg) => setToast({ message: msg, type: 'error' })}
+        deleteOpen={deleteOpen}
+        onDeleteOpenChange={setDeleteOpen}
+        editOpen={editOpen}
+        onEditOpenChange={setEditOpen}
+        renameOpen={renameOpen}
+        onRenameOpenChange={setRenameOpen}
+      />
+
+      <SourceContextBar sourceMetadata={selectedSourceMetadata} />
+
+
+
+      {/* Master-detail layout */}
+      <div className="flex flex-1 overflow-hidden">
+        {/* Master: token groups sidebar — collapsible */}
+        <aside
+          className={`border-r border-gray-200 bg-gray-50 flex-shrink-0 flex flex-col transition-all duration-200 w-56`}
+    
+        >
+         
+         {themes.length > 0 && (
+         <div className="flex flex-col gap-1 py-4">
+          <div className="px-4 flex items-center justify-between flex-shrink-0">
+            <span className="text-xs font-semibold text-gray-500 uppercase tracking-wider">Themes</span>
+          </div>
+
+
+          <div className="flex flex-col px-3">
+              {/* <label className="text-xs text-black whitespace-nowrap">Theme:</label> */}
             <Select
               key={activeThemeId ?? '__default__'}
               value={activeThemeId ?? '__default__'}
               onValueChange={(v) => handleThemeChange(v === '__default__' ? null : v)}
             >
-              <SelectTrigger className="w-36 h-8 text-sm">
+              <SelectTrigger className="w-full h-8 text-sm">
                 <SelectValue placeholder="Default" />
               </SelectTrigger>
               <SelectContent>
@@ -773,93 +1104,11 @@ export default function CollectionTokensPage({ params }: TokensPageProps) {
               </SelectContent>
             </Select>
           </div>
+          </div>
         )}
-
-        {/* Spacer */}
-        <div className="flex-1" />
-
-        {/* More actions dropdown */}
-        <DropdownMenu>
-          <DropdownMenuTrigger asChild>
-            <Button variant="outline" size="sm" className="px-2">
-              <MoreHorizontal size={16} />
-            </Button>
-          </DropdownMenuTrigger>
-          <DropdownMenuContent align="end">
-            <DropdownMenuItem onClick={() => setSaveAsDialogOpen(true)}>
-              Save As
-            </DropdownMenuItem>
-            <DropdownMenuItem onClick={() => setImportFigmaOpen(true)}>
-              Import from Figma
-            </DropdownMenuItem>
-            <DropdownMenuSeparator />
-            <DropdownMenuItem onClick={() => setRenameOpen(true)}>
-              Rename
-            </DropdownMenuItem>
-            <DropdownMenuSeparator />
-            <DropdownMenuItem
-              onClick={() => setDeleteOpen(true)}
-              className="text-red-600 focus:text-red-600 focus:bg-red-50"
-            >
-              Delete
-            </DropdownMenuItem>
-            <DropdownMenuSeparator />
-            <DropdownMenuItem onClick={() => setGuideOpen(true)}>
-              <Info size={14} className="mr-2" />
-              Generator Guide
-            </DropdownMenuItem>
-          </DropdownMenuContent>
-        </DropdownMenu>
-
-        {/* Primary action */}
-        <Button size="sm" onClick={handleSave} disabled={isSaving} className="gap-1.5">
-          <Save size={14} />
-          {isSaving ? 'Saving…' : 'Save'}
-        </Button>
-      </div>
-
-      {/* Dialogs driven by the dropdown */}
-      <CollectionActions
-        selectedId={id}
-        selectedName={collectionName}
-        collections={[{ _id: id, name: collectionName }]}
-        onDeleted={handleDeleted}
-        onRenamed={handleRenamed}
-        onDuplicated={handleDuplicated}
-        onError={(msg) => setToast({ message: msg, type: 'error' })}
-        deleteOpen={deleteOpen}
-        onDeleteOpenChange={setDeleteOpen}
-        renameOpen={renameOpen}
-        onRenameOpenChange={setRenameOpen}
-      />
-
-      <SourceContextBar sourceMetadata={selectedSourceMetadata} />
-
-      {/* Master-detail layout */}
-      <div className="flex flex-1 overflow-hidden">
-        {/* Master: token groups sidebar — collapsible */}
-        <aside
-          className={`border-r border-gray-200 bg-gray-50 flex-shrink-0 flex flex-col transition-all duration-200 ${sidebarCollapsed ? 'w-10' : 'w-56'}`}
-          onClick={() => { if (!sidebarCollapsed) { setSelectedGroupId(''); setSelectedToken(null); } }}
-        >
-          {sidebarCollapsed ? (
-            /* Collapsed icon strip */
-            <div className="flex flex-col items-center py-3 gap-3">
-              <button
-                className="text-gray-400 hover:text-gray-700 p-1 rounded"
-                onClick={e => { e.stopPropagation(); setSidebarCollapsed(false); }}
-                title="Expand sidebar"
-              >
-                <svg width="16" height="16" viewBox="0 0 16 16" fill="none" stroke="currentColor" strokeWidth="1.5">
-                  <rect x="2" y="3" width="5" height="10" rx="1"/>
-                  <path d="M10 6l3 2-3 2"/>
-                </svg>
-              </button>
-              <span className="text-[9px] text-gray-400 uppercase tracking-widest" style={{ writingMode: 'vertical-rl' }}>Groups</span>
-            </div>
-          ) : (
-            /* Expanded full tree */
             <div className="flex flex-col h-full" onClick={e => e.stopPropagation()}>
+
+
               <TokenGroupTree
                 groups={filteredGroups}
                 selectedGroupId={selectedGroupId}
@@ -884,20 +1133,22 @@ export default function CollectionTokensPage({ params }: TokensPageProps) {
                 </button>
               </div>
             </div>
-          )}
+     
         </aside>
 
         {/* Detail: breadcrumb + split pane */}
         <div className="flex flex-col flex-1 overflow-hidden">
-          <GroupBreadcrumb
+
+          <ResizablePanelGroup orientation="horizontal" className="flex-1 min-h-0">
+            {/* Form panel */}
+            <ResizablePanel defaultSize="60%" minSize="25%">
+              <main className="h-full overflow-y-auto p-6 flex flex-col gap-4">
+
+              <GroupBreadcrumb
             groups={masterGroups}
             selectedGroupId={selectedGroupId}
             onSelect={(id) => { setSelectedGroupId(id); setSelectedToken(null); }}
           />
-          <ResizablePanelGroup orientation="horizontal" className="flex-1 min-h-0">
-            {/* Form panel */}
-            <ResizablePanel defaultSize="60%" minSize="25%">
-              <main className="h-full overflow-y-auto p-6">
                 <TokenGeneratorForm
                   key={`${id}-${activeThemeId ?? 'default'}`}
                   githubConfig={null}
@@ -932,6 +1183,8 @@ export default function CollectionTokensPage({ params }: TokensPageProps) {
                   onResetGroupToSource={activeThemeId ? handleResetGroupToSource : undefined}
                   isGroupSource={activeThemeId ? isGroupSource : undefined}
                   tokenNameMismatch={tokenNameMismatch}
+                  onPreviewJSON={handlePreviewJSON}
+                  onDownloadJSON={handleDownloadJSONFromHeader}
                 />
               </main>
             </ResizablePanel>
@@ -976,6 +1229,58 @@ export default function CollectionTokensPage({ params }: TokensPageProps) {
           setImportFigmaOpen(false);
           setToast({ message: `Imported "${name}" from Figma`, type: 'success' });
         }}
+      />
+
+      {showDirectoryPicker && githubConfig && (
+        <GitHubDirectoryPicker
+          githubToken={githubConfig.token}
+          repository={githubConfig.repository}
+          branch={githubConfig.branch}
+          onSelect={handleDirectorySelect}
+          onCancel={() => setShowDirectoryPicker(false)}
+          mode={directoryPickerMode}
+          availableBranches={availableBranches}
+        />
+      )}
+
+      <ExportToFigmaDialog
+        isOpen={showExportFigmaDialog}
+        onClose={() => setShowExportFigmaDialog(false)}
+        tokenSet={generateTokenSet()}
+      />
+
+      <LoadCollectionDialog
+        isOpen={showLoadDialog}
+        onLoad={async (collectionId: string) => {
+          try {
+            const response = await fetch(`/api/collections/${collectionId}`);
+            if (response.ok) {
+              const { collection } = await response.json();
+              // Update form with loaded collection data
+              setGenerateTabTokens(collection.tokens);
+              generateTabTokensRef.current = collection.tokens;
+              setShowLoadDialog(false);
+              setToast({ message: `Loaded "${collection.name}"`, type: 'success' });
+            } else {
+              setToast({ message: 'Failed to load collection', type: 'error' });
+            }
+          } catch (error) {
+            setToast({ message: 'Failed to load collection', type: 'error' });
+          }
+        }}
+        onCancel={() => setShowLoadDialog(false)}
+      />
+
+      <ClearFormDialog
+        isOpen={showClearDialog}
+        onConfirm={handleClearForm}
+        onCancel={() => setShowClearDialog(false)}
+      />
+
+      <JsonPreviewDialog
+        isOpen={showJsonDialog}
+        onClose={() => setShowJsonDialog(false)}
+        jsonData={generateTabTokens ?? rawCollectionTokens ?? {}}
       />
 
       <Dialog open={isAddingGroup} onOpenChange={(open) => { if (!open) { setIsAddingGroup(false); setNewGroupName(''); } }}>

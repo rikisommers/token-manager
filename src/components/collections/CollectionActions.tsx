@@ -8,15 +8,20 @@ import { Input } from '@/components/ui/input';
 interface CollectionActionsProps {
   selectedId: string;
   selectedName: string;
+  selectedNamespace?: string;
   collections: { _id: string; name: string }[];
   onDeleted: () => void;
   onRenamed: (newName: string) => void;
+  onEdited: (newName: string, newNamespace: string) => void;
   onDuplicated: (newId: string, newName: string) => void;
   onError: (message: string) => void;
   /** Controlled delete dialog state — if provided, dialogs are driven by parent */
   deleteOpen?: boolean;
   onDeleteOpenChange?: (open: boolean) => void;
-  /** Controlled rename dialog state — if provided, dialogs are driven by parent */
+  /** Controlled edit dialog state — if provided, dialogs are driven by parent */
+  editOpen?: boolean;
+  onEditOpenChange?: (open: boolean) => void;
+  /** Legacy rename support - will be removed */
   renameOpen?: boolean;
   onRenameOpenChange?: (open: boolean) => void;
 }
@@ -24,32 +29,49 @@ interface CollectionActionsProps {
 export function CollectionActions({
   selectedId,
   selectedName,
+  selectedNamespace = '',
   collections,
   onDeleted,
   onRenamed,
+  onEdited,
   onDuplicated,
   onError,
   deleteOpen,
   onDeleteOpenChange,
+  editOpen,
+  onEditOpenChange,
   renameOpen,
   onRenameOpenChange,
 }: CollectionActionsProps) {
-  const controlled = deleteOpen !== undefined || renameOpen !== undefined;
+  const controlled = deleteOpen !== undefined || editOpen !== undefined || renameOpen !== undefined;
 
   const [showDeleteModal, setShowDeleteModal] = useState(false);
   const [showRenameModal, setShowRenameModal] = useState(false);
+  const [showEditModal, setShowEditModal] = useState(false);
   const [isDeleting, setIsDeleting] = useState(false);
   const [isRenaming, setIsRenaming] = useState(false);
+  const [isEditing, setIsEditing] = useState(false);
   const [renameValue, setRenameValue] = useState('');
+  const [editNameValue, setEditNameValue] = useState('');
+  const [editNamespaceValue, setEditNamespaceValue] = useState('');
 
   const deleteModalOpen = controlled ? (deleteOpen ?? false) : showDeleteModal;
   const setDeleteModalOpen = controlled ? (onDeleteOpenChange ?? (() => {})) : setShowDeleteModal;
   const renameModalOpen = controlled ? (renameOpen ?? false) : showRenameModal;
   const setRenameModalOpen = controlled ? (onRenameOpenChange ?? (() => {})) : setShowRenameModal;
+  const editModalOpen = controlled ? (editOpen ?? false) : showEditModal;
+  const setEditModalOpen = controlled ? (onEditOpenChange ?? (() => {})) : setShowEditModal;
 
   useEffect(() => {
     if (renameModalOpen) setRenameValue(selectedName);
   }, [renameModalOpen, selectedName]);
+
+  useEffect(() => {
+    if (editModalOpen) {
+      setEditNameValue(selectedName);
+      setEditNamespaceValue(selectedNamespace);
+    }
+  }, [editModalOpen, selectedName, selectedNamespace]);
 
   if (!selectedId || selectedId === 'local' || collections.length === 0) {
     return null;
@@ -102,6 +124,36 @@ export function CollectionActions({
     }
   };
 
+  // --- Edit ---
+  const editNameTrimmed = editNameValue.trim();
+  const editNamespaceTrimed = editNamespaceValue.trim();
+  const editNameIsDuplicate =
+    editNameTrimmed !== '' && collections.some((c) => c.name === editNameTrimmed && c._id !== selectedId);
+  const editIsUnchanged = editNameTrimmed === selectedName && editNamespaceTrimed === selectedNamespace;
+  const editSaveDisabled = isEditing || !editNameTrimmed || editNameIsDuplicate || editIsUnchanged;
+
+  const handleEdit = async () => {
+    if (editSaveDisabled) return;
+    setIsEditing(true);
+    try {
+      const res = await fetch(`/api/collections/${selectedId}`, {
+        method: 'PUT',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ name: editNameTrimmed, namespace: editNamespaceTrimed }),
+      });
+      if (res.ok) {
+        setEditModalOpen(false);
+        onEdited(editNameTrimmed, editNamespaceTrimed);
+      } else {
+        onError('Failed to update collection');
+      }
+    } catch {
+      onError('Failed to update collection');
+    } finally {
+      setIsEditing(false);
+    }
+  };
+
   return (
     <>
       {/* Uncontrolled trigger buttons — only when not driven by parent dropdown */}
@@ -114,6 +166,9 @@ export function CollectionActions({
             className="text-red-600 border-red-300 hover:bg-red-50"
           >
             Delete
+          </Button>
+          <Button variant="outline" size="sm" onClick={() => setShowEditModal(true)}>
+            Edit
           </Button>
           <Button variant="outline" size="sm" onClick={() => setShowRenameModal(true)}>
             Rename
@@ -174,6 +229,64 @@ export function CollectionActions({
             </Button>
             <Button onClick={handleRename} disabled={renameSaveDisabled}>
               {isRenaming ? 'Saving...' : 'Save'}
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
+      {/* ---- Edit Dialog ---- */}
+      <Dialog open={editModalOpen} onOpenChange={setEditModalOpen}>
+        <DialogContent className="w-full max-w-md">
+          <DialogHeader>
+            <DialogTitle>Edit Collection</DialogTitle>
+          </DialogHeader>
+          <div className="space-y-4">
+            <div className="space-y-2">
+              <label className="block text-sm font-medium text-gray-700">Collection name</label>
+              <Input
+                type="text"
+                value={editNameValue}
+                onChange={(e) => setEditNameValue(e.target.value)}
+                onKeyDown={(e) => {
+                  if (e.key === 'Enter' && !editSaveDisabled) handleEdit();
+                  if (e.key === 'Escape') setEditModalOpen(false);
+                }}
+                autoFocus
+                disabled={isEditing}
+              />
+              {editNameIsDuplicate && (
+                <p className="text-sm text-red-600">
+                  A collection named &ldquo;{editNameTrimmed}&rdquo; already exists.
+                </p>
+              )}
+            </div>
+            
+            <div className="space-y-2">
+              <label className="block text-sm font-medium text-gray-700">Token prefix (namespace)</label>
+              <Input
+                type="text"
+                value={editNamespaceValue}
+                onChange={(e) => setEditNamespaceValue(e.target.value)}
+                onKeyDown={(e) => {
+                  if (e.key === 'Enter' && !editSaveDisabled) handleEdit();
+                  if (e.key === 'Escape') setEditModalOpen(false);
+                }}
+                placeholder="Optional namespace (e.g., 'design', 'token')"
+                disabled={isEditing}
+              />
+              {editNamespaceTrimed && (
+                <p className="text-sm text-gray-600">
+                  Tokens will be prefixed with &ldquo;{editNamespaceTrimed}.&rdquo;
+                </p>
+              )}
+            </div>
+          </div>
+          <DialogFooter>
+            <Button variant="outline" onClick={() => setEditModalOpen(false)} disabled={isEditing}>
+              Cancel
+            </Button>
+            <Button onClick={handleEdit} disabled={editSaveDisabled}>
+              {isEditing ? 'Saving...' : 'Save'}
             </Button>
           </DialogFooter>
         </DialogContent>

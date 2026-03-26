@@ -12,8 +12,8 @@ export function ToastNotification({ toast, onClose }: ToastNotificationProps) {
   }
 
   return (
-    <div className="fixed top-4 right-4 z-50">
-      <div className={`max-w-sm w-full bg-white shadow-lg rounded-lg pointer-events-auto ring-1 ring-black ring-opacity-5 ${
+    <div className="fixed bottom-8 right-8 z-50">
+      <div className={`min-w-[320px] max-w-md w-full bg-white shadow-lg rounded-lg pointer-events-auto ring-1 ring-black ring-opacity-5 ${
         toast.type === 'success' ? 'border-l-4 border-green-400' :
         toast.type === 'error' ? 'border-l-4 border-red-400' :
         'border-l-4 border-blue-400'
@@ -29,8 +29,8 @@ export function ToastNotification({ toast, onClose }: ToastNotificationProps) {
                 <div className="w-5 h-5 text-blue-400">ℹ</div>
               )}
             </div>
-            <div className="ml-3 w-0 flex-1">
-              <p className="text-sm font-medium text-gray-900">
+            <div className="ml-3 flex-1 min-w-0">
+              <p className="text-sm font-medium text-gray-900 break-words">
                 {toast.message}
               </p>
             </div>

@@ -183,11 +183,11 @@ export function TokenTable({ section, tokens, onSave }: TokenTableProps) {
       <div className="overflow-x-auto">
         {Object.entries(groupedTokens).map(([filePath, fileTokens]) => (
           <div key={filePath} className="border-b border-gray-100 last:border-b-0">
-            <div className="px-6 py-3 bg-gray-50 border-b border-gray-200">
+            <div className="px-6 py-3 bg-gray-50">
               <h3 className="text-sm font-medium text-gray-700">{filePath}</h3>
             </div>
-            <table className="min-w-full">
-              <thead className="bg-gray-50">
+            <table className="min-w-full table-auto">
+              <thead>
                 <tr>
                   <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
                     Token Name
@@ -218,7 +218,7 @@ export function TokenTable({ section, tokens, onSave }: TokenTableProps) {
                           )}
                         </div>
                       </td>
-                      <td className="px-6 py-4 whitespace-nowrap">
+                      <td className="px-6 py-4 whitespace-nowrap w-[120px]">
                         {isColor ? (
                           <ColorSwatch
                             value={currentValue}
@@ -227,6 +227,7 @@ export function TokenTable({ section, tokens, onSave }: TokenTableProps) {
                           />
                         ) : (
                           <TextInput
+                           
                             value={currentValue}
                             onChange={(newValue) => updateToken(tokenGroup, newValue)}
                             type={tokenGroup.token.type}

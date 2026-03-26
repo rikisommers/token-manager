@@ -1,20 +1,27 @@
-'use client';
+"use client";
 
-import React, { useState, useEffect, useRef, useCallback } from 'react';
-import { HexColorPicker, HexColorInput } from 'react-colorful';
-import { ChevronDown, ChevronUp, Trash2, RotateCcw, Lock } from 'lucide-react';
-import { GitHubDirectoryPicker } from '@/components/github/GitHubDirectoryPicker';
-import { LoadingIndicator } from '@/components/layout/LoadingIndicator';
-import { ToastNotification } from '@/components/layout/ToastNotification';
-import { JsonPreviewDialog } from '@/components/dev/JsonPreviewDialog';
-import { SaveCollectionDialog } from '@/components/collections/SaveCollectionDialog';
-import { LoadCollectionDialog } from '@/components/collections/LoadCollectionDialog';
-import { ExportToFigmaDialog } from '@/components/figma/ExportToFigmaDialog';
-import { TokenReferencePicker } from '@/components/tokens/TokenReferencePicker';
-import { Button } from '@/components/ui/button';
-import { Input } from '@/components/ui/input';
-import { Select, SelectTrigger, SelectContent, SelectItem, SelectValue } from '@/components/ui/select';
-import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
+import React, { useState, useEffect, useRef, useCallback } from "react";
+import { HexColorPicker, HexColorInput } from "react-colorful";
+import { ChevronDown, ChevronUp, Trash2, RotateCcw, Lock, EllipsisVertical } from "lucide-react";
+import { LoadingIndicator } from "@/components/layout/LoadingIndicator";
+import { ToastNotification } from "@/components/layout/ToastNotification";
+import { JsonPreviewDialog } from "@/components/dev/JsonPreviewDialog";
+import { LoadCollectionDialog } from "@/components/collections/LoadCollectionDialog";
+import { TokenReferencePicker } from "@/components/tokens/TokenReferencePicker";
+import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
+import {
+  Select,
+  SelectTrigger,
+  SelectContent,
+  SelectItem,
+  SelectValue,
+} from "@/components/ui/select";
+import {
+  Popover,
+  PopoverContent,
+  PopoverTrigger,
+} from "@/components/ui/popover";
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -23,11 +30,10 @@ import {
   DropdownMenuLabel,
   DropdownMenuSeparator,
   DropdownMenuTrigger,
-} from "@/components/ui/dropdown-menu"
-
+} from "@/components/ui/dropdown-menu";
 
 // Import services and types
-import { githubService, tokenService, fileService } from '../../services';
+import { tokenService, fileService } from "../../services";
 import {
   GeneratedToken,
   TokenGroup,
@@ -35,8 +41,8 @@ import {
   TokenType,
   TOKEN_TYPES,
   ToastMessage,
-  LoadingState
-} from '../../types';
+  LoadingState,
+} from "../../types";
 import {
   generateId,
   buildFullPath,
@@ -48,8 +54,8 @@ import {
   validateTokenValue,
   parseTokenValue,
   countTokensRecursive,
-} from '../../utils';
-import { createToast, createLoadingState } from '../../utils';
+} from "../../utils";
+import { createToast, createLoadingState } from "../../utils";
 
 // ─── TokenTableRow ─────────────────────────────────────────────────────────────
 
@@ -60,10 +66,20 @@ interface TokenTableRowProps {
   selectedTokenId?: string | null;
   isExpanded: boolean;
   onTokenSelect?: (token: GeneratedToken | null, groupPath: string) => void;
-  onUpdateToken: (groupId: string, tokenId: string, field: keyof GeneratedToken, value: unknown) => void;
+  onUpdateToken: (
+    groupId: string,
+    tokenId: string,
+    field: keyof GeneratedToken,
+    value: unknown,
+  ) => void;
   onDeleteToken: (groupId: string, tokenId: string) => void;
   onToggleExpansion: (tokenId: string) => void;
-  onUpdateAttribute: (groupId: string, tokenId: string, key: string, value: string) => void;
+  onUpdateAttribute: (
+    groupId: string,
+    tokenId: string,
+    key: string,
+    value: string,
+  ) => void;
   onRemoveAttribute: (groupId: string, tokenId: string, key: string) => void;
   resolveRef: (value: string) => string;
   getFullPath: (group: TokenGroup, tokenPath: string) => string;
@@ -71,17 +87,31 @@ interface TokenTableRowProps {
   isReadOnly?: boolean;
   isPathLocked?: boolean;
   masterValue?: string;
-  onResetToDefault?: (groupId: string, tokenId: string, masterValue: string) => void;
+  onResetToDefault?: (
+    groupId: string,
+    tokenId: string,
+    masterValue: string,
+  ) => void;
 }
 
 /** Upsert incoming tokens into an existing list, matching by path. Updates value/type of
  *  existing tokens and appends any that are new. */
-function upsertTokensByPath(existing: GeneratedToken[], incoming: GeneratedToken[]): GeneratedToken[] {
-  const result = existing.map(t => {
-    const match = incoming.find(n => n.path === t.path);
-    return match ? { ...t, value: match.value, type: match.type, description: match.description ?? t.description } : t;
+function upsertTokensByPath(
+  existing: GeneratedToken[],
+  incoming: GeneratedToken[],
+): GeneratedToken[] {
+  const result = existing.map((t) => {
+    const match = incoming.find((n) => n.path === t.path);
+    return match
+      ? {
+          ...t,
+          value: match.value,
+          type: match.type,
+          description: match.description ?? t.description,
+        }
+      : t;
   });
-  const existingPaths = new Set(existing.map(t => t.path));
+  const existingPaths = new Set(existing.map((t) => t.path));
   for (const token of incoming) {
     if (!existingPaths.has(token.path)) result.push(token);
   }
@@ -89,10 +119,24 @@ function upsertTokensByPath(existing: GeneratedToken[], incoming: GeneratedToken
 }
 
 function TokenTableRow({
-  token, group, tokenGroups, selectedTokenId, isExpanded,
-  onTokenSelect, onUpdateToken, onDeleteToken, onToggleExpansion,
-  onUpdateAttribute, onRemoveAttribute, resolveRef, getFullPath, parseValue,
-  isReadOnly, isPathLocked, masterValue, onResetToDefault,
+  token,
+  group,
+  tokenGroups,
+  selectedTokenId,
+  isExpanded,
+  onTokenSelect,
+  onUpdateToken,
+  onDeleteToken,
+  onToggleExpansion,
+  onUpdateAttribute,
+  onRemoveAttribute,
+  resolveRef,
+  getFullPath,
+  parseValue,
+  isReadOnly,
+  isPathLocked,
+  masterValue,
+  onResetToDefault,
 }: TokenTableRowProps) {
   const [editingField, setEditingField] = useState<string | null>(null);
   const [colorPickerOpen, setColorPickerOpen] = useState(false);
@@ -104,15 +148,20 @@ function TokenTableRow({
     }
   }, []);
 
-  const enterEdit = useCallback((field: string) => (e: React.MouseEvent) => {
-    e.stopPropagation();
-    setEditingField(field);
-  }, []);
+  const enterEdit = useCallback(
+    (field: string) => (e: React.MouseEvent) => {
+      e.stopPropagation();
+      setEditingField(field);
+    },
+    [],
+  );
 
-  const resolvedValue = resolveRef(token.value?.toString() ?? '');
-  const swatchBg = resolvedValue.startsWith('#') ? resolvedValue
-    : resolvedValue.startsWith('{') ? '#cccccc'
-    : (resolvedValue || '#cccccc');
+  const resolvedValue = resolveRef(token.value?.toString() ?? "");
+  const swatchBg = resolvedValue.startsWith("#")
+    ? resolvedValue
+    : resolvedValue.startsWith("{")
+      ? "#cccccc"
+      : resolvedValue || "#cccccc";
 
   const isSelected = selectedTokenId === token.id;
 
@@ -120,84 +169,111 @@ function TokenTableRow({
     <>
       <tr
         ref={trRef}
-        className={`transition-colors group/row ${isSelected ? 'bg-blue-50 ring-1 ring-inset ring-blue-200' : 'hover:bg-gray-50/60'}`}
+        className={`transition-colors group/row ${isSelected ? "bg-blue-50 ring-1 ring-inset ring-blue-200" : "hover:bg-gray-50/60"}`}
         style={{ height: 36 }}
-        onClick={() => onTokenSelect?.(isSelected ? null : token, group.path ?? group.name)}
+        onFocusCapture={() =>
+          onTokenSelect?.(isSelected ? null : token, group.path ?? group.name)
+        }
       >
         {/* Name */}
         <td className="px-0 py-0 border-r border-gray-100 w-[180px]">
-          {!isPathLocked && editingField === 'path' ? (
+          {!isPathLocked && editingField === "path" ? (
             <Input
               autoFocus
               value={token.path}
-              onChange={e => onUpdateToken(group.id, token.id, 'path', e.target.value)}
+              onChange={(e) =>
+                onUpdateToken(group.id, token.id, "path", e.target.value)
+              }
               onBlur={handleBlur}
-              onClick={e => e.stopPropagation()}
+              onClick={(e) => e.stopPropagation()}
               placeholder="token-name"
               className="h-9 w-full border-0 rounded-none shadow-none focus-visible:ring-1 focus-visible:ring-inset focus-visible:ring-blue-400 font-mono text-xs bg-white"
             />
           ) : (
             <div
-              className={`h-9 flex items-center px-4 font-mono text-sm text-gray-700 ${isReadOnly || isPathLocked ? 'cursor-default' : 'cursor-text'}`}
-              onClick={isReadOnly || isPathLocked ? undefined : enterEdit('path')}
+              className={`h-9 flex items-center px-4 font-mono text-sm text-gray-700 ${isReadOnly || isPathLocked ? "cursor-default" : "cursor-text"}`}
+              onClick={
+                isReadOnly || isPathLocked ? undefined : enterEdit("path")
+              }
             >
-              <span className="truncate">{token.path || <span className="text-gray-300">—</span>}</span>
+              <span className="truncate">
+                {token.path || <span className="text-gray-300">—</span>}
+              </span>
             </div>
           )}
         </td>
 
         {/* Type */}
-        <td className="px-0 py-0 border-r border-gray-100 w-[120px]">
-          {editingField === 'type' ? (
+        <td className="px-0 py-0 border-r border-gray-100 w-[180px]">
+          {editingField === "type" ? (
             <Select
               value={token.type}
-              onValueChange={v => { onUpdateToken(group.id, token.id, 'type', v); setEditingField(null); }}
+              onValueChange={(v) => {
+                onUpdateToken(group.id, token.id, "type", v);
+                setEditingField(null);
+              }}
               open
-              onOpenChange={o => { if (!o) setEditingField(null); }}
+              onOpenChange={(o) => {
+                if (!o) setEditingField(null);
+              }}
             >
               <SelectTrigger
                 className="h-9 w-full border-0 rounded-none shadow-none focus:ring-0 text-xs"
-                onClick={e => e.stopPropagation()}
+                onClick={(e) => e.stopPropagation()}
               >
                 <SelectValue />
               </SelectTrigger>
               <SelectContent>
-                {TOKEN_TYPES.map(t => <SelectItem key={t} value={t}>{t}</SelectItem>)}
+                {TOKEN_TYPES.map((t) => (
+                  <SelectItem key={t} value={t}>
+                    {t}
+                  </SelectItem>
+                ))}
               </SelectContent>
             </Select>
           ) : (
             <div
-              className={`h-9 flex items-center px-3 ${isReadOnly ? 'cursor-default' : 'cursor-pointer'}`}
-              onClick={isReadOnly ? undefined : enterEdit('type')}
+              className={`h-9 flex items-center px-3 ${isReadOnly ? "cursor-default" : "cursor-pointer"}`}
+              onClick={isReadOnly ? undefined : enterEdit("type")}
             >
-              <span className="text-[11px] px-1.5 py-0.5 rounded bg-gray-100 text-gray-600 font-medium">{token.type}</span>
+              <span className="text-[11px] px-1.5 py-0.5 rounded bg-gray-100 text-gray-600 font-medium">
+                {token.type}
+              </span>
             </div>
           )}
         </td>
 
         {/* Value */}
-        <td className="px-0 py-0 border-r border-gray-100">
+        <td className="px-0 py-0 border-r border-gray-100 w-[180px]">
           <div className="h-9 flex items-center gap-1.5 px-2">
             {/* Color swatch / picker */}
-            {token.type === 'color' && (
+            {token.type === "color" && (
               <Popover open={colorPickerOpen} onOpenChange={setColorPickerOpen}>
                 <PopoverTrigger asChild>
                   <button
                     type="button"
                     className="w-5 h-5 rounded border border-gray-300 flex-shrink-0 cursor-pointer hover:ring-2 hover:ring-offset-1 hover:ring-blue-400 transition-shadow"
                     style={{ backgroundColor: swatchBg }}
-                    onClick={e => e.stopPropagation()}
+                    onClick={(e) => e.stopPropagation()}
                     title="Pick color"
                   />
                 </PopoverTrigger>
-                <PopoverContent className="w-auto p-3 flex flex-col gap-2" align="start" onClick={e => e.stopPropagation()}>
+                <PopoverContent
+                  className="w-auto p-3 flex flex-col gap-2"
+                  align="start"
+                  onClick={(e) => e.stopPropagation()}
+                >
                   <HexColorPicker
-                    color={swatchBg.startsWith('#') ? swatchBg : '#000000'}
-                    onChange={hex => onUpdateToken(group.id, token.id, 'value', hex)}
+                    color={swatchBg.startsWith("#") ? swatchBg : "#000000"}
+                    onChange={(hex) =>
+                      onUpdateToken(group.id, token.id, "value", hex)
+                    }
                   />
                   <HexColorInput
-                    color={swatchBg.startsWith('#') ? swatchBg : '#000000'}
-                    onChange={hex => onUpdateToken(group.id, token.id, 'value', hex)}
+                    color={swatchBg.startsWith("#") ? swatchBg : "#000000"}
+                    onChange={(hex) =>
+                      onUpdateToken(group.id, token.id, "value", hex)
+                    }
                     prefixed
                     className="w-full border border-gray-200 rounded px-2 py-1 text-xs font-mono focus:outline-none focus:ring-1 focus:ring-blue-400"
                   />
@@ -206,67 +282,84 @@ function TokenTableRow({
             )}
 
             {/* Value input / display */}
-            {editingField === 'value' ? (
+            {editingField === "value" ? (
               <Input
                 autoFocus
-                value={token.value?.toString() ?? ''}
-                onChange={e => onUpdateToken(group.id, token.id, 'value', parseValue(e.target.value, token.type))}
+                value={token.value?.toString() ?? ""}
+                onChange={(e) =>
+                  onUpdateToken(
+                    group.id,
+                    token.id,
+                    "value",
+                    parseValue(e.target.value, token.type),
+                  )
+                }
                 onBlur={handleBlur}
-                onClick={e => e.stopPropagation()}
+                onClick={(e) => e.stopPropagation()}
                 placeholder={getValuePlaceholder(token.type)}
                 className="flex-1 h-7 border border-gray-300 rounded px-2 text-sm font-mono shadow-none focus-visible:ring-1 focus-visible:ring-blue-400"
               />
             ) : (
               <div
-                className={`flex-1 text-sm font-mono text-gray-700 truncate ${isReadOnly ? 'cursor-default' : 'cursor-text'}`}
-                onClick={isReadOnly ? undefined : enterEdit('value')}
+                className={`flex-1 text-sm font-mono text-gray-700 truncate ${isReadOnly ? "cursor-default" : "cursor-text"}`}
+                onClick={isReadOnly ? undefined : enterEdit("value")}
               >
-                {token.value?.toString() || <span className="text-gray-300">{getValuePlaceholder(token.type)}</span>}
+                {token.value?.toString() || (
+                  <span className="text-gray-300">
+                    {getValuePlaceholder(token.type)}
+                  </span>
+                )}
               </div>
             )}
 
             {/* Reset to collection default button */}
-            {!isReadOnly && masterValue !== undefined && onResetToDefault &&
-              String(token.value ?? '') !== masterValue && (
-              <button
-                type="button"
-                title="Reset to collection default"
-                onClick={(e) => {
-                  e.stopPropagation();
-                  onResetToDefault(group.id, token.id, masterValue);
-                }}
-                className="text-gray-400 hover:text-indigo-600 flex-shrink-0 focus:outline-none"
-              >
-                <RotateCcw size={12} />
-              </button>
-            )}
+            {!isReadOnly &&
+              masterValue !== undefined &&
+              onResetToDefault &&
+              String(token.value ?? "") !== masterValue && (
+                <button
+                  type="button"
+                  title="Reset to collection default"
+                  onClick={(e) => {
+                    e.stopPropagation();
+                    onResetToDefault(group.id, token.id, masterValue);
+                  }}
+                  className="text-gray-400 hover:text-indigo-600 flex-shrink-0 focus:outline-none"
+                >
+                  <RotateCcw size={12} />
+                </button>
+              )}
 
             {/* Reference picker */}
-            <div onClick={e => e.stopPropagation()}>
+            <div onClick={(e) => e.stopPropagation()}>
               <TokenReferencePicker
                 allGroups={tokenGroups}
-                onSelect={alias => onUpdateToken(group.id, token.id, 'value', alias)}
+                onSelect={(alias) =>
+                  onUpdateToken(group.id, token.id, "value", alias)
+                }
               />
             </div>
           </div>
         </td>
 
         {/* Description */}
-        <td className="px-0 py-0 border-r border-gray-100">
-          {editingField === 'description' ? (
+        <td className="px-0 py-0 border-r border-gray-100 w-[180px]">
+          {editingField === "description" ? (
             <Input
               autoFocus
-              value={token.description || ''}
-              onChange={e => onUpdateToken(group.id, token.id, 'description', e.target.value)}
+              value={token.description || ""}
+              onChange={(e) =>
+                onUpdateToken(group.id, token.id, "description", e.target.value)
+              }
               onBlur={handleBlur}
-              onClick={e => e.stopPropagation()}
+              onClick={(e) => e.stopPropagation()}
               placeholder="Optional description"
               className="h-9 w-full border-0 rounded-none shadow-none focus-visible:ring-1 focus-visible:ring-inset focus-visible:ring-blue-400 text-sm bg-white"
             />
           ) : (
             <div
-              className={`h-9 flex items-center px-4 text-sm text-gray-500 truncate ${isReadOnly ? 'cursor-default' : 'cursor-text'}`}
-              onClick={isReadOnly ? undefined : enterEdit('description')}
+              className={`h-9 flex items-center px-4 text-sm text-gray-500 truncate ${isReadOnly ? "cursor-default" : "cursor-text"}`}
+              onClick={isReadOnly ? undefined : enterEdit("description")}
             >
               {token.description || <span className="text-gray-300">—</span>}
             </div>
@@ -280,13 +373,19 @@ function TokenTableRow({
               variant="ghost"
               size="sm"
               className="h-6 w-6 p-0 text-gray-400 hover:text-blue-600"
-              onClick={e => { e.stopPropagation(); onToggleExpansion(token.id); }}
+              onClick={(e) => {
+                e.stopPropagation();
+                onToggleExpansion(token.id);
+              }}
               title="Toggle attributes"
             >
               {isExpanded ? <ChevronUp size={12} /> : <ChevronDown size={12} />}
             </Button>
             {isReadOnly ? (
-              <span title="Source group — read only" className="h-6 w-6 flex items-center justify-center text-gray-300">
+              <span
+                title="Source group — read only"
+                className="h-6 w-6 flex items-center justify-center text-gray-300"
+              >
                 <Lock size={12} />
               </span>
             ) : (
@@ -294,9 +393,12 @@ function TokenTableRow({
                 variant="ghost"
                 size="sm"
                 className="h-6 w-6 p-0 text-gray-400 hover:text-red-600 disabled:opacity-50 disabled:pointer-events-none"
-                onClick={e => { e.stopPropagation(); onDeleteToken(group.id, token.id); }}
+                onClick={(e) => {
+                  e.stopPropagation();
+                  onDeleteToken(group.id, token.id);
+                }}
                 disabled={isReadOnly}
-                title={isReadOnly ? 'Source group — read only' : 'Delete token'}
+                title={isReadOnly ? "Source group — read only" : "Delete token"}
               >
                 <Trash2 size={12} />
               </Button>
@@ -310,16 +412,23 @@ function TokenTableRow({
         <tr className="bg-gray-50">
           <td colSpan={5} className="px-4 py-3">
             <div className="space-y-2">
-              <h5 className="mb-2 text-sm font-medium text-gray-700">Custom Attributes</h5>
+              <h5 className="mb-2 text-sm font-medium text-gray-700">
+                Custom Attributes
+              </h5>
               {Object.entries(token.attributes || {}).map(([key, value]) => (
                 <div key={key} className="flex items-center space-x-2">
                   <Input
                     type="text"
                     value={key}
-                    onChange={e => {
+                    onChange={(e) => {
                       const newKey = e.target.value;
                       onRemoveAttribute(group.id, token.id, key);
-                      onUpdateAttribute(group.id, token.id, newKey, value as string);
+                      onUpdateAttribute(
+                        group.id,
+                        token.id,
+                        newKey,
+                        value as string,
+                      );
                     }}
                     placeholder="Attribute name"
                     className="flex-1 px-2 py-1 text-xs rounded border border-gray-300 h-auto"
@@ -328,7 +437,9 @@ function TokenTableRow({
                   <Input
                     type="text"
                     value={value as string}
-                    onChange={e => onUpdateAttribute(group.id, token.id, key, e.target.value)}
+                    onChange={(e) =>
+                      onUpdateAttribute(group.id, token.id, key, e.target.value)
+                    }
                     placeholder="Attribute value"
                     className="flex-1 px-2 py-1 text-xs rounded border border-gray-300 h-auto"
                   />
@@ -345,7 +456,9 @@ function TokenTableRow({
               <Button
                 variant="ghost"
                 size="sm"
-                onClick={() => onUpdateAttribute(group.id, token.id, 'newAttribute', '')}
+                onClick={() =>
+                  onUpdateAttribute(group.id, token.id, "newAttribute", "")
+                }
                 className="text-sm font-medium text-blue-600 hover:text-blue-800 h-auto p-0"
               >
                 + Add Attribute
@@ -363,9 +476,13 @@ interface TokenGeneratorFormProps {
   onTokensChange?: (
     tokens: Record<string, unknown> | null,
     namespace: string,
-    collectionName: string
+    collectionName: string,
   ) => void;
-  collectionToLoad?: { id: string; name: string; tokens: Record<string, unknown> } | null;
+  collectionToLoad?: {
+    id: string;
+    name: string;
+    tokens: Record<string, unknown>;
+  } | null;
   namespace?: string;
   onNamespaceChange?: (ns: string) => void;
   onGroupsChange?: (groups: TokenGroup[]) => void;
@@ -377,21 +494,36 @@ interface TokenGeneratorFormProps {
   hideAddGroupButton?: boolean;
   onTokenSelect?: (token: GeneratedToken | null, groupPath: string) => void;
   selectedTokenId?: string | null;
-  pendingBulkInsert?: { groupId: string; tokens: GeneratedToken[]; subgroupName?: string } | null;
+  pendingBulkInsert?: {
+    groupId: string;
+    tokens: GeneratedToken[];
+    subgroupName?: string;
+  } | null;
   onBulkInsertProcessed?: () => void;
-  pendingGroupAction?: { type: 'delete' | 'addSub'; groupId: string } | null;
+  pendingGroupAction?: { type: "delete" | "addSub"; groupId: string } | null;
   onGroupActionProcessed?: () => void;
   themeTokens?: TokenGroup[];
   onThemeTokensChange?: (tokens: TokenGroup[]) => void;
   isReadOnly?: boolean;
   findMasterValue?: (groupId: string, tokenPath: string) => string | undefined;
-  onResetToDefault?: (groupId: string, tokenId: string, masterValue: string) => void;
+  onResetToDefault?: (
+    groupId: string,
+    tokenId: string,
+    masterValue: string,
+  ) => void;
   /** Reset entire group to source: delete tokens not in source, reset values */
   onResetGroupToSource?: (groupId: string) => void;
   /** Whether a group is in source mode (read-only, no reset) */
   isGroupSource?: (groupId: string) => boolean;
   /** When theme is active and graph token names differ from default */
-  tokenNameMismatch?: { inThemeNotDefault: string[]; inDefaultNotTheme: string[] } | null;
+  tokenNameMismatch?: {
+    inThemeNotDefault: string[];
+    inDefaultNotTheme: string[];
+  } | null;
+  /** Callback for Preview JSON action */
+  onPreviewJSON?: () => void;
+  /** Callback for Download JSON action */
+  onDownloadJSON?: () => void;
 }
 
 export function TokenGeneratorForm({
@@ -421,35 +553,35 @@ export function TokenGeneratorForm({
   onResetGroupToSource,
   isGroupSource,
   tokenNameMismatch,
+  onPreviewJSON,
+  onDownloadJSON,
 }: TokenGeneratorFormProps) {
   const [tokenGroups, setTokenGroups] = useState<TokenGroup[]>([
-    { id: '1', name: 'colors', tokens: [], level: 0, expanded: true }
+    { id: "1", name: "colors", tokens: [], level: 0, expanded: true },
   ]);
   const [showJsonDialog, setShowJsonDialog] = useState(false);
   const [isAddingGroup, setIsAddingGroup] = useState(false);
-  const [newGroupName, setNewGroupName] = useState('');
+  const [newGroupName, setNewGroupName] = useState("");
   const [expandedTokens, setExpandedTokens] = useState<Set<string>>(new Set());
-  const [globalNamespace, setGlobalNamespace] = useState('');
-  const [showDirectoryPicker, setShowDirectoryPicker] = useState(false);
-  const [directoryPickerMode, setDirectoryPickerMode] = useState<'export' | 'import'>('export');
-  const [availableBranches, setAvailableBranches] = useState<string[]>([]);
-  const [loadingState, setLoadingState] = useState<LoadingState>(createLoadingState(false));
+  const [globalNamespace, setGlobalNamespace] = useState("");
+  const [loadingState, setLoadingState] = useState<LoadingState>(
+    createLoadingState(false),
+  );
   const [toast, setToast] = useState<ToastMessage | null>(null);
 
   // Collection persistence state
-  const [loadedCollection, setLoadedCollection] = useState<{ id: string; name: string } | null>(null);
-  const [showSaveDialog, setShowSaveDialog] = useState(false);
-  const [isSaving, setIsSaving] = useState(false);
-  const [saveDialogDuplicateName, setSaveDialogDuplicateName] = useState<string | null>(null);
+  const [loadedCollection, setLoadedCollection] = useState<{
+    id: string;
+    name: string;
+  } | null>(null);
   const [showLoadDialog, setShowLoadDialog] = useState(false);
   const [isDirty, setIsDirty] = useState(false);
-  const [showExportFigmaDialog, setShowExportFigmaDialog] = useState(false);
 
   // Expose live token state to parent via onTokensChange
   useEffect(() => {
     if (!onTokensChange) return;
     if (themeTokens && themeTokens.length > 0) return; // Theme mode: don't push tokenGroups to parent
-    const collectionName = loadedCollection?.name ?? '';
+    const collectionName = loadedCollection?.name ?? "";
     if (tokenGroups.length === 0) {
       onTokensChange(null, globalNamespace, collectionName);
       return;
@@ -463,33 +595,45 @@ export function TokenGeneratorForm({
       onTokensChange(null, globalNamespace, collectionName);
       return;
     }
-    const rawJson = tokenService.generateStyleDictionaryOutput(tokenGroups, globalNamespace);
-    onTokensChange(rawJson as Record<string, unknown>, globalNamespace, collectionName);
-  // eslint-disable-next-line react-hooks/exhaustive-deps
+    const rawJson = tokenService.generateStyleDictionaryOutput(
+      tokenGroups,
+      globalNamespace,
+    );
+    onTokensChange(
+      rawJson as Record<string, unknown>,
+      globalNamespace,
+      collectionName,
+    );
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [tokenGroups, globalNamespace, loadedCollection, themeTokens]);
 
   // Auto-load a collection when the parent passes a new one (e.g. user selects from shared header)
   useEffect(() => {
     if (!collectionToLoad) return;
-    const { groups, detectedGlobalNamespace } = tokenService.processImportedTokens(
-      collectionToLoad.tokens,
-      ''
-    );
+    const { groups, detectedGlobalNamespace } =
+      tokenService.processImportedTokens(collectionToLoad.tokens, "");
     setTokenGroups(groups);
     setGlobalNamespace(detectedGlobalNamespace);
-    setLoadedCollection({ id: collectionToLoad.id, name: collectionToLoad.name });
+    setLoadedCollection({
+      id: collectionToLoad.id,
+      name: collectionToLoad.name,
+    });
     setIsDirty(false);
-  // eslint-disable-next-line react-hooks/exhaustive-deps
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [collectionToLoad?.id]);
 
   // Sync controlled namespace prop into internal state
   useEffect(() => {
-    if (namespace !== undefined && namespace !== globalNamespace) setGlobalNamespace(namespace);
+    if (namespace !== undefined && namespace !== globalNamespace)
+      setGlobalNamespace(namespace);
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [namespace]);
 
   // Toast helper functions
-  const showToast = (message: string, type: 'success' | 'error' | 'info' = 'info') => {
+  const showToast = (
+    message: string,
+    type: "success" | "error" | "info" = "info",
+  ) => {
     setToast(createToast(message, type));
     setTimeout(() => setToast(null), 5000); // Auto-dismiss after 5 seconds
   };
@@ -501,67 +645,6 @@ export function TokenGeneratorForm({
     setLoadingState(createLoadingState(isLoading, message));
   };
 
-  // Save collection to MongoDB
-  const handleSaveCollection = async (name: string) => {
-    setIsSaving(true);
-    try {
-      const tokenSet = generateTokenSet();
-      const sourceMetadata = githubConfig
-        ? { repo: githubConfig.repository, branch: githubConfig.branch, path: null }
-        : null;
-
-      // If user confirmed overwrite (saveDialogDuplicateName is set), attempt PUT directly
-      if (loadedCollection && saveDialogDuplicateName === name) {
-        const res = await fetch(`/api/collections/${loadedCollection.id}`, {
-          method: 'PUT',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ name, tokens: tokenSet, sourceMetadata }),
-        });
-        const data = await res.json();
-        if (!res.ok) {
-          showToast(`Failed to save: ${data.error}`, 'error');
-          return;
-        }
-        setLoadedCollection({ id: data.collection._id, name: data.collection.name });
-        setSaveDialogDuplicateName(null);
-        setIsDirty(false);
-        setShowSaveDialog(false);
-        showToast(`Saved to database: ${data.collection.name}`, 'success');
-        return;
-      }
-
-      // Otherwise POST (new name)
-      const res = await fetch('/api/collections', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ name, tokens: tokenSet, sourceMetadata }),
-      });
-      const data = await res.json();
-
-      if (res.status === 409) {
-        // Duplicate name — surface confirm-overwrite step in dialog
-        setSaveDialogDuplicateName(name);
-        // Store the existingId so the overwrite PUT uses it
-        setLoadedCollection({ id: data.existingId, name });
-        return; // dialog stays open, advances to confirm-overwrite step
-      }
-
-      if (!res.ok) {
-        showToast(`Failed to save: ${data.error}`, 'error');
-        return;
-      }
-
-      setLoadedCollection({ id: data.collection._id, name: data.collection.name });
-      setSaveDialogDuplicateName(null);
-      setIsDirty(false);
-      setShowSaveDialog(false);
-      showToast(`Saved to database: ${data.collection.name}`, 'success');
-    } catch (err) {
-      showToast(`Error: ${err instanceof Error ? err.message : 'Unknown error'}`, 'error');
-    } finally {
-      setIsSaving(false);
-    }
-  };
 
   // Load a collection by id from MongoDB
   const handleLoadCollection = async (collectionId: string) => {
@@ -569,27 +652,34 @@ export function TokenGeneratorForm({
       const res = await fetch(`/api/collections/${collectionId}`);
       const data = await res.json();
       if (!res.ok) {
-        showToast(`Failed to load collection: ${data.error}`, 'error');
+        showToast(`Failed to load collection: ${data.error}`, "error");
         return;
       }
       const { collection } = data;
-      const { groups, detectedGlobalNamespace } = convertToTokenGroups(collection.tokens);
+      const { groups, detectedGlobalNamespace } = convertToTokenGroups(
+        collection.tokens,
+      );
       // Programmatic state update — do NOT set dirty
       setTokenGroups(groups);
       setGlobalNamespace(detectedGlobalNamespace);
       setLoadedCollection({ id: collection._id, name: collection.name });
       setIsDirty(false);
       setShowLoadDialog(false);
-      showToast(`Loaded: ${collection.name}`, 'success');
+      showToast(`Loaded: ${collection.name}`, "success");
     } catch (err) {
-      showToast(`Error: ${err instanceof Error ? err.message : 'Unknown error'}`, 'error');
+      showToast(
+        `Error: ${err instanceof Error ? err.message : "Unknown error"}`,
+        "error",
+      );
     }
   };
 
   // Unsaved-changes guard before loading a collection
   const handleLoadRequest = async (collectionId: string) => {
     if (isDirty) {
-      const confirmed = window.confirm('You have unsaved changes. Loading a collection will replace them. Continue?');
+      const confirmed = window.confirm(
+        "You have unsaved changes. Loading a collection will replace them. Continue?",
+      );
       if (!confirmed) return;
     }
     await handleLoadCollection(collectionId);
@@ -600,7 +690,7 @@ export function TokenGeneratorForm({
   // Helper function to toggle group expansion
   const toggleGroupExpansion = (groupId: string) => {
     const updateGroup = (groups: TokenGroup[]): TokenGroup[] => {
-      return groups.map(group => {
+      return groups.map((group) => {
         if (group.id === groupId) {
           return { ...group, expanded: !group.expanded };
         }
@@ -619,37 +709,47 @@ export function TokenGeneratorForm({
     if (globalNamespace.trim()) parts.push(globalNamespace.trim());
 
     // Use utility function to get the path prefix for the group
-    const groupPrefix = getPathPrefix(group, getAllGroups(tokenGroups), globalNamespace);
+    const groupPrefix = getPathPrefix(
+      group,
+      getAllGroups(tokenGroups),
+      globalNamespace,
+    );
     if (groupPrefix) {
       // Remove the global namespace from the prefix since we're adding it separately
-      const prefixWithoutNamespace = groupPrefix.replace(new RegExp(`^${globalNamespace}\\.`), '');
-      if (prefixWithoutNamespace) parts.push(prefixWithoutNamespace.replace(/\.$/, ''));
+      const prefixWithoutNamespace = groupPrefix.replace(
+        new RegExp(`^${globalNamespace}\\.`),
+        "",
+      );
+      if (prefixWithoutNamespace)
+        parts.push(prefixWithoutNamespace.replace(/\.$/, ""));
     } else {
       parts.push(group.name);
     }
 
     if (tokenPath.trim()) parts.push(tokenPath.trim());
-    return parts.join('.');
+    return parts.join(".");
   };
 
   const addTokenGroup = (externalName?: string): TokenGroup => {
-    const groupName = (externalName ?? newGroupName).trim() || `group-${tokenGroups.length + 1}`;
+    const groupName =
+      (externalName ?? newGroupName).trim() ||
+      `group-${tokenGroups.length + 1}`;
     const newGroup: TokenGroup = {
       id: generateId(),
       name: groupName,
       tokens: [],
       level: 0,
-      expanded: true
+      expanded: true,
     };
-    setTokenGroups(prev => [...prev, newGroup]);
+    setTokenGroups((prev) => [...prev, newGroup]);
     setIsDirty(true);
-    setNewGroupName('');
+    setNewGroupName("");
     setIsAddingGroup(false);
     return newGroup;
   };
 
   // Notify parent when token groups change (emits full TokenGroup[] tree with children)
-  const prevGroupsRef = useRef<string>('');
+  const prevGroupsRef = useRef<string>("");
   useEffect(() => {
     if (!onGroupsChange) return;
     const serialized = JSON.stringify(tokenGroups);
@@ -676,15 +776,22 @@ export function TokenGeneratorForm({
     if (subgroupName) {
       // Upsert: update existing child group with same name, or create new one
       const upsertSubgroup = (groups: TokenGroup[]): TokenGroup[] =>
-        groups.map(g => {
+        groups.map((g) => {
           if (g.id === groupId) {
-            const existingChild = g.children?.find(c => c.name === subgroupName);
+            const existingChild = g.children?.find(
+              (c) => c.name === subgroupName,
+            );
             if (existingChild) {
-              const upsertedTokens = upsertTokensByPath(existingChild.tokens, tokens);
+              const upsertedTokens = upsertTokensByPath(
+                existingChild.tokens,
+                tokens,
+              );
               return {
                 ...g,
-                children: (g.children ?? []).map(c =>
-                  c.name === subgroupName ? { ...c, tokens: upsertedTokens } : c
+                children: (g.children ?? []).map((c) =>
+                  c.name === subgroupName
+                    ? { ...c, tokens: upsertedTokens }
+                    : c,
                 ),
                 expanded: true,
               };
@@ -698,51 +805,61 @@ export function TokenGeneratorForm({
               children: [],
               expanded: true,
             };
-            return { ...g, children: [...(g.children ?? []), newChild], expanded: true };
+            return {
+              ...g,
+              children: [...(g.children ?? []), newChild],
+              expanded: true,
+            };
           }
-          if (g.children?.length) return { ...g, children: upsertSubgroup(g.children) };
+          if (g.children?.length)
+            return { ...g, children: upsertSubgroup(g.children) };
           return g;
         });
-      setTokenGroups(prev => upsertSubgroup(prev));
+      setTokenGroups((prev) => upsertSubgroup(prev));
     } else {
       const upsertIntoGroup = (groups: TokenGroup[]): TokenGroup[] =>
-        groups.map(group => {
-          if (group.id === groupId) return { ...group, tokens: upsertTokensByPath(group.tokens, tokens) };
-          if (group.children?.length) return { ...group, children: upsertIntoGroup(group.children) };
+        groups.map((group) => {
+          if (group.id === groupId)
+            return {
+              ...group,
+              tokens: upsertTokensByPath(group.tokens, tokens),
+            };
+          if (group.children?.length)
+            return { ...group, children: upsertIntoGroup(group.children) };
           return group;
         });
-      setTokenGroups(prev => upsertIntoGroup(prev));
+      setTokenGroups((prev) => upsertIntoGroup(prev));
     }
 
     setIsDirty(true);
     onBulkInsertProcessed?.();
-  // eslint-disable-next-line react-hooks/exhaustive-deps
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [pendingBulkInsert]);
 
   useEffect(() => {
     if (!pendingGroupAction) return;
-    if (pendingGroupAction.type === 'delete') {
+    if (pendingGroupAction.type === "delete") {
       deleteTokenGroup(pendingGroupAction.groupId);
-    } else if (pendingGroupAction.type === 'addSub') {
+    } else if (pendingGroupAction.type === "addSub") {
       addSubGroup(pendingGroupAction.groupId);
     }
     onGroupActionProcessed?.();
-  // eslint-disable-next-line react-hooks/exhaustive-deps
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [pendingGroupAction]);
 
   const deleteTokenGroup = (groupId: string) => {
     const allGroups = getAllGroups(tokenGroups);
     if (allGroups.length === 1) {
-      showToast('Cannot delete the last group', 'error');
+      showToast("Cannot delete the last group", "error");
       return;
     }
 
     const removeGroup = (groups: TokenGroup[]): TokenGroup[] => {
       return groups
-        .filter(group => group.id !== groupId)
-        .map(group => ({
+        .filter((group) => group.id !== groupId)
+        .map((group) => ({
           ...group,
-          children: group.children ? removeGroup(group.children) : undefined
+          children: group.children ? removeGroup(group.children) : undefined,
         }));
     };
 
@@ -752,7 +869,7 @@ export function TokenGeneratorForm({
 
   const updateGroupName = (groupId: string, newName: string) => {
     const updateGroup = (groups: TokenGroup[]): TokenGroup[] => {
-      return groups.map(group => {
+      return groups.map((group) => {
         if (group.id === groupId) {
           return { ...group, name: newName };
         }
@@ -770,15 +887,15 @@ export function TokenGeneratorForm({
     if (isReadOnly) return; // Source group: read-only
     const newToken: GeneratedToken = {
       id: generateId(),
-      path: '',
-      value: '',
-      type: 'color',
-      description: '',
-      attributes: {}
+      path: "",
+      value: "",
+      type: "color",
+      description: "",
+      attributes: {},
     };
 
     const updateGroup = (groups: TokenGroup[]): TokenGroup[] => {
-      return groups.map(group => {
+      return groups.map((group) => {
         if (group.id === groupId) {
           return { ...group, tokens: [...group.tokens, newToken] };
         }
@@ -789,8 +906,11 @@ export function TokenGeneratorForm({
       });
     };
 
-    const groupInTheme = themeTokens && onThemeTokensChange &&
-      (themeTokens.some(g => g.id === groupId) || !!findGroupById(themeTokens, groupId));
+    const groupInTheme =
+      themeTokens &&
+      onThemeTokensChange &&
+      (themeTokens.some((g) => g.id === groupId) ||
+        !!findGroupById(themeTokens, groupId));
     if (groupInTheme) {
       onThemeTokensChange!(updateGroup(themeTokens!));
     } else {
@@ -799,20 +919,27 @@ export function TokenGeneratorForm({
     }
   };
 
-
-  const updateToken = (groupId: string, tokenId: string, field: keyof GeneratedToken, value: any) => {
-    const groupInTheme = themeTokens && onThemeTokensChange &&
-      (themeTokens.some(g => g.id === groupId) || !!findGroupById(themeTokens, groupId));
-    if (groupInTheme && field === 'path') return; // Theme mode: token names locked
+  const updateToken = (
+    groupId: string,
+    tokenId: string,
+    field: keyof GeneratedToken,
+    value: any,
+  ) => {
+    const groupInTheme =
+      themeTokens &&
+      onThemeTokensChange &&
+      (themeTokens.some((g) => g.id === groupId) ||
+        !!findGroupById(themeTokens, groupId));
+    if (groupInTheme && field === "path") return; // Theme mode: token names locked
 
     const applyUpdate = (groups: TokenGroup[]): TokenGroup[] => {
-      return groups.map(group => {
+      return groups.map((group) => {
         if (group.id === groupId) {
           return {
             ...group,
-            tokens: group.tokens.map(token =>
-              token.id === tokenId ? { ...token, [field]: value } : token
-            )
+            tokens: group.tokens.map((token) =>
+              token.id === tokenId ? { ...token, [field]: value } : token,
+            ),
           };
         }
         if (group.children && group.children.length > 0) {
@@ -840,20 +967,25 @@ export function TokenGeneratorForm({
     setExpandedTokens(newExpanded);
   };
 
-  const updateTokenAttribute = (groupId: string, tokenId: string, key: string, value: string) => {
+  const updateTokenAttribute = (
+    groupId: string,
+    tokenId: string,
+    key: string,
+    value: string,
+  ) => {
     const updateGroup = (groups: TokenGroup[]): TokenGroup[] => {
-      return groups.map(group => {
+      return groups.map((group) => {
         if (group.id === groupId) {
           return {
             ...group,
-            tokens: group.tokens.map(token =>
+            tokens: group.tokens.map((token) =>
               token.id === tokenId
                 ? {
                     ...token,
-                    attributes: { ...token.attributes, [key]: value }
+                    attributes: { ...token.attributes, [key]: value },
                   }
-                : token
-            )
+                : token,
+            ),
           };
         }
         if (group.children && group.children.length > 0) {
@@ -863,8 +995,11 @@ export function TokenGeneratorForm({
       });
     };
 
-    const groupInTheme = themeTokens && onThemeTokensChange &&
-      (themeTokens.some(g => g.id === groupId) || !!findGroupById(themeTokens, groupId));
+    const groupInTheme =
+      themeTokens &&
+      onThemeTokensChange &&
+      (themeTokens.some((g) => g.id === groupId) ||
+        !!findGroupById(themeTokens, groupId));
     if (groupInTheme) {
       onThemeTokensChange!(updateGroup(themeTokens!));
     } else {
@@ -873,22 +1008,28 @@ export function TokenGeneratorForm({
     }
   };
 
-  const removeTokenAttribute = (groupId: string, tokenId: string, key: string) => {
+  const removeTokenAttribute = (
+    groupId: string,
+    tokenId: string,
+    key: string,
+  ) => {
     const updateGroup = (groups: TokenGroup[]): TokenGroup[] => {
-      return groups.map(group => {
+      return groups.map((group) => {
         if (group.id === groupId) {
           return {
             ...group,
-            tokens: group.tokens.map(token =>
+            tokens: group.tokens.map((token) =>
               token.id === tokenId
                 ? {
                     ...token,
                     attributes: Object.fromEntries(
-                      Object.entries(token.attributes || {}).filter(([k]) => k !== key)
-                    )
+                      Object.entries(token.attributes || {}).filter(
+                        ([k]) => k !== key,
+                      ),
+                    ),
                   }
-                : token
-            )
+                : token,
+            ),
           };
         }
         if (group.children && group.children.length > 0) {
@@ -898,8 +1039,11 @@ export function TokenGeneratorForm({
       });
     };
 
-    const groupInTheme = themeTokens && onThemeTokensChange &&
-      (themeTokens.some(g => g.id === groupId) || !!findGroupById(themeTokens, groupId));
+    const groupInTheme =
+      themeTokens &&
+      onThemeTokensChange &&
+      (themeTokens.some((g) => g.id === groupId) ||
+        !!findGroupById(themeTokens, groupId));
     if (groupInTheme) {
       onThemeTokensChange!(updateGroup(themeTokens!));
     } else {
@@ -911,9 +1055,12 @@ export function TokenGeneratorForm({
   const deleteToken = (groupId: string, tokenId: string) => {
     if (isReadOnly) return; // Source group: read-only
     const updateGroup = (groups: TokenGroup[]): TokenGroup[] => {
-      return groups.map(group => {
+      return groups.map((group) => {
         if (group.id === groupId) {
-          return { ...group, tokens: group.tokens.filter(token => token.id !== tokenId) };
+          return {
+            ...group,
+            tokens: group.tokens.filter((token) => token.id !== tokenId),
+          };
         }
         if (group.children && group.children.length > 0) {
           return { ...group, children: updateGroup(group.children) };
@@ -922,8 +1069,11 @@ export function TokenGeneratorForm({
       });
     };
 
-    const groupInTheme = themeTokens && onThemeTokensChange &&
-      (themeTokens.some(g => g.id === groupId) || !!findGroupById(themeTokens, groupId));
+    const groupInTheme =
+      themeTokens &&
+      onThemeTokensChange &&
+      (themeTokens.some((g) => g.id === groupId) ||
+        !!findGroupById(themeTokens, groupId));
     if (groupInTheme) {
       onThemeTokensChange!(updateGroup(themeTokens!));
     } else {
@@ -933,174 +1083,32 @@ export function TokenGeneratorForm({
   };
 
   const generateTokenSet = () => {
-    return tokenService.generateStyleDictionaryOutput(tokenGroups, globalNamespace);
+    return tokenService.generateStyleDictionaryOutput(
+      tokenGroups,
+      globalNamespace,
+    );
   };
 
   const exportToJSON = () => {
     const content = fileService.exportTokens(tokenGroups, globalNamespace, {
-      format: 'json',
-      fileName: 'design-tokens.json'
+      format: "json",
+      fileName: "design-tokens.json",
     });
-    fileService.downloadFile(content, 'design-tokens.json', 'application/json');
+    fileService.downloadFile(content, "design-tokens.json", "application/json");
   };
 
-  const loadBranches = async () => {
-    if (!githubConfig) {
-      console.warn('No GitHub config available for loading branches');
-      return;
-    }
 
-    setLoading(true, 'Loading repository branches...');
 
-    try {
-      console.log('Loading branches for repository:', githubConfig.repository);
-      const branches = await githubService.getBranches(githubConfig.token, githubConfig.repository);
-      const branchNames = branches.map(branch => branch.name);
-      setAvailableBranches(branchNames);
-      console.log('Successfully loaded branches:', branchNames);
-    } catch (error) {
-      console.error('Failed to load branches:', error);
-      if (githubConfig.branch) {
-        setAvailableBranches([githubConfig.branch]);
-      }
-      showToast('Error loading branches, using default branch', 'error');
-    } finally {
-      setLoading(false);
-    }
-  };
 
-  const exportToGitHub = async () => {
-    console.log('GitHub config check:', githubConfig); // Debug log
-    if (!githubConfig) {
-      showToast('Please configure GitHub connection first', 'error');
-      return;
-    }
 
-    try {
-      await loadBranches();
-    } catch (error) {
-      console.warn('Failed to load branches, continuing with export:', error);
-      // Continue anyway - the directory picker can work with the configured branch
-      // Ensure we have at least the configured branch available
-      if (availableBranches.length === 0 && githubConfig.branch) {
-        setAvailableBranches([githubConfig.branch]);
-      }
-    }
-
-    setDirectoryPickerMode('export');
-    setShowDirectoryPicker(true);
-  };
-
-  const handleDirectorySelect = async (selectedPath: string, selectedBranch: string) => {
-    setShowDirectoryPicker(false);
-
-    if (!githubConfig) return;
-
-    const isImportMode = directoryPickerMode === 'import';
-
-    setLoading(true, isImportMode ? 'Importing tokens from GitHub...' : 'Exporting tokens to GitHub...');
-
-    try {
-      if (directoryPickerMode === 'export') {
-        // Export mode
-        const tokenSet = generateTokenSet();
-        const response = await fetch('/api/export/github', {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({
-            tokenSet,
-            repository: githubConfig.repository,
-            githubToken: githubConfig.token,
-            branch: selectedBranch,
-            path: selectedPath
-          }),
-        });
-
-        const result = await response.json();
-        if (response.ok) {
-          showToast(`Successfully pushed to GitHub! View at: ${result.url}`, 'success');
-        } else {
-          showToast(`Failed to push to GitHub: ${result.error}`, 'error');
-        }
-      } else {
-        // Import mode
-        const response = await fetch('/api/import/github', {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({
-            repository: githubConfig.repository,
-            githubToken: githubConfig.token,
-            branch: selectedBranch,
-            path: selectedPath
-          }),
-        });
-
-        const result = await response.json();
-        if (response.ok) {
-          console.log('Import result:', result);
-          console.log('Token set:', result.tokenSet);
-
-          // Convert imported tokens to our format
-          const { groups: importedTokens, detectedGlobalNamespace } = convertToTokenGroups(result.tokenSet);
-          console.log('Converted token groups:', importedTokens);
-          console.log('Detected global namespace:', detectedGlobalNamespace);
-
-          setTokenGroups(importedTokens);
-          setGlobalNamespace(detectedGlobalNamespace);
-          const tokenCount = importedTokens.reduce((total, group) => total + group.tokens.length, 0);
-          showToast(`Successfully imported ${tokenCount} tokens across ${importedTokens.length} groups from GitHub!`, 'success');
-        } else {
-          showToast(`Failed to import from GitHub: ${result.error}`, 'error');
-        }
-      }
-    } catch (error) {
-      showToast(`Error: ${error instanceof Error ? error.message : 'Unknown error'}`, 'error');
-    } finally {
-      setLoading(false);
-    }
-  };
-
-  const importFromGitHub = async () => {
-    console.log('GitHub config check:', githubConfig); // Debug log
-    if (!githubConfig) {
-      showToast('Please configure GitHub connection first', 'error');
-      return;
-    }
-
-    try {
-      await loadBranches();
-    } catch (error) {
-      console.warn('Failed to load branches, continuing with import:', error);
-      // Continue anyway - the directory picker can work with the configured branch
-      // Ensure we have at least the configured branch available
-      if (availableBranches.length === 0 && githubConfig.branch) {
-        setAvailableBranches([githubConfig.branch]);
-      }
-    }
-
-    setDirectoryPickerMode('import');
-    setShowDirectoryPicker(true);
-  };
-
-  const clearForm = () => {
-    if (confirm('Are you sure you want to clear all tokens and groups? This cannot be undone.')) {
-      setTokenGroups([{ id: generateId(), name: 'colors', tokens: [], level: 0, expanded: true }]);
-      setGlobalNamespace('');
-      setExpandedTokens(new Set());
-      setLoadedCollection(null);
-      setIsDirty(false);
-      showToast('Form cleared successfully!', 'success');
-    }
-  };
 
   // Use token service to convert tokens to groups
-  const convertToTokenGroups = (tokenSet: any): { groups: TokenGroup[]; detectedGlobalNamespace: string } => {
+  const convertToTokenGroups = (
+    tokenSet: any,
+  ): { groups: TokenGroup[]; detectedGlobalNamespace: string } => {
     return tokenService.processImportedTokens(tokenSet, globalNamespace);
   };
 
-  const exportToFigma = () => {
-    setShowExportFigmaDialog(true);
-  };
 
   // Use token service for resolving token references
   const resolveTokenReference = (value: string): string => {
@@ -1112,20 +1120,25 @@ export function TokenGeneratorForm({
   // Add a child group under an existing group
   const addSubGroup = (parentGroupId: string) => {
     const insertChild = (groups: TokenGroup[]): TokenGroup[] =>
-      groups.map(g => {
+      groups.map((g) => {
         if (g.id === parentGroupId) {
           const newChild: TokenGroup = {
             id: generateId(),
-            name: 'new-group',
+            name: "new-group",
             tokens: [],
             level: g.level + 1,
             parent: parentGroupId,
             children: [],
             expanded: true,
           };
-          return { ...g, children: [...(g.children ?? []), newChild], expanded: true };
+          return {
+            ...g,
+            children: [...(g.children ?? []), newChild],
+            expanded: true,
+          };
         }
-        if (g.children?.length) return { ...g, children: insertChild(g.children) };
+        if (g.children?.length)
+          return { ...g, children: insertChild(g.children) };
         return g;
       });
     setTokenGroups(insertChild(tokenGroups));
@@ -1162,7 +1175,11 @@ export function TokenGeneratorForm({
               )}
               <DropdownMenu>
                 <DropdownMenuTrigger asChild>
-                  <Button variant="ghost" size="sm" className="h-7 w-7 p-0 text-gray-400 hover:text-gray-700">
+                  <Button
+                    variant="ghost"
+                    size="sm"
+                    className="h-7 w-7 p-0 text-gray-400 hover:text-gray-700"
+                  >
                     ···
                   </Button>
                 </DropdownMenuTrigger>
@@ -1196,18 +1213,26 @@ export function TokenGeneratorForm({
 
           {hasTokens && (
             <div className="overflow-x-auto">
-              <table className="min-w-full border-collapse">
-                <thead className="bg-gray-50 border-b border-gray-200">
+              <table className="min-w-full border-collapse table-auto">
+                <thead className="border-b border-gray-200">
                   <tr>
-                    <th className="px-4 py-2 text-[10px] font-semibold text-left text-gray-400 uppercase tracking-wide w-[180px]">Name</th>
-                    <th className="px-4 py-2 text-[10px] font-semibold text-left text-gray-400 uppercase tracking-wide w-[120px]">Type</th>
-                    <th className="px-4 py-2 text-[10px] font-semibold text-left text-gray-400 uppercase tracking-wide">Value</th>
-                    <th className="px-4 py-2 text-[10px] font-semibold text-left text-gray-400 uppercase tracking-wide">Description</th>
-                    <th className="px-4 py-2 text-[10px] font-semibold text-left text-gray-400 uppercase tracking-wide w-[72px]"></th>
+                    <th className="px-4 py-2 text-[10px] font-semibold text-left text-gray-400 uppercase tracking-wide">
+                      Name
+                    </th>
+                    <th className="px-4 py-2 text-[10px] font-semibold text-left text-gray-400 uppercase tracking-wide">
+                      Type
+                    </th>
+                    <th className="px-4 py-2 text-[10px] font-semibold text-left text-gray-400 uppercase tracking-wide">
+                      Value
+                    </th>
+                    <th className="px-4 py-2 text-[10px] font-semibold text-left text-gray-400 uppercase tracking-wide">
+                      Description
+                    </th>
+                    <th className="px-4 py-2 text-[10px] font-semibold text-left text-gray-400 uppercase tracking-wide"></th>
                   </tr>
                 </thead>
                 <tbody className="divide-y divide-gray-100">
-                  {group.tokens.map(token => (
+                  {group.tokens.map((token) => (
                     <TokenTableRow
                       key={token.id}
                       token={token}
@@ -1243,7 +1268,7 @@ export function TokenGeneratorForm({
               onClick={() => addToken(group.id)}
               disabled={isReadOnly}
               className="text-xs font-medium text-blue-600 hover:text-blue-800 h-auto p-0 disabled:opacity-50 disabled:pointer-events-none"
-              title={isReadOnly ? 'Source group — read only' : undefined}
+              title={isReadOnly ? "Source group — read only" : undefined}
             >
               + Add Token
             </Button>
@@ -1251,7 +1276,7 @@ export function TokenGeneratorForm({
         </div>
         {hasChildren && group.expanded && (
           <div className="mt-2">
-            {group.children!.map(childGroup => renderGroup(childGroup))}
+            {group.children!.map((childGroup) => renderGroup(childGroup))}
           </div>
         )}
       </div>
@@ -1259,159 +1284,171 @@ export function TokenGeneratorForm({
   };
 
   return (
-    <div className="space-y-6">
-      {/* Header Actions */}
-      <div className="p-4 bg-white rounded-lg border border-gray-200 shadow-sm">
+    <div className="space-y-4">
+ 
+
         {!hideNamespaceAndActions && (
           <div className="flex items-center space-x-4 mb-4">
-            <h3 className="text-lg font-medium text-gray-900">Export Actions</h3>
+            <h3 className="text-lg font-medium text-gray-900">
+              Export Actions
+            </h3>
             {loadedCollection && (
               <p className="text-xs text-emerald-700 font-medium">
                 Editing: {loadedCollection.name}
               </p>
             )}
+
             <div className="flex items-center space-x-2">
-              <label className="text-sm font-medium text-gray-700">Global Namespace:</label>
+              <label className="text-sm font-medium text-gray-700">
+                Global Namespace:
+              </label>
               <Input
                 type="text"
                 value={globalNamespace}
-                onChange={(e) => { setGlobalNamespace(e.target.value); onNamespaceChange?.(e.target.value); setIsDirty(true); }}
+                onChange={(e) => {
+                  setGlobalNamespace(e.target.value);
+                  onNamespaceChange?.(e.target.value);
+                  setIsDirty(true);
+                }}
                 placeholder="Optional namespace (e.g., 'design', 'token')"
                 className="text-sm"
               />
             </div>
           </div>
         )}
-        <div className="flex flex-wrap gap-2">
-          <Button
-            size="sm"
-            onClick={() => setShowJsonDialog(true)}
-            className="bg-gray-600 hover:bg-gray-700 text-white"
-          >
-            Preview JSON
-          </Button>
 
 
-          <DropdownMenu>
-  <DropdownMenuTrigger asChild>
-    <Button variant="outline">Open</Button>
-  </DropdownMenuTrigger>
-  <DropdownMenuContent>
-    <DropdownMenuGroup>
-      <DropdownMenuItem onClick={exportToJSON}>Download JSON</DropdownMenuItem>
-    <DropdownMenuItem onClick={() => setShowSaveDialog(true)}>Save to Database</DropdownMenuItem>
-    <DropdownMenuItem onClick={() => setShowLoadDialog(true)}>Load from Database</DropdownMenuItem>
-    <DropdownMenuItem onClick={exportToJSON}>Download JSON</DropdownMenuItem>
-    <DropdownMenuItem onClick={exportToGitHub}>Push to GitHub</DropdownMenuItem>
-    <DropdownMenuItem onClick={importFromGitHub}>Import from GitHub</DropdownMenuItem>
-    <DropdownMenuItem onClick={exportToFigma}>Export to Figma</DropdownMenuItem>
-    <DropdownMenuItem onClick={clearForm}>Clear Form</DropdownMenuItem>
-    </DropdownMenuGroup>
-  </DropdownMenuContent>
-</DropdownMenu>
 
-
-      
-          <Button
-            variant="destructive"
-            size="sm"
-            onClick={clearForm}
-          >
-            Clear Form
-          </Button>
-        </div>
         {!hideNamespaceAndActions && globalNamespace && (
           <div className="text-sm text-gray-600 mt-4">
-            <strong>Preview:</strong> Tokens will be prefixed with "{globalNamespace}."
+            <strong>Preview:</strong> Tokens will be prefixed with "
+            {globalNamespace}."
           </div>
         )}
-      </div>
+    
 
       {/* Token Groups */}
       {!selectedGroupId ? (
         /* Default view: overview table of all top-level groups */
         <div className="bg-white rounded-lg border border-gray-200 shadow-sm overflow-hidden">
-          <div className="px-4 py-3 border-b border-gray-100">
+          <div className="px-4 py-3">
             <h3 className="text-sm font-semibold text-gray-700">All Groups</h3>
           </div>
           {(() => {
-            const overviewGroups = (themeTokens && themeTokens.length > 0) ? themeTokens : tokenGroups;
+            const overviewGroups =
+              themeTokens && themeTokens.length > 0 ? themeTokens : tokenGroups;
             return overviewGroups.length === 0 ? (
-            <p className="px-4 py-8 text-sm text-gray-400 text-center">No groups yet. Add a group below.</p>
-          ) : (
-            <table className="min-w-full">
-              <thead className="bg-gray-50 border-b border-gray-100">
-                <tr>
-                  <th className="px-4 py-2 text-[10px] font-semibold text-left text-gray-400 uppercase tracking-wide">Group</th>
-                  <th className="px-4 py-2 text-[10px] font-semibold text-left text-gray-400 uppercase tracking-wide w-[90px]">Tokens</th>
-                  <th className="px-4 py-2 text-[10px] font-semibold text-left text-gray-400 uppercase tracking-wide w-[90px]">Sub-groups</th>
-                  <th className="px-4 py-2 w-[40px]"></th>
-                </tr>
-              </thead>
-              <tbody className="divide-y divide-gray-100">
-                {overviewGroups.map(group => (
-                  <tr
-                    key={group.id}
-                    className="hover:bg-gray-50 cursor-pointer transition-colors"
-                    onClick={() => onGroupSelect?.(group.id)}
-                  >
-                    <td className="px-4 py-2.5">
-                      <span className="text-sm font-medium text-gray-800">{group.name}</span>
-                    </td>
-                    <td className="px-4 py-2.5">
-                      <span className="text-xs text-gray-500">{group.tokens.length}</span>
-                    </td>
-                    <td className="px-4 py-2.5">
-                      <span className="text-xs text-gray-500">{group.children?.length ?? 0}</span>
-                    </td>
-                    <td className="px-4 py-2.5 text-right">
-                      <span className="text-gray-300 text-sm">→</span>
-                    </td>
+              <p className="px-4 py-8 text-sm text-gray-400 text-center">
+                No groups yet. Add a group below.
+              </p>
+            ) : (
+              <table className="min-w-full table-auto">
+                <thead className="bg-gray-50 border-b border-gray-100">
+                  <tr>
+                    <th className="px-4 py-2 text-[10px] font-semibold text-left text-gray-400 uppercase tracking-wide">
+                      Group
+                    </th>
+                    <th className="px-4 py-2 text-[10px] font-semibold text-left text-gray-400 uppercase tracking-wide">
+                      Tokens
+                    </th>
+                    <th className="px-4 py-2 text-[10px] font-semibold text-left text-gray-400 uppercase tracking-wide">
+                      Sub-groups
+                    </th>
+                    <th className="px-4 py-2 w-[40px]"></th>
                   </tr>
-                ))}
-              </tbody>
-            </table>
-          );
+                </thead>
+                <tbody className="divide-y divide-gray-100">
+                  {overviewGroups.map((group) => (
+                    <tr
+                      key={group.id}
+                      className="hover:bg-gray-50 cursor-pointer transition-colors"
+                      onClick={() => onGroupSelect?.(group.id)}
+                    >
+                      <td className="px-4 py-2.5">
+                        <span className="text-sm font-medium text-gray-800">
+                          {group.name}
+                        </span>
+                      </td>
+                      <td className="px-4 py-2.5">
+                        <span className="text-xs text-gray-500">
+                          {group.tokens.length}
+                        </span>
+                      </td>
+                      <td className="px-4 py-2.5">
+                        <span className="text-xs text-gray-500">
+                          {group.children?.length ?? 0}
+                        </span>
+                      </td>
+                      <td className="px-4 py-2.5 text-right">
+                        <span className="text-gray-300 text-sm">→</span>
+                      </td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            );
           })()}
         </div>
       ) : (
         <>
           {/* Token name mismatch warning when theme graph differs from default */}
-          {tokenNameMismatch && (tokenNameMismatch.inThemeNotDefault.length > 0 || tokenNameMismatch.inDefaultNotTheme.length > 0) && (
-            <div className="rounded-lg border border-amber-200 bg-amber-50 px-4 py-3 text-sm text-amber-800">
-              <span className="font-medium">Token names differ from default.</span>
-              <span className="ml-1">Theme graph produces different token paths than the default collection.</span>
-              {tokenNameMismatch.inThemeNotDefault.length > 0 && (
-                <p className="mt-1 text-xs">In theme only: {tokenNameMismatch.inThemeNotDefault.slice(0, 5).join(', ')}
-                  {tokenNameMismatch.inThemeNotDefault.length > 5 && ` +${tokenNameMismatch.inThemeNotDefault.length - 5} more`}
-                </p>
-              )}
-              {tokenNameMismatch.inDefaultNotTheme.length > 0 && (
-                <p className="mt-1 text-xs">In default only: {tokenNameMismatch.inDefaultNotTheme.slice(0, 5).join(', ')}
-                  {tokenNameMismatch.inDefaultNotTheme.length > 5 && ` +${tokenNameMismatch.inDefaultNotTheme.length - 5} more`}
-                </p>
-              )}
-            </div>
-          )}
+          {tokenNameMismatch &&
+            (tokenNameMismatch.inThemeNotDefault.length > 0 ||
+              tokenNameMismatch.inDefaultNotTheme.length > 0) && (
+              <div className="rounded-lg border border-amber-200 bg-amber-50 px-4 py-3 text-sm text-amber-800">
+                <span className="font-medium">
+                  Token names differ from default.
+                </span>
+                <span className="ml-1">
+                  Theme graph produces different token paths than the default
+                  collection.
+                </span>
+                {tokenNameMismatch.inThemeNotDefault.length > 0 && (
+                  <p className="mt-1 text-xs">
+                    In theme only:{" "}
+                    {tokenNameMismatch.inThemeNotDefault.slice(0, 5).join(", ")}
+                    {tokenNameMismatch.inThemeNotDefault.length > 5 &&
+                      ` +${tokenNameMismatch.inThemeNotDefault.length - 5} more`}
+                  </p>
+                )}
+                {tokenNameMismatch.inDefaultNotTheme.length > 0 && (
+                  <p className="mt-1 text-xs">
+                    In default only:{" "}
+                    {tokenNameMismatch.inDefaultNotTheme.slice(0, 5).join(", ")}
+                    {tokenNameMismatch.inDefaultNotTheme.length > 5 &&
+                      ` +${tokenNameMismatch.inDefaultNotTheme.length - 5} more`}
+                  </p>
+                )}
+              </div>
+            )}
           {/* Render selected group — prefer themeTokens when group exists (keeps render+write in sync); fall back to tokenGroups */}
           {(() => {
-            const sourceGroups = (themeTokens && themeTokens.length > 0) ? themeTokens : tokenGroups;
-            const topLevel = sourceGroups.find(g => g.id === selectedGroupId)
-                          ?? tokenGroups.find(g => g.id === selectedGroupId);
+            const sourceGroups =
+              themeTokens && themeTokens.length > 0 ? themeTokens : tokenGroups;
+            const topLevel =
+              sourceGroups.find((g) => g.id === selectedGroupId) ??
+              tokenGroups.find((g) => g.id === selectedGroupId);
             if (topLevel) return renderGroup(topLevel);
-            const found = findGroupById(sourceGroups, selectedGroupId)
-                       ?? findGroupById(tokenGroups, selectedGroupId);
+            const found =
+              findGroupById(sourceGroups, selectedGroupId) ??
+              findGroupById(tokenGroups, selectedGroupId);
             return found ? renderGroup(found) : null;
           })()}
           {/* No tokens empty state */}
           {(() => {
-            const sourceGroups = (themeTokens && themeTokens.length > 0) ? themeTokens : tokenGroups;
-            const found = findGroupById(sourceGroups, selectedGroupId)
-                       ?? sourceGroups.find(g => g.id === selectedGroupId)
-                       ?? findGroupById(tokenGroups, selectedGroupId)
-                       ?? tokenGroups.find(g => g.id === selectedGroupId);
+            const sourceGroups =
+              themeTokens && themeTokens.length > 0 ? themeTokens : tokenGroups;
+            const found =
+              findGroupById(sourceGroups, selectedGroupId) ??
+              sourceGroups.find((g) => g.id === selectedGroupId) ??
+              findGroupById(tokenGroups, selectedGroupId) ??
+              tokenGroups.find((g) => g.id === selectedGroupId);
             if (found && found.tokens.length === 0) {
-              return <p className="p-6 text-sm text-gray-400 text-center">No tokens in this group</p>;
+              return (
+                <p className="p-6 text-sm text-gray-400 text-center">
+                  No tokens in this group
+                </p>
+              );
             }
             return null;
           })()}
@@ -1435,8 +1472,11 @@ export function TokenGeneratorForm({
                 value={newGroupName}
                 onChange={(e) => setNewGroupName(e.target.value)}
                 onKeyDown={(e) => {
-                  if (e.key === 'Enter') addTokenGroup();
-                  if (e.key === 'Escape') { setIsAddingGroup(false); setNewGroupName(''); }
+                  if (e.key === "Enter") addTokenGroup();
+                  if (e.key === "Escape") {
+                    setIsAddingGroup(false);
+                    setNewGroupName("");
+                  }
                 }}
                 placeholder="Group name (optional)..."
                 autoFocus
@@ -1449,7 +1489,10 @@ export function TokenGeneratorForm({
               </Button>
               <Button
                 variant="outline"
-                onClick={() => { setIsAddingGroup(false); setNewGroupName(''); }}
+                onClick={() => {
+                  setIsAddingGroup(false);
+                  setNewGroupName("");
+                }}
               >
                 ✕
               </Button>
@@ -1459,18 +1502,6 @@ export function TokenGeneratorForm({
       )}
 
       {/* Directory Picker */}
-      {showDirectoryPicker && githubConfig && (
-        <GitHubDirectoryPicker
-          githubToken={githubConfig.token}
-          repository={githubConfig.repository}
-          branch={githubConfig.branch}
-          onSelect={handleDirectorySelect}
-          onCancel={() => setShowDirectoryPicker(false)}
-          defaultFilename={directoryPickerMode === 'import' ? '' : 'tokens.json'}
-          mode={directoryPickerMode}
-          availableBranches={availableBranches}
-        />
-      )}
 
       {/* JSON Preview Dialog */}
       <JsonPreviewDialog
@@ -1479,14 +1510,6 @@ export function TokenGeneratorForm({
         jsonData={generateTokenSet()}
       />
 
-      {/* Save Collection Dialog */}
-      <SaveCollectionDialog
-        isOpen={showSaveDialog}
-        initialName={loadedCollection?.name ?? ''}
-        onSave={handleSaveCollection}
-        onCancel={() => { setShowSaveDialog(false); setSaveDialogDuplicateName(null); }}
-        isSaving={isSaving}
-      />
 
       {/* Load Collection Dialog */}
       <LoadCollectionDialog
@@ -1495,13 +1518,6 @@ export function TokenGeneratorForm({
         onCancel={() => setShowLoadDialog(false)}
       />
 
-      {/* Export to Figma Dialog */}
-      <ExportToFigmaDialog
-        isOpen={showExportFigmaDialog}
-        onClose={() => setShowExportFigmaDialog(false)}
-        tokenSet={generateTokenSet() as Record<string, unknown>}
-        loadedCollectionId={loadedCollection?.id ?? null}
-      />
 
       {/* Loading Indicator */}
       <LoadingIndicator loadingState={loadingState} />

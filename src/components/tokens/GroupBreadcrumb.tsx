@@ -1,5 +1,5 @@
 'use client';
-
+import { ListTree } from 'lucide-react';
 import { TokenGroup } from '@/types';
 import { parseGroupPath } from '@/utils';
 
@@ -54,8 +54,10 @@ export function GroupBreadcrumb({
   return (
     <nav
       aria-label="breadcrumb"
-      className="text-sm py-2 px-6 border-b border-gray-100 bg-white flex items-center gap-1"
+      className="text-sm flex items-center gap-1"
     >
+
+       <ListTree size={18} className="mr-2" />
       {ancestors.map((group, index) => {
         const isLast = index === ancestors.length - 1;
         // Use the last segment of the parsed path as the display label —
