@@ -5,3 +5,6 @@ export { GroupBreadcrumb } from './GroupBreadcrumb';
 export { TokenReferencePicker } from './TokenReferencePicker';
 export { TokenGeneratorDocs } from './TokenGeneratorDocs';
 export { ClearFormDialog } from './ClearFormDialog';
+export { DeleteConfirmDialog } from './DeleteConfirmDialog';
+export { GroupPickerModal } from './GroupPickerModal';
+export { BulkActionBar } from './BulkActionBar';
