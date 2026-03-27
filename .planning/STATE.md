@@ -70,6 +70,7 @@ Progress: [████] Phase 14 in progress (4/4 plans done)
 - v1.4 (Phases 10-12): Theme Token Sets — themes become actual value stores
 - Phase 13 added: groups ordering drag and drop
 - Phase 14 added: dark mode support
+- Phase 15 added: multi-row actions
 
 ### Decisions
 
