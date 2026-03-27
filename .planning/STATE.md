@@ -18,16 +18,16 @@ progress:
 See: .planning/PROJECT.md (updated 2026-03-19)
 
 **Core value:** Token collections are always available and editable: stored in MongoDB, accessible via collection-scoped URLs, with per-collection Figma/GitHub config, full CRUD from the collections grid, Figma import/export fully integrated, and a Themes system for filtering active token groups.
-**Current focus:** Phase 14 Dark Mode Support — In Progress
+**Current focus:** Phase 15 Multi-Row Actions — In Progress
 
 ## Current Position
 
-Phase: 14 of 14 (Dark Mode Support) — In Progress
-Plan: 04 complete — 1 task done
+Phase: 15 of 15 (Multi-Row Actions) — In Progress
+Plan: 01 complete — bulkTokenActions pure utilities (TDD)
 Status: In Progress
-Last activity: 2026-03-25 — 14-04 complete: Figma export colorMode-aware Light/Dark mode pairing
+Last activity: 2026-03-27 — 15-01 complete: six pure bulk-mutation helpers + Jest infrastructure
 
-Progress: [████] Phase 14 in progress (4/4 plans done)
+Progress: [████] Phase 15 in progress (1/4 plans done)
 
 ## Performance Metrics
 
@@ -58,6 +58,7 @@ Progress: [████] Phase 14 in progress (4/4 plans done)
 | Phase 14-dark-mode-support P04 | ~3 min | 1 tasks | 1 files |
 | Phase 14-dark-mode-support P03 | 3 | 2 tasks | 5 files |
 | Phase 14-dark-mode-support P05 | 5min | 2 tasks | 0 files |
+| Phase 15-multi-row-actions P01 | ~3 min | 1 task (TDD) | 4 files |
 
 ## Accumulated Context
 
@@ -117,6 +118,9 @@ Key decisions relevant to v1.4:
 - [Phase 14-03]: JSON format omits dark tokens — JSON spec forbids comments; no dark block structure needed
 - [Phase 14-03]: darkTokens derived only when selectedThemeId === '__default__'; single-theme exports unchanged for specific theme selection
 - [Phase 14-dark-mode-support]: Phase 14 human verification gate — all 7 scenarios approved by user on 2026-03-26
+- [Phase 15-01]: resolveTokenPathConflict mirrors resolveCollisionFreeId from groupMove.ts — candidate-2..candidate-10 then Date.now() fallback
+- [Phase 15-01]: Alias rewrite scoped to within-group tokens only — rewriteGroupAliases uses regex /.${oldPath}(?=})/g
+- [Phase 15-01]: jest.config.ts uses ts-jest with CommonJS module override — Next.js tsconfig bundler moduleResolution incompatible with Jest
 
 ### Pending Todos
 
@@ -129,6 +133,6 @@ None.
 
 ## Session Continuity
 
-Last session: 2026-03-26
-Stopped at: Completed 14-02-PLAN.md — colorMode UI: badge, dialog, selectors (human-verify approved)
+Last session: 2026-03-27
+Stopped at: Completed 15-01-PLAN.md — bulkTokenActions pure utilities (TDD, 35 tests pass)
 Resume file: None

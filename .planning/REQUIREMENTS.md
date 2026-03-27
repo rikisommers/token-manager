@@ -103,11 +103,11 @@ Which phases cover which requirements. Updated during roadmap creation.
 | DARK-06 | Phase 14 | Planned |
 | BULK-01 | Phase 15 | Planned |
 | BULK-02 | Phase 15 | Planned |
-| BULK-03 | Phase 15 | Planned |
-| BULK-04 | Phase 15 | Planned |
-| BULK-05 | Phase 15 | Planned |
-| BULK-06 | Phase 15 | Planned |
-| BULK-07 | Phase 15 | Planned |
+| BULK-03 | Phase 15 | In Progress (core logic done in P01) |
+| BULK-04 | Phase 15 | In Progress (core logic done in P01) |
+| BULK-05 | Phase 15 | In Progress (core logic done in P01) |
+| BULK-06 | Phase 15 | In Progress (core logic done in P01) |
+| BULK-07 | Phase 15 | In Progress (core logic done in P01) |
 
 **Coverage:**
 - v1.4 requirements: 11 total
