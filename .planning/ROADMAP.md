@@ -175,7 +175,7 @@ Plans:
 **Goal:** Users can select multiple tokens in the active group via always-visible checkboxes and perform bulk operations (delete, move to group, change type, add/remove prefix) from a floating action bar, with undo support and theme-aware dual-path routing
 **Depends on:** Phase 14
 **Requirements:** BULK-01, BULK-02, BULK-03, BULK-04, BULK-05, BULK-06, BULK-07
-**Plans:** 3/4 plans executed
+**Plans:** 4/4 plans complete
 
 Plans:
 - [ ] 15-01-PLAN.md — Pure bulk mutation utils (TDD): bulkDeleteTokens, bulkMoveTokens, bulkChangeType, bulkAddPrefix, bulkRemovePrefix, detectCommonPrefix

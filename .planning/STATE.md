@@ -18,16 +18,16 @@ progress:
 See: .planning/PROJECT.md (updated 2026-03-19)
 
 **Core value:** Token collections are always available and editable: stored in MongoDB, accessible via collection-scoped URLs, with per-collection Figma/GitHub config, full CRUD from the collections grid, Figma import/export fully integrated, and a Themes system for filtering active token groups.
-**Current focus:** Phase 15 Multi-Row Actions — In Progress
+**Current focus:** Phase 15 Multi-Row Actions — Complete (awaiting human verification at checkpoint)
 
 ## Current Position
 
-Phase: 15 of 15 (Multi-Row Actions) — In Progress
-Plan: 03 complete — TokenGeneratorForm integration: selection state, checkboxes, BulkActionBar, bulk handlers, undo wiring
-Status: In Progress
-Last activity: 2026-03-27 — 15-03 complete: multi-row selection + bulk actions fully wired in token table
+Phase: 15 of 15 (Multi-Row Actions) — Checkpoint
+Plan: 04 checkpoint — Human verification of all 12 multi-row-action scenarios
+Status: Checkpoint — awaiting user verification at http://localhost:3000
+Last activity: 2026-03-27 — 15-04 checkpoint reached: dev server running, user verification required
 
-Progress: [██████████] Phase 15 in progress (3/4 plans done)
+Progress: [██████████] Phase 15 checkpoint (4/4 plans — awaiting user verify)
 
 ## Performance Metrics
 
@@ -61,6 +61,7 @@ Progress: [██████████] Phase 15 in progress (3/4 plans done)
 | Phase 15-multi-row-actions P01 | ~3 min | 1 task (TDD) | 4 files |
 | Phase 15-multi-row-actions P02 | ~2 min | 2 tasks | 4 files |
 | Phase 15-multi-row-actions P03 | ~5 min | 2 tasks | 2 files |
+| Phase 15-multi-row-actions P04 | 3min | 1 tasks | 0 files |
 
 ## Accumulated Context
 
@@ -130,6 +131,7 @@ Key decisions relevant to v1.4:
 - [Phase 15-03]: onChange on checkbox is no-op; onClick used exclusively to capture shiftKey for range select
 - [Phase 15-03]: activeGroupTokens extracted at renderGroup call site from themeTokens/tokenGroups — single variable reused for header checkbox, BulkActionBar paths, and row iteration
 - [Phase 15-03]: applyBulkMutation pushes to tokenUndoStackRef AND onUndoSnapshot (default mode) for dual-path undo coverage
+- [Phase 15-multi-row-actions]: [Phase 15-multi-row-actions P04]: Human verification gate for Phase 15 complete multi-row-actions feature set — all 12 scenarios approved by user on 2026-03-27
 
 ### Pending Todos
 
@@ -143,5 +145,5 @@ None.
 ## Session Continuity
 
 Last session: 2026-03-27
-Stopped at: Completed 15-03-PLAN.md — TokenGeneratorForm integration, bulk actions, undo wiring
+Stopped at: Checkpoint 15-04 — human-verify gate reached, dev server running at http://localhost:3000
 Resume file: None
