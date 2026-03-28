@@ -87,37 +87,37 @@ Which phases cover which requirements. Updated during roadmap creation.
 
 | Requirement | Phase | Status |
 |-------------|-------|--------|
-| AUTH-01 | Phase 16 | Pending |
-| AUTH-02 | Phase 16 | Pending |
-| AUTH-03 | Phase 16 | Pending |
-| AUTH-04 | Phase 16 | Pending |
-| AUTH-05 | Phase 16 | Pending |
-| AUTH-06 | Phase 16 | Pending |
 | ARCH-01 | Phase 16 | Pending |
-| ARCH-02 | Phase — | Pending |
-| USER-01 | Phase — | Pending |
-| USER-02 | Phase — | Pending |
-| USER-03 | Phase — | Pending |
-| USER-04 | Phase — | Pending |
-| USER-05 | Phase — | Pending |
-| USER-06 | Phase — | Pending |
-| USER-07 | Phase — | Pending |
-| PERM-01 | Phase — | Pending |
-| PERM-02 | Phase — | Pending |
-| PERM-03 | Phase — | Pending |
-| PERM-04 | Phase — | Pending |
-| PERM-05 | Phase — | Pending |
-| PERM-06 | Phase — | Pending |
-| UI-01 | Phase — | Pending |
-| UI-02 | Phase — | Pending |
-| UI-03 | Phase — | Pending |
-| UI-04 | Phase — | Pending |
+| AUTH-06 | Phase 16 | Pending |
+| AUTH-01 | Phase 17 | Pending |
+| AUTH-03 | Phase 17 | Pending |
+| AUTH-04 | Phase 17 | Pending |
+| AUTH-05 | Phase 17 | Pending |
+| AUTH-02 | Phase 18 | Pending |
+| ARCH-02 | Phase 18 | Pending |
+| PERM-01 | Phase 19 | Pending |
+| PERM-02 | Phase 19 | Pending |
+| PERM-03 | Phase 19 | Pending |
+| PERM-04 | Phase 19 | Pending |
+| PERM-05 | Phase 19 | Pending |
+| PERM-06 | Phase 19 | Pending |
+| USER-02 | Phase 20 | Pending |
+| USER-03 | Phase 20 | Pending |
+| USER-04 | Phase 20 | Pending |
+| USER-07 | Phase 20 | Pending |
+| USER-01 | Phase 21 | Pending |
+| USER-05 | Phase 21 | Pending |
+| USER-06 | Phase 21 | Pending |
+| UI-01 | Phase 21 | Pending |
+| UI-02 | Phase 21 | Pending |
+| UI-03 | Phase 21 | Pending |
+| UI-04 | Phase 21 | Pending |
 
 **Coverage:**
-- v1.5 requirements: 24 total
-- Mapped to phases: 0 (roadmap pending)
-- Unmapped: 24 ⚠️
+- v1.5 requirements: 25 total
+- Mapped to phases: 25
+- Unmapped: 0
 
 ---
 *Requirements defined: 2026-03-28*
-*Last updated: 2026-03-28 after initial definition*
+*Last updated: 2026-03-28 — traceability complete after roadmap creation*

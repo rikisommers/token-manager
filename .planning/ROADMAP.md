@@ -7,7 +7,7 @@
 - ✅ **v1.2 Token Groups Tree** — Phases 5-6 (shipped 2026-03-13; Phase 7 Mutations deferred)
 - ✅ **v1.3 Add Tokens Modes** — Phases 8-9 (shipped 2026-03-19)
 - ✅ **v1.4 Theme Token Sets** — Phases 10-15 (shipped 2026-03-27)
-- 📋 **v1.5** — TBD (planned)
+- 🚧 **v1.5 Org User Management** — Phases 16-21 (in progress)
 
 ## Phases
 
@@ -73,9 +73,92 @@ See: `.planning/milestones/v1.4-ROADMAP.md` for full phase details.
 
 </details>
 
-### 📋 v1.5 (Planned)
+### 🚧 v1.5 Org User Management (In Progress)
 
-- [ ] Phase 16: TBD
+**Milestone Goal:** Add authentication and org-level user management so multiple users can collaborate on token collections with role-based access control.
+
+- [ ] **Phase 16: Auth Infrastructure and Security Baseline** — Patch CVE-2025-29927, install packages, Mongoose models, authOptions, permissions pure function
+- [ ] **Phase 17: Auth API Routes and Sign-In Flow** — NextAuth route handler, first-user bootstrap, sign-in and sign-out pages, SessionProvider wiring
+- [ ] **Phase 18: Middleware and Route Handler Guards** — withAuth middleware, requireAuth() utility, all 18 existing write Route Handlers guarded
+- [ ] **Phase 19: RBAC and Permissions Context** — PermissionsProvider, usePermissions() hook, role enforcement on write routes, JWT role re-fetch, per-collection overrides
+- [ ] **Phase 20: Email Invite Flow and Account Setup** — Resend invite email, invite token generation, account setup page, invite management
+- [ ] **Phase 21: Org Users Admin UI and Permission-Gated UI** — /org/users admin page, role change and removal API, write controls hidden for Viewer
+
+## Phase Details
+
+### Phase 16: Auth Infrastructure and Security Baseline
+**Goal**: Secure foundation is in place — CVE patched, packages installed, Mongoose models defined, authOptions configured with JWT strategy and superadmin enforcement, permissions pure function established
+**Depends on**: Phase 15 (v1.4 complete)
+**Requirements**: ARCH-01, AUTH-06
+**Success Criteria** (what must be TRUE):
+  1. `next@13.5.9` is installed and `yarn build` passes with zero TypeScript errors
+  2. `User`, `Invite`, and `CollectionPermission` Mongoose models exist in `src/lib/db/models/` with correct schemas
+  3. `src/lib/auth/` module exists with `nextauth.config.ts` (authOptions), `permissions.ts` (pure canPerform function), and `invite.ts` (token utility) — no auth code outside this module
+  4. JWT and session TypeScript module augmentation compiles and carries `id` and `role` fields at runtime (verified with a live sign-in smoke test)
+  5. `SUPER_ADMIN_EMAIL` env var is read in the jwt callback; signing in as that email always produces role=Admin in the JWT regardless of what is stored in the DB
+**Plans**: TBD
+
+### Phase 17: Auth API Routes and Sign-In Flow
+**Goal**: Users can sign in, stay signed in across refresh, and sign out — the full auth round-trip works end to end
+**Depends on**: Phase 16
+**Requirements**: AUTH-01, AUTH-03, AUTH-04, AUTH-05
+**Success Criteria** (what must be TRUE):
+  1. User can navigate to `/auth/sign-in`, enter email and password, and be redirected to the app on success
+  2. After signing in, refreshing the browser keeps the user signed in (JWT session persists)
+  3. User can sign out from any page and is redirected to `/auth/sign-in`
+  4. The first user to complete registration (no other users exist in the DB) is automatically assigned the Admin role
+  5. `SessionProvider` and `PermissionsProvider` are wired into `LayoutShell` so session data is available to all client components
+**Plans**: TBD
+
+### Phase 18: Middleware and Route Handler Guards
+**Goal**: Unauthenticated users are blocked at every entry point — middleware redirects unauthenticated page requests and all 18 write Route Handlers return 401 without a valid session
+**Depends on**: Phase 17
+**Requirements**: AUTH-02, ARCH-02
+**Success Criteria** (what must be TRUE):
+  1. Visiting any app page without a session cookie redirects to `/auth/sign-in`
+  2. Sending a write request (PUT, POST, PATCH, DELETE) to any existing collection or theme API route without a session cookie returns HTTP 401
+  3. A curl request with a crafted `x-middleware-subrequest` header (CVE-2025-29927 exploit vector) does not bypass auth on Next.js 13.5.9
+  4. `requireAuth()` utility exists in `src/lib/auth/` and is called at the top of all 18 write Route Handlers
+**Plans**: TBD
+
+### Phase 19: RBAC and Permissions Context
+**Goal**: Roles are enforced on all write API routes and available globally in the React tree — every component can check permissions without prop drilling
+**Depends on**: Phase 18
+**Requirements**: PERM-01, PERM-02, PERM-03, PERM-04, PERM-05, PERM-06
+**Success Criteria** (what must be TRUE):
+  1. A Viewer session receives HTTP 403 when attempting any write operation (token edit, collection create/delete, GitHub push, Figma push)
+  2. An Editor session can perform all write operations except user management (invite, role change, remove user)
+  3. An Admin session has unrestricted access to all operations including user management
+  4. `usePermissions()` hook is accessible from any client component and returns pre-computed booleans (`canEdit`, `canCreate`, `isAdmin`, `canGitHub`, `canFigma`) without additional props
+  5. An Admin can set a per-collection override for a specific user; that override is reflected in the permissions context within 60 seconds without requiring sign-out
+  6. All existing MongoDB collections are backfilled to the first Admin user at bootstrap
+**Plans**: TBD
+
+### Phase 20: Email Invite Flow and Account Setup
+**Goal**: An Admin can invite a new user by email; the invited user receives a link, sets their display name and password, and gains access — pending invites are visible with expiry status
+**Depends on**: Phase 19
+**Requirements**: USER-02, USER-03, USER-04, USER-07
+**Success Criteria** (what must be TRUE):
+  1. Admin can enter an email address and role, submit the invite form, and a Resend email is delivered to that address containing a unique setup link
+  2. Clicking the setup link opens an account setup page where the invited user can enter their display name and password
+  3. After completing account setup, the invited user is signed in and can access the app with their assigned role
+  4. The invite link is single-use (clicking it a second time after account setup returns an error page)
+  5. Pending invitations appear in the org users list with an expiry badge showing whether the invite is active or expired
+**Plans**: TBD
+
+### Phase 21: Org Users Admin UI and Permission-Gated UI
+**Goal**: Admin can manage all org members from a dedicated page, and write controls in existing collection UI are hidden for users who cannot perform those actions
+**Depends on**: Phase 20
+**Requirements**: USER-01, USER-05, USER-06, UI-01, UI-02, UI-03, UI-04
+**Success Criteria** (what must be TRUE):
+  1. Admin can navigate to `/org/users` and see a table of all org members with their name, email, role, and status (active / pending invite)
+  2. Admin can change any non-superadmin user's org-level role using a role selector; the change takes effect within 60 seconds for the affected user without requiring sign-out
+  3. Admin can remove any non-superadmin user from the org; removed users are immediately redirected to sign-in on their next request
+  4. Token table edit fields and bulk action controls are visible but non-interactive (disabled) for users with read-only access on the active collection
+  5. The create-collection button and flow are not visible to Viewer users
+  6. GitHub push/pull controls are not visible to Viewer users
+  7. Figma push/pull controls are not visible to Viewer users
+**Plans**: TBD
 
 ## Progress
 
@@ -102,3 +185,9 @@ See: `.planning/milestones/v1.4-ROADMAP.md` for full phase details.
 | 13. Groups Ordering Drag and Drop | v1.4 | 3/3 | Complete | 2026-03-21 |
 | 14. Dark Mode Support | v1.4 | 5/5 | Complete | 2026-03-26 |
 | 15. Multi-Row Actions | v1.4 | 4/4 | Complete | 2026-03-27 |
+| 16. Auth Infrastructure and Security Baseline | v1.5 | 0/TBD | Not started | - |
+| 17. Auth API Routes and Sign-In Flow | v1.5 | 0/TBD | Not started | - |
+| 18. Middleware and Route Handler Guards | v1.5 | 0/TBD | Not started | - |
+| 19. RBAC and Permissions Context | v1.5 | 0/TBD | Not started | - |
+| 20. Email Invite Flow and Account Setup | v1.5 | 0/TBD | Not started | - |
+| 21. Org Users Admin UI and Permission-Gated UI | v1.5 | 0/TBD | Not started | - |

@@ -2,10 +2,10 @@
 gsd_state_version: 1.0
 milestone: v1.5
 milestone_name: Org User Management
-status: defining_requirements
+status: roadmap_ready
 last_updated: "2026-03-28T00:00:00Z"
 progress:
-  total_phases: 0
+  total_phases: 6
   completed_phases: 0
   total_plans: 0
   completed_plans: 0
@@ -18,120 +18,51 @@ progress:
 See: .planning/PROJECT.md (updated 2026-03-28)
 
 **Core value:** Token collections are always available and editable: stored in MongoDB, accessible via collection-scoped URLs, with per-collection Figma/GitHub config, full CRUD from the collections grid, Figma import/export fully integrated, and a Themes system where each theme is a complete token value set with per-group edit permissions, dark-mode awareness, and theme-targeted export.
-**Current focus:** Not started (defining requirements)
+**Current focus:** Phase 16 — Auth Infrastructure and Security Baseline
 
 ## Current Position
 
-Phase: Not started (defining requirements)
-Plan: —
-Status: Defining requirements
-Last activity: 2026-03-28 — Milestone v1.5 started
+Phase: 16 of 21 (Auth Infrastructure and Security Baseline)
+Plan: — (not started)
+Status: Ready to plan
+Last activity: 2026-03-28 — Roadmap created for v1.5 Org User Management (6 phases, 25 requirements mapped)
 
-Progress: [░░░░░░░░░░] 0% — requirements defined, roadmap pending
+Progress: [░░░░░░░░░░] 0% (0/6 phases complete)
 
 ## Performance Metrics
 
-**Velocity (v1.3 reference):**
-- Total plans completed (v1.3): 9
-- Average duration: ~5 min
-- Total execution time: ~42 min
+**Velocity (v1.4 reference):**
+- Total plans completed (v1.4): 21
+- Average duration: ~3-5 min/plan
+- Total execution time: ~8 days
 
-**By Phase (v1.3):**
+**By Phase (v1.4):**
 
-| Phase | Plans | Total | Avg/Plan |
-|-------|-------|-------|----------|
-| 8. Clean Code | 5 | ~25 min | ~5 min |
-| 9. Add Tokens Modes | 4 | ~21 min | ~5 min |
+| Phase | Plans | Avg/Plan |
+|-------|-------|----------|
+| 10. Data Model Foundation | 2 | ~5 min |
+| 11. Inline Token Editing UI | 3 | ~4 min |
+| 12. Theme-Aware Export | 4 | ~3 min |
+| 13. Groups Ordering DnD | 3 | ~5 min |
+| 14. Dark Mode Support | 5 | ~3 min |
+| 15. Multi-Row Actions | 4 | ~3 min |
 
 *Updated after each plan completion*
-| Phase 11-inline-token-editing-ui P01 | 2 | 1 tasks | 1 files |
-| Phase 11-inline-token-editing-ui P02 | 3 | 2 tasks | 1 files |
-| Phase 11-inline-token-editing-ui P03 | 5 | 2 tasks | 2 files |
-| Phase 12-theme-aware-export P01 | ~2 min | 2 tasks | 3 files |
-| Phase 12-theme-aware-export P02 | ~2 min | 2 tasks | 3 files |
-| Phase 12-theme-aware-export P03 | ~2 min | 1 tasks | 1 files |
-| Phase 12-theme-aware-export P04 | 1 | 0 tasks | 0 files |
-| Phase 13-groups-ordering-drag-and-drop P01 | ~3 min | 2 tasks | 3 files |
-| Phase 13-groups-ordering-drag-and-drop P02 | ~1 min | 1 tasks | 1 files |
-| Phase 13-groups-ordering-drag-and-drop P03 | ~10min | 2 tasks | 2 files |
-| Phase 14-dark-mode-support P01 | ~2 min | 2 tasks | 3 files |
-| Phase 14-dark-mode-support P04 | ~3 min | 1 tasks | 1 files |
-| Phase 14-dark-mode-support P03 | 3 | 2 tasks | 5 files |
-| Phase 14-dark-mode-support P05 | 5min | 2 tasks | 0 files |
-| Phase 15-multi-row-actions P01 | ~3 min | 1 task (TDD) | 4 files |
-| Phase 15-multi-row-actions P02 | ~2 min | 2 tasks | 4 files |
-| Phase 15-multi-row-actions P03 | ~5 min | 2 tasks | 2 files |
-| Phase 15-multi-row-actions P04 | 3min | 1 tasks | 0 files |
 
 ## Accumulated Context
-
-### Roadmap Evolution
-
-- v1.0 (Phases 1-7): MongoDB persistence, collection CRUD, Figma integration, unified tabbed UI
-- v1.1 (Phases 1-4): shadcn/ui migration, sidebar layout restructure, collection card grid, collection-scoped routing, per-collection config persistence to MongoDB
-- v1.2 (Phases 5-6): Token groups tree in sidebar, breadcrumb navigation, content scoped to selected group (Phase 7 Mutations deferred)
-- v1.3 (Phases 8-9): Clean code + Add Tokens Modes (Themes feature)
-- v1.4 (Phases 10-12): Theme Token Sets — themes become actual value stores
-- Phase 13 added: groups ordering drag and drop
-- Phase 14 added: dark mode support
-- Phase 15 added: multi-row actions
 
 ### Decisions
 
 All decisions logged in PROJECT.md Key Decisions table.
 
-Key decisions relevant to v1.4:
-- Whole-array `$set: { themes: updatedArray }` for all theme mutations — positional `$set` on Mixed-typed arrays is unreliable (Mongoose bugs #14595, #12530)
-- `ITheme.tokens` is required (not optional) — backward compat handled solely in `toDoc()` normalization with `?? []`; consuming code stays clean
-- Theme count limit (max 10) enforced in POST handler (HTTP 422) before BSON document size becomes a problem
-- Store full `groupTree` as `theme.tokens` (not `flattenAllGroups` result) — flat list strips children hierarchy needed by Phase 11
-- PATCH `/api/collections/[id]/themes/[themeId]/tokens` built in Phase 11 plan 01 — whole-array $set, source-group 422 guard on root-level group IDs only
-- Cast `.lean()` result through `unknown` before narrowing to `Record<string,unknown>[]` — TypeScript strict overlap check rejects direct cast from typed Mongoose document arrays
-- `atLimit` UI guard pattern: `disabled={atLimit}` + title tooltip + `disabled:opacity-40 disabled:cursor-not-allowed` Tailwind classes
-- Root-level source-group guard only (not recursive) — theme.groups maps root-level group IDs; children governed by parent
-- [Phase 11-inline-token-editing-ui]: Root-level source-group guard only (not recursive) — theme.groups maps root-level group IDs; children governed by parent
-- [Phase 11-02]: activeThemeTokens uses JSON.parse/stringify deep copy — sufficient for plain TokenGroup data objects
-- [Phase 11-02]: handleThemeTokenChange is silent on fetch error — mirrors existing graph auto-save pattern
-- [Phase 11-inline-token-editing-ui]: themeTokens overlay (not state replacement) in TokenGeneratorForm keeps master collection clean; updateToken routes through onThemeTokensChange when overlay active; switching themes or turning off theme resets to master without any state cleanup
-- [Phase 11-inline-token-editing-ui]: updateGroupToken is a pure recursive helper outside component; handleResetToDefault maps activeThemeTokens through it then calls handleThemeTokenChange
-- [Phase 12-01]: mergeThemeTokens is a pure helper — merge is done before calling the route; route only reads themeLabel for comment injection (style-dictionary.service.ts stays pure)
-- [Phase 12-01]: COMMENT_FORMATS covers css/scss/less/js/ts only — JSON format excluded (JSON spec forbids comments)
-- [Phase 12-02]: Theme selector hidden when collection has no themes (themes.length > 0 guard); overflow-auto replaces overflow-hidden on right column
-- [Phase 12-03]: Route fetches themes from MongoDB itself using mongoCollectionId — no changes required in ExportToFigmaDialog caller
-- [Phase 12-03]: Figma export always includes ALL enabled themes as modes — ignores Config page theme selector entirely
-- [Phase 12-theme-aware-export]: Human verification gate for Phase 12 complete feature set — all 6 scenarios approved by user on 2026-03-20
-- [Phase 13-01]: applyGroupMove returns { groups, themes } tuple — callers receive updated tree and theme snapshots atomically
-- [Phase 13-01]: isDragOverlay split into SortableRowInner — hook calls stay unconditional, overlay uses plain div
-- [Phase 13-01]: resolveCollisionFreeId increments suffix -2..-10 then falls back to timestamp — prevents duplicate IDs on reparent
-- [Phase 13-02]: DndContext placed inside overflow-y-auto div — DragOverlay portal renders at body level so ghost is never clipped by sidebar overflow
-- [Phase 13-02]: applyGroupMove called without themes in TokenGroupTree — theme sync delegated to page (Plan 03)
-- [Phase 13-02]: Local FlatNode + flattenTree removed from TokenGroupTree — @/utils/groupMove is canonical source
-- [Phase 13-03]: _newGroupsFromTree parameter intentionally unused in page handler — page re-derives from masterGroups + activeId + overId + themes; leading underscore signals intent
-- [Phase 13-03]: nonDefaultThemes excludes __default__ from applyGroupMove — synthetic theme rebuilt from masterGroups, not stored in MongoDB
-- [Phase 13-03]: Undo stack via useRef (not useState) — no re-renders from stack mutations; max 20 steps
-- [Phase 13-03]: Two-call pattern: TokenGroupTree calls applyGroupMove without themes (optimistic UI), page re-calls with themes (authoritative cascade)
-- [Phase 13-groups-ordering-drag-and-drop]: Human verification gate for Phase 13 complete drag-and-drop feature set — all 8 scenarios approved by user on 2026-03-21
-- [Phase 14-01]: colorMode typed as non-optional (required) on ITheme — backward compat handled via ?? 'light' at DB read sites; no migration script needed
-- [Phase 14-01]: POST handler validates colorMode against ['light','dark'] allowlist, defaults to 'light' — graceful default, no 400 on omission
-- [Phase 14-01]: PUT handler does not add runtime colorMode validation — body type ColorMode constrains it at TypeScript level
-- [Phase 14-04]: buildMultiModePayload uses first pair with both light+dark as primary — multiple pairs with different group structures not yet multi-collection (Figma API limitation)
-- [Phase 14-04]: buildSingleModePayload extracted from Phase 12 loop — formalized as named fallback for collections without paired themes
-- [Phase 14-04]: theme.colorMode ?? 'light' defensive fallback in pairThemesByColorMode — backward compat with existing DB documents lacking colorMode
-- [Phase 14-03]: JS/TS dark exports use namespace-prefix approach (Dark) — SD flat model doesn't support nested objects; namespace-prefix is standard SD multi-mode pattern
-- [Phase 14-03]: JSON format omits dark tokens — JSON spec forbids comments; no dark block structure needed
-- [Phase 14-03]: darkTokens derived only when selectedThemeId === '__default__'; single-theme exports unchanged for specific theme selection
-- [Phase 14-dark-mode-support]: Phase 14 human verification gate — all 7 scenarios approved by user on 2026-03-26
-- [Phase 15-01]: resolveTokenPathConflict mirrors resolveCollisionFreeId from groupMove.ts — candidate-2..candidate-10 then Date.now() fallback
-- [Phase 15-01]: Alias rewrite scoped to within-group tokens only — rewriteGroupAliases uses regex /.${oldPath}(?=})/g
-- [Phase 15-01]: jest.config.ts uses ts-jest with CommonJS module override — Next.js tsconfig bundler moduleResolution incompatible with Jest
-- [Phase 15-02]: BulkActionBar returns null (not hidden) when selectedCount=0 or isReadOnly — avoids DOM presence when not needed
-- [Phase 15-02]: removePrefixValue initialized from detectedPrefix when opening — handleOpenRemovePrefix sets state before showing input for correct pre-fill each time
-- [Phase 15-02]: GroupPickerModal uses flattenTree from groupMove.ts — canonical source (local flattenTree removed from TokenGroupTree in Phase 13-02)
-- [Phase 15-03]: TokenTableRow receives checkbox props (isMultiSelected, tokenIndex, onMultiSelectClick) — checkbox td rendered inside existing tr, no wrapper needed
-- [Phase 15-03]: onChange on checkbox is no-op; onClick used exclusively to capture shiftKey for range select
-- [Phase 15-03]: activeGroupTokens extracted at renderGroup call site from themeTokens/tokenGroups — single variable reused for header checkbox, BulkActionBar paths, and row iteration
-- [Phase 15-03]: applyBulkMutation pushes to tokenUndoStackRef AND onUndoSnapshot (default mode) for dual-path undo coverage
-- [Phase 15-multi-row-actions]: [Phase 15-multi-row-actions P04]: Human verification gate for Phase 15 complete multi-row-actions feature set — all 12 scenarios approved by user on 2026-03-27
+Key decisions relevant to v1.5 (from research):
+- `next-auth@^4.24.13` (not v5) — v5 requires Next.js 14+; project locked at 13.5.6 → 13.5.9
+- No `@auth/mongodb-adapter` — Credentials provider requires JWT sessions; adapter is incompatible and creates conflicting MongoClient
+- `session: { strategy: "jwt" }` explicit — role and id embedded in JWT via callbacks; never rely on default session strategy
+- `crypto.randomBytes(32)` for invite tokens — no `jsonwebtoken` dep needed; SHA-256 hash stored in DB, plaintext sent in email
+- JWT role re-fetch every 60s — `roleLastFetched` timestamp in JWT; re-fetch from DB in jwt callback if stale
+- `getServerSession()` on every write Route Handler — middleware is UX, not security (CVE-2025-29927 proof)
+- `SUPER_ADMIN_EMAIL` enforcement in jwt callback — always overrides DB role; no UI surface needed
 
 ### Pending Todos
 
@@ -139,11 +70,13 @@ None.
 
 ### Blockers/Concerns
 
-- Figma Variables POST API requires Figma Enterprise plan — must surface this in export UI (tooltip or note) during Phase 12
-- Measure actual BSON size of largest existing collection before Phase 10 ships to calibrate the theme count limit
+- CVE-2025-29927: Next.js 13.5.6 middleware auth bypass (CVSS 9.1) — must patch to 13.5.9 as first step of Phase 16 before any auth code ships
+- Per-collection override loading strategy (PERM-04) unresolved — lazy fetch on collection page mount vs. eager load of all user overrides at session start; resolve during Phase 19 planning
+- Resend domain verification required for production — `onboarding@resend.dev` works in dev; production needs verified sending domain (operational gap, not code gap)
+- Sign-in rate limiting deferred — `POST /api/auth/callback/credentials` unprotected against brute force; acceptable for internal tool; document in Phase 18 plan
 
 ## Session Continuity
 
-Last session: 2026-03-27
-Stopped at: Completed 15-04-PLAN.md — Phase 15 multi-row-actions fully verified and complete
+Last session: 2026-03-28
+Stopped at: Roadmap created — Phase 16 ready to plan
 Resume file: None
