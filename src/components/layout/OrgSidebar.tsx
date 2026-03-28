@@ -3,13 +3,15 @@
 import { useState } from 'react';
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
-import { LayoutGrid, SlidersHorizontal, ChevronLeft, ChevronRight } from 'lucide-react';
+import { LayoutGrid, SlidersHorizontal, ChevronLeft, ChevronRight, Users } from 'lucide-react';
 import { useDbStatus } from './OrgHeader';
+import { usePermissions } from '@/context/PermissionsContext';
 
 export function OrgSidebar() {
   const pathname = usePathname();
   const [collapsed, setCollapsed] = useState(false);
   const db = useDbStatus();
+  const { isAdmin } = usePermissions();
 
   const isConnected = db.state === 'connected';
   const isLoading = db.state === 'loading';
@@ -38,6 +40,7 @@ export function OrgSidebar() {
         />
       ),
     },
+    ...(isAdmin ? [{ href: '/org/users', label: 'Users', icon: Users, badge: null }] : []),
   ];
 
   return (

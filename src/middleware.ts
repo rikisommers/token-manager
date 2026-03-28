@@ -8,6 +8,12 @@ export default withAuth(
     if (req.nextUrl.pathname === '/auth/sign-in' && req.nextauth.token) {
       return NextResponse.redirect(new URL('/collections', req.url));
     }
+    // Guard /org/users — Admin only
+    if (req.nextUrl.pathname.startsWith('/org/users')) {
+      if (req.nextauth.token?.role !== 'Admin') {
+        return NextResponse.redirect(new URL('/collections', req.url));
+      }
+    }
     // All other authenticated requests proceed normally
     return NextResponse.next();
   },

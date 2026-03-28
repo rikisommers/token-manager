@@ -13,8 +13,10 @@ function isCollectionRoute(pathname: string): boolean {
 }
 
 function isOrgRoute(pathname: string): boolean {
-  // Top-level org pages only
-  return pathname === '/collections' || pathname === '/settings';
+  // Top-level org pages and /org/* pages (e.g. /org/users)
+  return pathname === '/collections'
+    || pathname === '/settings'
+    || pathname.startsWith('/org');
 }
 
 function isAuthRoute(pathname: string): boolean {
