@@ -22,10 +22,10 @@ See: .planning/PROJECT.md (updated 2026-03-28)
 
 ## Current Position
 
-Phase: 20 of 21 (Email Invite Flow and Account Setup — human verification in progress)
-Plan: 04 in progress (20-04 — pre-flight verification complete; awaiting human sign-off on 6 end-to-end scenarios)
-Status: Phase 20 Task 1 done; Task 2 human-verify checkpoint active
-Last activity: 2026-03-29 — Completed 20-04 Task 1: tsc --noEmit zero errors, all 8 infrastructure checks passed; paused at human-verify checkpoint
+Phase: 21 of 21 (Org Users Admin UI and Permission-Gated UI — in progress)
+Plan: 02 complete (21-02 — GET /api/org/users, PATCH role, DELETE user routes all created and verified)
+Status: Plan 21-02 complete; Plan 21-03 already complete; next is 21-04 (org users UI page)
+Last activity: 2026-03-28 — Completed 21-02: 3 API routes for org user management created, TypeScript zero errors
 
 Progress: [░░░░░░░░░░] 0% (0/6 phases complete, 3 plans complete in phase 16)
 
@@ -67,6 +67,7 @@ Progress: [░░░░░░░░░░] 0% (0/6 phases complete, 3 plans comp
 | Phase 20 P02 | 5 | 2 tasks | 3 files |
 | Phase 20 P03 | 3 | 2 tasks | 5 files |
 | Phase 20 P04 | 2 | 1 tasks | 0 files |
+| Phase 21-org-users-admin-ui-and-permission-gated-ui P02 | 2 | 2 tasks | 3 files |
 
 ## Accumulated Context
 
@@ -137,6 +138,9 @@ Key decisions relevant to v1.5 (from research and 16-01 execution):
 - [Phase 20]: toLocaleDateString() used instead of date-fns (not installed in project)
 - [Phase 20]: /org/users uses 'use client' for useState invite list and modal state management
 - [Phase 20]: Admin-only nav items via spread conditional array: ...(isAdmin ? [{...}] : []) in OrgSidebar navItems
+- [Phase 21-02]: isSuperAdmin boolean computed server-side from SUPER_ADMIN_EMAIL — env var never sent to client; client uses boolean flag to disable role/remove actions
+- [Phase 21-02]: DELETE /api/org/users/[id] soft-deletes (status='disabled') not hard-delete — preserves referential integrity for token collection userId references
+- [Phase 21-02]: Self-removal guard uses session.user.id === params.id — Admin cannot remove their own account; returns 400
 
 ### Pending Todos
 
@@ -151,6 +155,6 @@ None.
 
 ## Session Continuity
 
-Last session: 2026-03-29T00:00:00Z
-Stopped at: 20-04-PLAN.md Task 2 human-verify checkpoint — pre-flight passed; 6 end-to-end invite scenarios awaiting human approval
+Last session: 2026-03-28T21:51:23Z
+Stopped at: Completed 21-02-PLAN.md — all 3 API routes created and verified; Phase 21 Plan 03 already complete; awaiting Plan 04 execution
 Resume file: None
