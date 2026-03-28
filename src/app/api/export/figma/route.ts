@@ -2,10 +2,11 @@ import { NextRequest, NextResponse } from 'next/server';
 import { mergeThemeTokens } from '@/lib/themeTokenMerge';
 import type { ITheme } from '@/types/theme.types';
 import type { ColorMode } from '@/types/theme.types';
-import { requireAuth } from '@/lib/auth/require-auth';
+import { requireRole } from '@/lib/auth/require-auth';
+import { Action } from '@/lib/auth/permissions';
 
 export async function POST(request: NextRequest) {
-  const authResult = await requireAuth();
+  const authResult = await requireRole(Action.PushFigma);
   if (authResult instanceof NextResponse) return authResult;
   try {
     const { tokenSet, figmaToken, fileKey, collectionId, mongoCollectionId } = await request.json();

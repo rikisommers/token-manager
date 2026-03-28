@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { getRepository } from '@/lib/db/get-repository';
-import { requireAuth } from '@/lib/auth/require-auth';
+import { requireRole } from '@/lib/auth/require-auth';
+import { Action } from '@/lib/auth/permissions';
 
 // -------------------------------------------------------------------
 // Figma type helpers
@@ -86,7 +87,7 @@ interface FigmaApiResponse {
 }
 
 export async function POST(request: NextRequest) {
-  const authResult = await requireAuth();
+  const authResult = await requireRole(Action.PushFigma);
   if (authResult instanceof NextResponse) return authResult;
   let body: {
     token?: string;

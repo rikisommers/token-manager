@@ -1,9 +1,10 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { requireAuth } from '@/lib/auth/require-auth';
+import { requireRole } from '@/lib/auth/require-auth';
+import { Action } from '@/lib/auth/permissions';
 
 // Create a new branch
 export async function POST(request: NextRequest) {
-  const authResult = await requireAuth();
+  const authResult = await requireRole(Action.PushGithub);
   if (authResult instanceof NextResponse) return authResult;
   try {
     const { repository, githubToken, branchName, sourceBranch = 'main' } = await request.json();

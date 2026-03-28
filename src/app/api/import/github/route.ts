@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { requireAuth } from '@/lib/auth/require-auth';
+import { requireRole } from '@/lib/auth/require-auth';
+import { Action } from '@/lib/auth/permissions';
 
 // Recursive function to process directories and subdirectories
 async function processDirectory(
@@ -74,7 +75,7 @@ async function processDirectory(
 }
 
 export async function POST(request: NextRequest) {
-  const authResult = await requireAuth();
+  const authResult = await requireRole(Action.PushGithub);
   if (authResult instanceof NextResponse) return authResult;
   try {
     const { repository, branch = 'main', path = 'tokens.json', githubToken } = await request.json();
