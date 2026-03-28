@@ -130,7 +130,12 @@ Plans:
   2. Sending a write request (PUT, POST, PATCH, DELETE) to any existing collection or theme API route without a session cookie returns HTTP 401
   3. A curl request with a crafted `x-middleware-subrequest` header (CVE-2025-29927 exploit vector) does not bypass auth on Next.js 13.5.9
   4. `requireAuth()` utility exists in `src/lib/auth/` and is called at the top of all 18 write Route Handlers
-**Plans**: TBD
+**Plans**: 3 plans
+
+Plans:
+- [ ] 18-01-PLAN.md — Create src/middleware.ts (withAuth page protection) and src/lib/auth/require-auth.ts (requireAuth utility)
+- [ ] 18-02-PLAN.md — Apply requireAuth() guards to all 17 write Route Handlers; document POST /api/auth/setup exception
+- [ ] 18-03-PLAN.md — Human verification of all 4 auth guard scenarios (checkpoint)
 
 ### Phase 19: RBAC and Permissions Context
 **Goal**: Roles are enforced on all write API routes and available globally in the React tree — every component can check permissions without prop drilling
@@ -198,7 +203,7 @@ Plans:
 | 15. Multi-Row Actions | v1.4 | 4/4 | Complete | 2026-03-27 |
 | 16. Auth Infrastructure and Security Baseline | 3/3 | Complete    | 2026-03-28 | - |
 | 17. Auth API Routes and Sign-In Flow | v1.5 | Complete    | 2026-03-28 | 2026-03-28 |
-| 18. Middleware and Route Handler Guards | v1.5 | 0/TBD | Not started | - |
+| 18. Middleware and Route Handler Guards | v1.5 | 0/3 | Not started | - |
 | 19. RBAC and Permissions Context | v1.5 | 0/TBD | Not started | - |
 | 20. Email Invite Flow and Account Setup | v1.5 | 0/TBD | Not started | - |
 | 21. Org Users Admin UI and Permission-Gated UI | v1.5 | 0/TBD | Not started | - |
