@@ -113,7 +113,13 @@ Plans:
   3. User can sign out from any page and is redirected to `/auth/sign-in`
   4. The first user to complete registration (no other users exist in the DB) is automatically assigned the Admin role
   5. `SessionProvider` and `PermissionsProvider` are wired into `LayoutShell` so session data is available to all client components
-**Plans**: TBD
+**Plans**: 4 plans
+
+Plans:
+- [ ] 17-01-PLAN.md — Modify authorize() for specific errors + create /api/auth/setup route (AUTH-01, AUTH-05)
+- [ ] 17-02-PLAN.md — PermissionsContext + AuthProviders wrapper + layout.tsx wiring (AUTH-03)
+- [ ] 17-03-PLAN.md — /auth/sign-in page + /auth/setup page + UserMenu in OrgHeader (AUTH-01, AUTH-03, AUTH-04, AUTH-05)
+- [ ] 17-04-PLAN.md — Human verification of full auth round-trip (checkpoint)
 
 ### Phase 18: Middleware and Route Handler Guards
 **Goal**: Unauthenticated users are blocked at every entry point — middleware redirects unauthenticated page requests and all 18 write Route Handlers return 401 without a valid session
