@@ -148,7 +148,7 @@ Plans:
   4. `usePermissions()` hook is accessible from any client component and returns pre-computed booleans (`canEdit`, `canCreate`, `isAdmin`, `canGitHub`, `canFigma`) without additional props
   5. An Admin can set a per-collection override for a specific user; that override is reflected in the permissions context within 60 seconds without requiring sign-out
   6. All existing MongoDB collections are backfilled to the first Admin user at bootstrap
-**Plans**: 5 plans
+**Plans**: 6 plans
 
 Plans:
 - [ ] 19-01-PLAN.md — Add requireRole() to require-auth.ts, create collection-bootstrap.ts, create /api/collections/[id]/permissions/me endpoint
@@ -156,6 +156,7 @@ Plans:
 - [ ] 19-03-PLAN.md — Upgrade export/import/utility route handlers to requireRole() with org-level action checks
 - [ ] 19-04-PLAN.md — Rewrite PermissionsContext.tsx with collection-aware usePermissions() returning named booleans
 - [ ] 19-05-PLAN.md — Build verification, curl tests, and human sign-off checkpoint
+- [ ] 19-06-PLAN.md — Gap closure: add requireRole(Action.PushGithub) to GET /api/github/branches handler
 
 ### Phase 20: Email Invite Flow and Account Setup
 **Goal**: An Admin can invite a new user by email; the invited user receives a link, sets their display name and password, and gains access — pending invites are visible with expiry status
@@ -211,6 +212,6 @@ Plans:
 | 16. Auth Infrastructure and Security Baseline | 3/3 | Complete    | 2026-03-28 | - |
 | 17. Auth API Routes and Sign-In Flow | v1.5 | Complete    | 2026-03-28 | 2026-03-28 |
 | 18. Middleware and Route Handler Guards | 3/3 | Complete    | 2026-03-28 | - |
-| 19. RBAC and Permissions Context | 5/5 | Complete   | 2026-03-28 | - |
+| 19. RBAC and Permissions Context | 6/6 | In progress | 2026-03-28 | - |
 | 20. Email Invite Flow and Account Setup | v1.5 | 0/TBD | Not started | - |
 | 21. Org Users Admin UI and Permission-Gated UI | v1.5 | 0/TBD | Not started | - |
