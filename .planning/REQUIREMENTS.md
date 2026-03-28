@@ -37,10 +37,10 @@ Requirements for v1.5 Org User Management milestone. Each maps to roadmap phases
 
 ### Protected UI (UI)
 
-- [ ] **UI-01**: Token table data and graph data are always visible to all authenticated users; inline edit controls (value fields, rename, bulk action triggers) are **disabled** for users with read-only access on the active collection
-- [ ] **UI-02**: The create-collection button/flow is **hidden** for users without create-collection permission (Viewer)
-- [ ] **UI-03**: GitHub push/pull controls are **hidden** for users without GitHub permission (Viewer)
-- [ ] **UI-04**: Figma push/pull controls are **hidden** for users without Figma permission (Viewer)
+- [x] **UI-01**: Token table data and graph data are always visible to all authenticated users; inline edit controls (value fields, rename, bulk action triggers) are **disabled** for users with read-only access on the active collection
+- [x] **UI-02**: The create-collection button/flow is **hidden** for users without create-collection permission (Viewer)
+- [x] **UI-03**: GitHub push/pull controls are **hidden** for users without GitHub permission (Viewer)
+- [x] **UI-04**: Figma push/pull controls are **hidden** for users without Figma permission (Viewer)
 
 ### Architecture Constraint (ARCH)
 
@@ -108,10 +108,10 @@ Which phases cover which requirements. Updated during roadmap creation.
 | USER-01 | Phase 21 | Complete |
 | USER-05 | Phase 21 | Complete |
 | USER-06 | Phase 21 | Complete |
-| UI-01 | Phase 21 | Pending |
-| UI-02 | Phase 21 | Pending |
-| UI-03 | Phase 21 | Pending |
-| UI-04 | Phase 21 | Pending |
+| UI-01 | Phase 21 | Complete |
+| UI-02 | Phase 21 | Complete |
+| UI-03 | Phase 21 | Complete |
+| UI-04 | Phase 21 | Complete |
 
 **Coverage:**
 - v1.5 requirements: 25 total

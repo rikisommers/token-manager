@@ -68,6 +68,8 @@ Progress: [░░░░░░░░░░] 0% (0/6 phases complete, 3 plans comp
 | Phase 20 P03 | 3 | 2 tasks | 5 files |
 | Phase 20 P04 | 2 | 1 tasks | 0 files |
 | Phase 21-org-users-admin-ui-and-permission-gated-ui P02 | 2 | 2 tasks | 3 files |
+| Phase 21-org-users-admin-ui-and-permission-gated-ui P01 | 4 | 2 tasks | 2 files |
+| Phase 21 P03 | 4 | 2 tasks | 2 files |
 
 ## Accumulated Context
 
@@ -141,6 +143,12 @@ Key decisions relevant to v1.5 (from research and 16-01 execution):
 - [Phase 21-02]: isSuperAdmin boolean computed server-side from SUPER_ADMIN_EMAIL — env var never sent to client; client uses boolean flag to disable role/remove actions
 - [Phase 21-02]: DELETE /api/org/users/[id] soft-deletes (status='disabled') not hard-delete — preserves referential integrity for token collection userId references
 - [Phase 21-02]: Self-removal guard uses session.user.id === params.id — Admin cannot remove their own account; returns 400
+- [Phase 21-01]: Cast user via unknown (user as unknown as {...}) — TypeScript rejects direct cast since AdapterUser lacks role field
+- [Phase 21-01]: SUPER_ADMIN_EMAIL short-circuit returns early before DB re-fetch — guarantees no DB call or override for super admin role
+- [Phase 21-01]: return {} as typeof token for disabled/missing user — next-auth v4 session invalidation pattern; returning null is silently ignored
+- [Phase 21]: Separator gated with (canFigma || canGitHub) — avoids orphaned divider when all Figma/GitHub items are hidden
+- [Phase 21]: isThemeReadOnly || !canEdit unifies theme group source-mode and role-based read-only at single prop boundary
+- [Phase 21]: NewCollectionDialog mount kept unconditional — canCreate=false prevents setCreateDialogOpen from ever being called
 
 ### Pending Todos
 
@@ -155,6 +163,6 @@ None.
 
 ## Session Continuity
 
-Last session: 2026-03-28T21:51:23Z
-Stopped at: Completed 21-02-PLAN.md — all 3 API routes created and verified; Phase 21 Plan 03 already complete; awaiting Plan 04 execution
+Last session: 2026-03-28T21:53:00Z
+Stopped at: Completed 21-01-PLAN.md — JWT roleLastFetched mechanism and TypeScript augmentation done; 2 tasks, 2 files modified
 Resume file: None

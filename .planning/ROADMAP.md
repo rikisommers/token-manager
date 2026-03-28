@@ -227,4 +227,4 @@ Plans:
 | 18. Middleware and Route Handler Guards | 3/3 | Complete    | 2026-03-28 | - |
 | 19. RBAC and Permissions Context | 6/6 | Complete    | 2026-03-28 | - |
 | 20. Email Invite Flow and Account Setup | 4/4 | Complete   | 2026-03-28 | - |
-| 21. Org Users Admin UI and Permission-Gated UI | 1/5 | In Progress|  | - |
+| 21. Org Users Admin UI and Permission-Gated UI | 3/5 | In Progress|  | - |
