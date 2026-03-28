@@ -3,12 +3,12 @@ gsd_state_version: 1.0
 milestone: v1.5
 milestone_name: Org User Management
 status: in_progress
-last_updated: "2026-03-28T05:05:42Z"
+last_updated: "2026-03-28T05:12:00Z"
 progress:
   total_phases: 6
   completed_phases: 0
   total_plans: 0
-  completed_plans: 2
+  completed_plans: 3
 ---
 
 # Project State
@@ -23,11 +23,11 @@ See: .planning/PROJECT.md (updated 2026-03-28)
 ## Current Position
 
 Phase: 16 of 21 (Auth Infrastructure and Security Baseline)
-Plan: 03 (16-02 complete)
+Plan: 03 (16-03 complete — Phase 16 DONE)
 Status: In progress
-Last activity: 2026-03-28 — Completed 16-02: permissions.ts, invite.ts, User/Invite/CollectionPermission models
+Last activity: 2026-03-28 — Completed 16-03: authOptions, NextAuth route handler, env vars
 
-Progress: [░░░░░░░░░░] 0% (0/6 phases complete, 2 plans complete in phase 16)
+Progress: [░░░░░░░░░░] 0% (0/6 phases complete, 3 plans complete in phase 16)
 
 ## Performance Metrics
 
@@ -49,6 +49,7 @@ Progress: [░░░░░░░░░░] 0% (0/6 phases complete, 2 plans comp
 
 *Updated after each plan completion*
 | Phase 16 P02 | 4 | 2 tasks | 5 files |
+| Phase 16 P03 | 4 | 2 tasks | 3 files |
 
 ## Accumulated Context
 
@@ -68,6 +69,9 @@ Key decisions relevant to v1.5 (from research and 16-01 execution):
 - [Phase 16]: Action const object (not enum) for runtime iteration and TypeScript type inference
 - [Phase 16]: permissions.ts is canonical Role source of truth; User.ts re-exports it
 - [Phase 16]: canPerform is the only exported permission function; no isAdmin/isEditor helpers
+- [Phase 16-03]: SUPER_ADMIN_EMAIL enforcement checks token.email (always present) not user?.email (only on initial sign-in)
+- [Phase 16-03]: authOptions centralized in src/lib/auth/nextauth.config.ts — single import target for getServerSession() in Phases 18+
+- [Phase 16-03]: pages.signIn: '/auth/sign-in' configured now even though page is Phase 17 work
 
 ### Pending Todos
 
@@ -82,6 +86,6 @@ None.
 
 ## Session Continuity
 
-Last session: 2026-03-28T05:05:42Z
-Stopped at: Completed 16-02-PLAN.md (permissions + invite utilities + 3 Mongoose models)
+Last session: 2026-03-28T05:12:00Z
+Stopped at: Completed 16-03-PLAN.md (authOptions, NextAuth route handler, env vars — Phase 16 complete)
 Resume file: None
