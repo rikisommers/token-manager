@@ -212,6 +212,6 @@ Plans:
 | 16. Auth Infrastructure and Security Baseline | 3/3 | Complete    | 2026-03-28 | - |
 | 17. Auth API Routes and Sign-In Flow | v1.5 | Complete    | 2026-03-28 | 2026-03-28 |
 | 18. Middleware and Route Handler Guards | 3/3 | Complete    | 2026-03-28 | - |
-| 19. RBAC and Permissions Context | 6/6 | In progress | 2026-03-28 | - |
+| 19. RBAC and Permissions Context | 6/6 | Complete   | 2026-03-28 | - |
 | 20. Email Invite Flow and Account Setup | v1.5 | 0/TBD | Not started | - |
 | 21. Org Users Admin UI and Permission-Gated UI | v1.5 | 0/TBD | Not started | - |
