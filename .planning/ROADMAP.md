@@ -96,7 +96,12 @@ See: `.planning/milestones/v1.4-ROADMAP.md` for full phase details.
   3. `src/lib/auth/` module exists with `nextauth.config.ts` (authOptions), `permissions.ts` (pure canPerform function), and `invite.ts` (token utility) — no auth code outside this module
   4. JWT and session TypeScript module augmentation compiles and carries `id` and `role` fields at runtime (verified with a live sign-in smoke test)
   5. `SUPER_ADMIN_EMAIL` env var is read in the jwt callback; signing in as that email always produces role=Admin in the JWT regardless of what is stored in the DB
-**Plans**: TBD
+**Plans**: 3 plans
+
+Plans:
+- [ ] 16-01-PLAN.md — Patch CVE-2025-29927, install next-auth + bcryptjs, add TypeScript module augmentation
+- [ ] 16-02-PLAN.md — Create permissions.ts, invite.ts, and three Mongoose models (User, Invite, CollectionPermission)
+- [ ] 16-03-PLAN.md — Create authOptions (nextauth.config.ts), NextAuth route handler, add env vars to .env.local
 
 ### Phase 17: Auth API Routes and Sign-In Flow
 **Goal**: Users can sign in, stay signed in across refresh, and sign out — the full auth round-trip works end to end
@@ -185,7 +190,7 @@ See: `.planning/milestones/v1.4-ROADMAP.md` for full phase details.
 | 13. Groups Ordering Drag and Drop | v1.4 | 3/3 | Complete | 2026-03-21 |
 | 14. Dark Mode Support | v1.4 | 5/5 | Complete | 2026-03-26 |
 | 15. Multi-Row Actions | v1.4 | 4/4 | Complete | 2026-03-27 |
-| 16. Auth Infrastructure and Security Baseline | v1.5 | 0/TBD | Not started | - |
+| 16. Auth Infrastructure and Security Baseline | v1.5 | 0/3 | Not started | - |
 | 17. Auth API Routes and Sign-In Flow | v1.5 | 0/TBD | Not started | - |
 | 18. Middleware and Route Handler Guards | v1.5 | 0/TBD | Not started | - |
 | 19. RBAC and Permissions Context | v1.5 | 0/TBD | Not started | - |
