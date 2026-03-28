@@ -5,6 +5,7 @@ import Link from 'next/link';
 import { usePathname } from 'next/navigation';
 import { ChevronLeft } from 'lucide-react';
 import { DATABASE_PROVIDERS } from '@/types/database.types';
+import { UserMenu } from '@/components/layout/UserMenu';
 
 type ConnectionState = 'connected' | 'local' | 'loading';
 
@@ -65,7 +66,10 @@ export function OrgHeader() {
         </Link>
       </div>
 
-      <DbPill status={db} />
+      <div className="flex items-center gap-3">
+        <DbPill status={db} />
+        <UserMenu />
+      </div>
     </header>
   );
 }
