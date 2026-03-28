@@ -1,544 +1,760 @@
 # Architecture Research
 
-**Domain:** Design token manager — Theme Token Sets feature (v1.4)
-**Researched:** 2026-03-20
-**Confidence:** HIGH — all findings based on direct inspection of existing codebase
+**Domain:** Auth + Org User Management layer on Next.js 13.5.6 App Router (brownfield)
+**Researched:** 2026-03-28
+**Confidence:** HIGH (NextAuth.js v4 + App Router patterns verified via official docs; Resend API verified via official docs; Mongoose compatibility verified via official Next.js guide)
 
 ---
 
-## System Overview
+## Standard Architecture
+
+### System Overview
 
 ```
-┌─────────────────────────────────────────────────────────────────────┐
-│                         Next.js App Router                           │
-├───────────────────┬─────────────────────────────────────────────────┤
-│  Page Routes      │  API Routes                                      │
-│                   │                                                  │
-│  /collections/    │  /api/collections/[id]          PUT              │
-│    [id]/tokens    │  /api/collections/[id]/themes   GET POST         │
-│    [id]/themes    │  /api/collections/[id]/themes/  PUT DELETE       │
-│    [id]/config    │    [themeId]                                     │
-│    [id]/settings  │  /api/collections/[id]/themes/  PATCH  ← NEW    │
-│                   │    [themeId]/tokens                              │
-│                   │  /api/build-tokens              POST             │
-│                   │  /api/export/figma              POST             │
-├───────────────────┴─────────────────────────────────────────────────┤
-│                    Service / Utility Layer                            │
-│  tokenService (TokenService)  style-dictionary.service  figma.service│
-├─────────────────────────────────────────────────────────────────────┤
-│                    Data Layer                                         │
-│  ICollectionRepository  →  MongoRepository  →  Mongoose ODM          │
-│  TokenCollection model  (themes: Schema.Types.Mixed — array of ITheme│
-└─────────────────────────────────────────────────────────────────────┘
+┌──────────────────────────────────────────────────────────────────────────┐
+│                          BROWSER (Client)                                 │
+│  ┌──────────────────┐  ┌───────────────────┐  ┌────────────────────────┐ │
+│  │  Sign-in page    │  │  App pages        │  │  Org Users admin page  │ │
+│  │  /auth/sign-in   │  │  /collections/…   │  │  /org/users            │ │
+│  └────────┬─────────┘  └────────┬──────────┘  └──────────┬─────────────┘ │
+│           │  useSession         │  usePermissions hook   │               │
+│           └─────────────────────┴────────────────────────┘               │
+│                                 │                                         │
+│                        SessionProvider                                    │
+│                        PermissionsProvider (React context, 'use client') │
+└─────────────────────────────────┬────────────────────────────────────────┘
+                                  │ HTTP / fetch
+┌─────────────────────────────────▼────────────────────────────────────────┐
+│                           MIDDLEWARE (Edge-adjacent)                      │
+│  src/middleware.ts — withAuth (JWT only, no DB at edge)                  │
+│  Protects: all routes except /auth/sign-in, /auth/invite/*               │
+│  Redirects unauthenticated -> /auth/sign-in                              │
+└─────────────────────────────────┬────────────────────────────────────────┘
+                                  │
+┌─────────────────────────────────▼────────────────────────────────────────┐
+│                           NEXT.JS APP ROUTER (Node.js)                   │
+│                                                                           │
+│  ┌──────────────────────────────────────────────────────────────────┐    │
+│  │  AUTH LAYER (isolated)                                            │    │
+│  │  src/app/api/auth/[...nextauth]/route.ts  — NextAuth handler     │    │
+│  │  src/app/api/auth/invite/route.ts         — POST create invite   │    │
+│  │  src/app/api/auth/invite/[token]/route.ts — GET verify + POST    │    │
+│  │  src/app/api/org/users/route.ts           — GET list             │    │
+│  │  src/app/api/org/users/[id]/route.ts      — PATCH role, DELETE   │    │
+│  │  src/lib/auth/nextauth.config.ts          — authOptions           │    │
+│  │  src/lib/auth/session.ts                  — getSession() helper  │    │
+│  │  src/lib/auth/permissions.ts              — canPerform() helper  │    │
+│  │  src/lib/auth/invite.ts                   — token gen/verify     │    │
+│  └──────────────────────────────────────────────────────────────────┘    │
+│                                                                           │
+│  ┌──────────────────────────────────────────────────────────────────┐    │
+│  │  EXISTING TOKEN MGMT LAYER (unchanged except auth guards)        │    │
+│  │  src/app/api/collections/[id]/…                                  │    │
+│  │  src/lib/graphEvaluator.ts, tokenGroupToGraph.ts, …             │    │
+│  └──────────────────────────────────────────────────────────────────┘    │
+│                                                                           │
+│  ┌──────────────────────────────────────────────────────────────────┐    │
+│  │  EMAIL (isolated)                                                 │    │
+│  │  src/lib/email/resend.ts          — Resend client singleton      │    │
+│  │  src/lib/email/invite-email.tsx   — React email template        │    │
+│  └──────────────────────────────────────────────────────────────────┘    │
+└─────────────────────────────────┬────────────────────────────────────────┘
+                                  │ Mongoose
+┌─────────────────────────────────▼────────────────────────────────────────┐
+│                              MONGODB                                      │
+│  Existing: TokenCollection                                                │
+│  New:      User, Invite, CollectionPermission                            │
+└──────────────────────────────────────────────────────────────────────────┘
+```
+
+### Component Responsibilities
+
+| Component | Responsibility | Implementation |
+|-----------|----------------|----------------|
+| `src/middleware.ts` | Block unauthenticated requests at edge; redirect to sign-in | `withAuth` from `next-auth/middleware`, JWT strategy only |
+| `src/app/api/auth/[...nextauth]/route.ts` | NextAuth catch-all handler (GET + POST) | Route Handler exporting `{ handler as GET, handler as POST }` |
+| `src/lib/auth/nextauth.config.ts` | Single authOptions definition; CredentialsProvider + callbacks | Imported by route handler AND by all `getServerSession()` callers |
+| `src/lib/auth/session.ts` | Re-export `getServerSession(authOptions)` as a single-import helper | Thin wrapper to keep authOptions import in one place |
+| `src/lib/auth/permissions.ts` | Pure `canPerform(role, action)` function and role type definitions | No React, no Next.js — plain TypeScript |
+| `src/lib/auth/invite.ts` | Generate signed invite token (JWT via `jsonwebtoken`), verify on redemption | Token signed with `NEXTAUTH_SECRET`, stored hashed in Invite model |
+| `src/lib/db/models/User.ts` | User schema: email, passwordHash, role, status, displayName | Mongoose model; hot-reload guard pattern |
+| `src/lib/db/models/Invite.ts` | Invite schema: email, tokenHash, role, invitedBy, expiresAt, redeemedAt | Mongoose model |
+| `src/lib/db/models/CollectionPermission.ts` | Per-collection role overrides: userId, collectionId, role | Mongoose model |
+| `src/lib/email/resend.ts` | Resend client singleton + `sendInviteEmail()` function | `new Resend(process.env.RESEND_API_KEY)` |
+| `src/lib/email/invite-email.tsx` | React Email template for invite | TSX component; rendered via `react` prop in Resend `.emails.send()` |
+| `src/app/auth/sign-in/page.tsx` | Sign-in form (email + password); calls `signIn('credentials')` | Client component |
+| `src/app/auth/invite/[token]/page.tsx` | Account setup form (display name + password) for invited users | Client component; calls verify API, then `signIn` |
+| `src/app/org/users/page.tsx` | Admin-only org users list + invite form | Client component; uses `usePermissions` to guard |
+| `src/components/auth/PermissionsProvider.tsx` | React context + `usePermissions` hook; wraps app | `'use client'`; reads `useSession()`, computes permission booleans |
+| `src/components/auth/AuthProviders.tsx` | Wraps `SessionProvider` + `PermissionsProvider` | `'use client'`; placed inside `<body>` in root layout |
+
+---
+
+## Recommended Project Structure
+
+```
+src/
+├── app/
+│   ├── api/
+│   │   ├── auth/
+│   │   │   ├── [...nextauth]/
+│   │   │   │   └── route.ts          # NextAuth catch-all; GET + POST exports
+│   │   │   ├── invite/
+│   │   │   │   ├── route.ts          # POST — admin creates invite
+│   │   │   │   └── [token]/
+│   │   │   │       └── route.ts      # GET verify token info, POST redeem + create user
+│   │   │   └── register-first/
+│   │   │       └── route.ts          # POST — first-user bootstrap (no auth required)
+│   │   ├── org/
+│   │   │   ├── users/
+│   │   │   │   ├── route.ts          # GET list users (admin-only)
+│   │   │   │   └── [id]/
+│   │   │   │       └── route.ts      # PATCH role, DELETE user (admin-only)
+│   │   │   └── permissions/
+│   │   │       └── [collectionId]/
+│   │   │           └── route.ts      # GET/PUT per-collection override (admin-only)
+│   │   └── collections/              # EXISTING — auth guard added only
+│   │       └── [id]/…
+│   ├── auth/
+│   │   ├── sign-in/
+│   │   │   └── page.tsx              # Sign-in page (public, excluded from middleware)
+│   │   └── invite/
+│   │       └── [token]/
+│   │           └── page.tsx          # Account setup page (public, token-gated)
+│   ├── org/
+│   │   └── users/
+│   │       └── page.tsx              # Admin: org users list (protected, admin-only)
+│   └── collections/                  # EXISTING — no structural changes
+│       └── [id]/…
+├── components/
+│   ├── auth/                         # NEW domain folder
+│   │   ├── AuthProviders.tsx         # 'use client' — SessionProvider + PermissionsProvider
+│   │   ├── PermissionsProvider.tsx   # 'use client' — context + usePermissions hook
+│   │   ├── SignInForm.tsx            # Email + password form
+│   │   ├── InviteSetupForm.tsx       # Display name + password for invited user
+│   │   └── index.ts                  # Barrel export
+│   ├── org/                          # NEW domain folder
+│   │   ├── UserTable.tsx             # Users list with role badges
+│   │   ├── InviteUserDialog.tsx      # Admin invite modal
+│   │   ├── RoleChangeSelect.tsx      # Role dropdown per-user
+│   │   └── index.ts                  # Barrel export
+│   └── [existing domains — unchanged]
+├── lib/
+│   ├── auth/                         # NEW — all auth logic isolated here
+│   │   ├── nextauth.config.ts        # authOptions (CredentialsProvider + jwt/session callbacks)
+│   │   ├── session.ts                # getSession() server helper (thin wrapper)
+│   │   ├── permissions.ts            # canPerform() pure function + role type constants
+│   │   └── invite.ts                 # invite token sign/verify via jsonwebtoken
+│   ├── email/                        # NEW — email layer
+│   │   ├── resend.ts                 # Resend singleton + sendInviteEmail()
+│   │   └── invite-email.tsx          # React Email template
+│   ├── db/
+│   │   ├── models/
+│   │   │   ├── TokenCollection.ts    # EXISTING — no changes
+│   │   │   ├── User.ts               # NEW
+│   │   │   ├── Invite.ts             # NEW
+│   │   │   └── CollectionPermission.ts # NEW
+│   │   └── [existing db files — unchanged]
+│   └── [existing lib files — unchanged]
+├── types/
+│   ├── next-auth.d.ts                # NEW — module augmentation for role + id on Session/JWT
+│   └── [existing types — unchanged]
+└── middleware.ts                     # NEW (at src/middleware.ts) — withAuth + matcher
+```
+
+### Structure Rationale
+
+- **`src/lib/auth/`:** All auth business logic (config, session helpers, permissions, invite tokens) in one isolated module. Token management code imports nothing from this module except via `getSession()`. This enforces the architectural constraint from the milestone brief.
+- **`src/lib/email/`:** Email concerns separated from auth logic. `resend.ts` holds the client singleton; `invite-email.tsx` is the template. No coupling to NextAuth internals.
+- **`src/app/auth/`:** Public-facing auth pages (sign-in, invite setup). Excluded from middleware matcher so unauthenticated users can reach them.
+- **`src/app/org/`:** Admin UI pages. Protected by middleware AND by `usePermissions` guard inside the page component.
+- **`src/app/api/auth/`:** Auth API routes. `[...nextauth]` is the NextAuth handler; `invite/` routes are custom and co-located at the auth boundary.
+- **`src/app/api/org/`:** Org management API routes (user list, role changes). Separated from `auth/` because they are admin-management operations, not authentication.
+- **`src/components/auth/`:** New domain folder following the existing `components/[domain]/` convention with barrel export. Never imports from `components/tokens/` or other token domains.
+- **`src/types/next-auth.d.ts`:** TypeScript module augmentation for `Session` and `JWT` interfaces. Located in `types/` so the existing `tsconfig.json` `include: ["**/*.ts"]` glob picks it up.
+
+---
+
+## Architectural Patterns
+
+### Pattern 1: Route Handler + Shared authOptions
+
+**What:** The NextAuth route handler exports GET and POST from a route file. `authOptions` is defined in `src/lib/auth/nextauth.config.ts` and imported wherever `getServerSession` is called.
+
+**When to use:** Every API route that needs to know the calling user's identity calls `getServerSession(authOptions)`. This applies to both new org API routes and to modified existing collection routes.
+
+**Trade-offs:** Keeping `authOptions` in a separate file (not co-located with the route handler) avoids a circular import problem that arises in Next.js 13 App Router when route handler files are imported by other server files. This is the documented best practice from the NextAuth team.
+
+**Example:**
+```typescript
+// src/lib/auth/nextauth.config.ts
+import CredentialsProvider from 'next-auth/providers/credentials';
+import type { NextAuthOptions } from 'next-auth';
+import dbConnect from '@/lib/mongodb';
+import User from '@/lib/db/models/User';
+import bcrypt from 'bcryptjs';
+
+export const authOptions: NextAuthOptions = {
+  session: { strategy: 'jwt' },
+  providers: [
+    CredentialsProvider({
+      name: 'credentials',
+      credentials: {
+        email: { label: 'Email', type: 'email' },
+        password: { label: 'Password', type: 'password' },
+      },
+      async authorize(credentials) {
+        if (!credentials?.email || !credentials?.password) return null;
+        await dbConnect();
+        const user = await User.findOne({ email: credentials.email }).lean();
+        if (!user) return null;
+        const valid = await bcrypt.compare(credentials.password, user.passwordHash);
+        if (!valid) return null;
+        return {
+          id: user._id.toString(),
+          email: user.email,
+          name: user.displayName ?? user.email,
+          role: user.role,
+        };
+      },
+    }),
+  ],
+  callbacks: {
+    async jwt({ token, user }) {
+      // user is only present on initial sign-in
+      if (user) {
+        token.id = user.id;
+        token.role = (user as { role: string }).role;
+      }
+      return token;
+    },
+    async session({ session, token }) {
+      session.user.id = token.id as string;
+      session.user.role = token.role as string;
+      return session;
+    },
+  },
+  pages: { signIn: '/auth/sign-in' },
+};
+
+// src/app/api/auth/[...nextauth]/route.ts
+import NextAuth from 'next-auth';
+import { authOptions } from '@/lib/auth/nextauth.config';
+const handler = NextAuth(authOptions);
+export { handler as GET, handler as POST };
+```
+
+### Pattern 2: JWT-Only Middleware; DB Checks Inside Handlers
+
+**What:** `src/middleware.ts` uses `withAuth` from `next-auth/middleware` with JWT strategy only — no database access in middleware. DB-dependent permission checks (per-collection overrides, admin role verification) happen inside the API route handlers themselves, after middleware has verified a valid JWT exists.
+
+**When to use:** Required because Next.js middleware runs in a restricted runtime that cannot use Mongoose's Node.js `net` API. Middleware only answers "is there a valid JWT?" Role enforcement is a separate concern handled per-handler.
+
+**Trade-offs:** Middleware is fast and stateless (no DB round-trip per request). Role checking on each API handler adds a single `getServerSession()` call, which is also fast — it reads the JWT cookie without a network call. Per-collection permission lookups only run when explicitly needed.
+
+**Example:**
+```typescript
+// src/middleware.ts (lives at src/middleware.ts since src/ is the project source root)
+import { withAuth } from 'next-auth/middleware';
+
+export default withAuth({
+  callbacks: {
+    authorized: ({ token }) => !!token,
+  },
+});
+
+export const config = {
+  matcher: [
+    // Protect everything except auth pages and NextAuth internals
+    '/((?!auth/sign-in|auth/invite|api/auth|_next/static|_next/image|favicon\\.ico).*)',
+  ],
+};
+```
+
+### Pattern 3: CredentialsProvider + JWT + No NextAuth Database Adapter
+
+**What:** Use `CredentialsProvider` with `session: { strategy: 'jwt' }`. Do NOT install or configure a NextAuth database adapter. User records and invite records are managed via custom Mongoose models.
+
+**When to use:** This codebase already uses Mongoose models for all persistence. There is no official Mongoose adapter for NextAuth v4 — only `@next-auth/mongodb-adapter` which uses a raw MongoClient connection. Adding a second MongoDB connection path (raw driver alongside Mongoose) would create parallel User representations in the database and require complex synchronization.
+
+**Trade-offs:** JWT sessions scale horizontally and require no database round-trip to verify. Role updates take effect only on the user's next sign-in (JWT is not automatically refreshed mid-session). This is acceptable for v1.5 — the admin changes a role, and the affected user's next session picks it up.
+
+**Consequence for invite flow:** Since CredentialsProvider + JWT is used, NextAuth's built-in Email provider (which requires a database adapter for VerificationToken) is not available. A custom invite flow is built instead: invite token generated with `jsonwebtoken`, stored hashed in the `Invite` collection, verified in a custom API route, and the user is created manually via the `User` model.
+
+### Pattern 4: React Permissions Context
+
+**What:** A `PermissionsProvider` client component wraps the application alongside `SessionProvider`. It reads `useSession()` to get `role` and `id` from the JWT, and exposes a `usePermissions()` hook returning pre-computed boolean flags. All UI components call `usePermissions()` — never `useSession().data.user.role` directly.
+
+**When to use:** Any component that needs to show/hide/disable UI based on user permissions.
+
+**Trade-offs:** Centralizes permission logic. Role changes in JWT only propagate on next sign-in, which is correct — the client's permission state mirrors the JWT. Per-collection overrides can be loaded lazily when a collection page mounts and merged into a collection-scoped permissions object if needed.
+
+**Example:**
+```typescript
+// src/components/auth/PermissionsProvider.tsx
+'use client';
+import { createContext, useContext } from 'react';
+import { useSession } from 'next-auth/react';
+
+interface Permissions {
+  isAdmin: boolean;
+  canEdit: boolean;   // Admin or Editor (also covers collection-level override)
+  canCreate: boolean; // Admin or Editor
+  canGitHub: boolean; // Admin or Editor
+  canFigma: boolean;  // Admin or Editor
+  role: string | null;
+  userId: string | null;
+}
+
+const PermissionsContext = createContext<Permissions>({
+  isAdmin: false, canEdit: false, canCreate: false,
+  canGitHub: false, canFigma: false, role: null, userId: null,
+});
+
+export function PermissionsProvider({ children }: { children: React.ReactNode }) {
+  const { data: session } = useSession();
+  const role = session?.user?.role ?? null;
+  const isAdminOrEditor = role === 'admin' || role === 'editor';
+  const value: Permissions = {
+    role,
+    userId: session?.user?.id ?? null,
+    isAdmin: role === 'admin',
+    canEdit: isAdminOrEditor,
+    canCreate: isAdminOrEditor,
+    canGitHub: isAdminOrEditor,
+    canFigma: isAdminOrEditor,
+  };
+  return (
+    <PermissionsContext.Provider value={value}>
+      {children}
+    </PermissionsContext.Provider>
+  );
+}
+
+export function usePermissions() {
+  return useContext(PermissionsContext);
+}
+```
+
+### Pattern 5: Minimal Auth Guard on Existing API Routes
+
+**What:** All existing API route handlers that modify state receive a 3-line auth guard at the top calling `getSession()` and returning 401/403 as appropriate. Existing route logic is untouched below the guard.
+
+**When to use:** Every API route that creates, updates, or deletes data. Also applied to GET routes for collection data (belt-and-suspenders, even though middleware already blocks unauthenticated requests).
+
+**Trade-offs:** Adds 3-5 lines to each existing route handler. The `getServerSession()` call reads the JWT cookie without a network round-trip, so it is fast. Existing routes are minimally modified — no restructuring of existing logic.
+
+**Example:**
+```typescript
+// src/lib/auth/session.ts
+import { getServerSession as nextGetServerSession } from 'next-auth/next';
+import { authOptions } from './nextauth.config';
+
+export async function getSession() {
+  return nextGetServerSession(authOptions);
+}
+
+// Applied to an existing route (src/app/api/collections/[id]/route.ts) — minimal diff:
+import { getSession } from '@/lib/auth/session';
+
+export async function PUT(req: Request, { params }: { params: { id: string } }) {
+  const session = await getSession();
+  if (!session) return new Response('Unauthorized', { status: 401 });
+  if (session.user.role === 'viewer') return new Response('Forbidden', { status: 403 });
+  // ... existing PUT logic below — zero changes
+}
 ```
 
 ---
 
-## Current State: ITheme Schema (v1.3)
+## Data Flow
+
+### Request Flow: Sign-In
+
+```
+User submits email + password on /auth/sign-in
+    |
+    v
+signIn('credentials', { email, password }) — next-auth/react client call
+    |
+    v
+POST /api/auth/callback/credentials — NextAuth handler
+    |
+    v
+CredentialsProvider.authorize() — dbConnect() + User.findOne() + bcrypt.compare()
+    |
+    v
+NextAuth jwt() callback — attaches id + role to JWT token
+    |
+    v
+NextAuth session() callback — copies id + role to session.user
+    |
+    v
+JWT set as httpOnly cookie (next-auth.session-token)
+    |
+    v
+Client redirect to /collections (or requested URL)
+    |
+    v
+SessionProvider surfaces session via useSession()
+    |
+    v
+PermissionsProvider computes permission booleans from role
+```
+
+### Request Flow: Admin Invite
+
+```
+Admin fills InviteUserDialog with email + role
+    |
+    v
+POST /api/auth/invite { email, role }
+    |
+    v
+API route: getSession() — verify admin role
+    |
+    v
+invite.ts: generateInviteToken(email, role) — signs JWT with NEXTAUTH_SECRET, 48h expiry
+    |
+    v
+Invite model: create { email, tokenHash, role, invitedBy, expiresAt }
+    |
+    v
+resend.ts: sendInviteEmail(email, inviteUrl) — POST to Resend API
+    |
+    v
+200 OK -> InviteUserDialog shows success toast; new invite row appears in Users list
+    |
+    v
+Invited user clicks magic link -> /auth/invite/[token]
+    |
+    v
+GET /api/auth/invite/[token] — verifyInviteToken(): check hash in DB, check expiry, check not redeemed
+    |
+    v
+200 OK with { email, role } -> InviteSetupForm displayed
+    |
+    v
+User submits displayName + password
+    |
+    v
+POST /api/auth/invite/[token] { displayName, password }
+    |
+    v
+API route: User.create({ email, passwordHash: bcrypt.hash(password), role, displayName, status: 'active' })
+    |
+    v
+Invite.updateOne: { redeemedAt: new Date() }
+    |
+    v
+200 OK -> client calls signIn('credentials', { email, password }) -> JWT session established
+```
+
+### Request Flow: Protected API Route (Existing Collection)
+
+```
+Client -> PUT /api/collections/[id]
+    |
+    v
+src/middleware.ts: withAuth checks next-auth JWT cookie
+    - No valid token? Redirect to /auth/sign-in (for page requests) / 401 (API)
+    - Valid token?  Pass through
+    |
+    v
+Route handler: getSession() -> session.user.role
+    - 'viewer'?           Return 403
+    - 'editor' or 'admin'? Proceed
+    |
+    v
+Existing collection update logic — unchanged
+    |
+    v
+200 OK with updated collection
+```
+
+### State Management: Permissions
+
+```
+MongoDB User.role
+    | (read at sign-in time only — not on every request)
+    v
+NextAuth JWT token (httpOnly cookie, role encoded in payload)
+    | (via NextAuth session() callback on session access)
+    v
+useSession() -> session.user.role + session.user.id
+    | (via PermissionsProvider)
+    v
+usePermissions() -> { isAdmin, canEdit, canCreate, canGitHub, canFigma }
+    | (consumed by UI components)
+    v
+Conditional render: disabled buttons, hidden controls, guarded page sections
+```
+
+---
+
+## New MongoDB Schemas
+
+### User
 
 ```typescript
-// src/types/theme.types.ts — CURRENT
-export type ThemeGroupState = 'disabled' | 'enabled' | 'source';
-
-export interface ITheme {
-  id: string;
-  name: string;
-  groups: Record<string, ThemeGroupState>;  // groupId → state only
-  // tokens field MISSING — must be added in v1.4
-}
+// src/lib/db/models/User.ts
+const UserSchema = new Schema({
+  email:        { type: String, required: true, unique: true, lowercase: true, trim: true },
+  passwordHash: { type: String, required: true },
+  displayName:  { type: String, default: null },
+  role:         { type: String, enum: ['admin', 'editor', 'viewer'], required: true, default: 'viewer' },
+  status:       { type: String, enum: ['active', 'pending'], required: true, default: 'pending' },
+}, { timestamps: true });
+// email index is implicit from unique: true
 ```
 
-The `themes` field on `TokenCollection` Mongoose schema is `Schema.Types.Mixed` with `default: []`. This means no Mongoose migration is needed — new fields can be added to theme objects in the array without touching the schema definition. However, the TypeScript `ITheme` type and the application logic that reads/writes themes must both be updated.
-
----
-
-## Target State: ITheme Schema (v1.4)
+### Invite
 
 ```typescript
-// src/types/theme.types.ts — TARGET
-export type ThemeGroupState = 'disabled' | 'enabled' | 'source';
-
-export interface ITheme {
-  id: string;
-  name: string;
-  groups: Record<string, ThemeGroupState>;
-  tokens: Record<string, unknown>;  // NEW — full copy of collection.tokens at creation time
-}
+// src/lib/db/models/Invite.ts
+const InviteSchema = new Schema({
+  email:       { type: String, required: true, lowercase: true },
+  tokenHash:   { type: String, required: true },        // bcrypt hash of signed JWT
+  role:        { type: String, enum: ['admin', 'editor', 'viewer'], required: true },
+  invitedBy:   { type: String, required: true },        // User._id string of admin
+  expiresAt:   { type: Date, required: true },
+  redeemedAt:  { type: Date, default: null },
+}, { timestamps: true });
+InviteSchema.index({ email: 1 });
+InviteSchema.index({ expiresAt: 1, redeemedAt: 1 });   // for pending-invite listing
 ```
 
-The `tokens` field stores the same shape as `TokenCollection.tokens` — raw W3C Design Token spec JSON keyed by group name. This is the per-theme mutable copy that inline edits on the Tokens page write into.
+### CollectionPermission
+
+```typescript
+// src/lib/db/models/CollectionPermission.ts
+const CollectionPermissionSchema = new Schema({
+  userId:       { type: String, required: true },        // User._id string
+  collectionId: { type: String, required: true },        // TokenCollection._id string
+  role:         { type: String, enum: ['admin', 'editor', 'viewer'], required: true },
+}, { timestamps: true });
+CollectionPermissionSchema.index({ userId: 1, collectionId: 1 }, { unique: true });
+```
+
+**Note:** CollectionPermission references both User and TokenCollection by string ID — not by ObjectId `ref`. This avoids Mongoose `populate()` complexity and keeps the pattern consistent with how the existing codebase references IDs (e.g. `userId: String` already on TokenCollection).
 
 ---
 
-## Component Map: New vs Modified
+## TypeScript Module Augmentation
 
-### New Components
+```typescript
+// src/types/next-auth.d.ts
+import type { DefaultSession } from 'next-auth';
+import type { JWT } from 'next-auth/jwt';
 
-| Component | Location | Purpose |
-|-----------|----------|---------|
-| `ThemeTokenEditor` | `src/components/themes/ThemeTokenEditor.tsx` | Read-only/editable token value rows displayed inside the Tokens page when an Enabled group is active under an active theme. Replaces the default `TokenGeneratorForm` display when theme context is active. |
-| `ThemeExportSelector` | `src/components/themes/ThemeExportSelector.tsx` | Dropdown on Config page: select "Collection default" or a specific named theme to export. |
-
-### Modified Components
-
-| Component | File | Change Required |
-|-----------|------|----------------|
-| `CollectionTokensPage` | `src/app/collections/[id]/tokens/page.tsx` | Add `activeThemeTokens` state. When `activeThemeId` is set AND `selectedGroupId` maps to an Enabled group in that theme, pass `themeTokens` instead of `rawCollectionTokens` to the editor. Wire save to `PATCH /themes/:themeId/tokens` instead of `PUT /api/collections/:id`. |
-| `CollectionConfigPage` | `src/app/collections/[id]/config/page.tsx` | Fetch themes list on mount. Render `ThemeExportSelector`. Pass selected theme tokens (or collection default) to `BuildTokensPanel`. Pass theme list structure to Figma export for multi-mode generation. |
-| `BuildTokensPanel` | `src/components/dev/BuildTokensPanel.tsx` | Accept optional `selectedThemeId` and `themes` props. When a theme is selected, send that theme's `tokens` to `/api/build-tokens` instead of the collection's `tokens`. |
-| `ExportToFigmaDialog` | `src/components/figma/ExportToFigmaDialog.tsx` | Accept `themes` prop. When themes are present, restructure the export payload to use `valuesByMode` with one mode per enabled theme. |
-
-### Modified API Routes
-
-| Route | File | Change Required |
-|-------|------|----------------|
-| `POST /api/collections/[id]/themes` | `src/app/api/collections/[id]/themes/route.ts` | After building `groupIds`, deep-copy `collection.tokens` into `theme.tokens`. The `ITheme` object gains the `tokens` field at creation time. |
-| `PUT /api/collections/[id]/themes/[themeId]` | `src/app/api/collections/[id]/themes/[themeId]/route.ts` | Extend `body` type to accept optional `tokens` field in addition to `name` and `groups`. Add `setFields['themes.$.tokens']` when tokens are in the body. OR keep this route for metadata only and create the dedicated PATCH route (preferred — cleaner separation). |
-| `POST /api/export/figma` | `src/app/api/export/figma/route.ts` | Accept optional `themes` array in request body. When present, use `valuesByMode` with theme names as mode identifiers rather than a single `default` mode. |
-| `POST /api/build-tokens` (via service) | `src/app/api/build-tokens/route.ts` | No route change needed. Caller passes pre-selected tokens; the route passes them through to `buildTokens()` unchanged. |
-
-### New API Routes
-
-| Route | File | Purpose |
-|-------|------|---------|
-| `PATCH /api/collections/[id]/themes/[themeId]/tokens` | `src/app/api/collections/[id]/themes/[themeId]/tokens/route.ts` | Accepts `{ tokens: Record<string, unknown> }` — full replacement of a theme's embedded token data. Uses `TokenCollection.findOneAndUpdate` with `$set: { 'themes.$.tokens': tokens }` (same positional operator pattern as existing PUT). Returns `{ theme }`. |
-
----
-
-## Data Flow Changes
-
-### Flow 1: Theme Creation (POST /themes) — Modified
-
-```
-CollectionThemesPage.handleAddTheme(name)
-    ↓
-POST /api/collections/:id/themes  { name }
-    ↓
-[existing] derive groupIds from collection.tokens via tokenService
-    ↓
-[NEW] deep-copy collection.tokens → theme.tokens
-    ↓
-push ITheme { id, name, groups, tokens } into themes array via $push
-    ↓
-return { theme }  (now includes tokens field)
-    ↓
-setThemes([...themes, newTheme])
-```
-
-**Key constraint:** The tokens copy happens at creation time using `collection.tokens` as the source of truth. Later edits to the collection's tokens do NOT automatically propagate into existing themes — themes become independent copies.
-
-### Flow 2: Inline Token Edit on Tokens Page — New
-
-```
-User clicks token value in an Enabled group row under active theme
-    ↓
-CollectionTokensPage detects: activeThemeId set AND group state === 'enabled'
-    ↓
-ThemeTokenEditor renders editable input (not read-only)
-    ↓
-User changes value, saves
-    ↓
-PATCH /api/collections/:id/themes/:themeId/tokens  { tokens: updatedThemeTokens }
-    ↓
-MongoDB: $set { 'themes.$.tokens': updatedThemeTokens }
-    ↓
-Update local themes state with new tokens
-```
-
-**Source group behavior:** Groups with state `source` render the same token values as the collection default but in a read-only state. No PATCH is sent. The Tokens page reads from `collection.tokens` (not theme tokens) for source groups.
-
-**Disabled group behavior:** Already filtered from `filteredGroups` in existing v1.3 code — no change needed.
-
-### Flow 3: Theme-Aware SD Export — Modified
-
-```
-CollectionConfigPage: user selects theme from ThemeExportSelector
-    ↓
-"selected theme" resolves tokens:
-  - "Collection default" → collection.tokens
-  - Named theme → theme.tokens (from themes array)
-    ↓
-BuildTokensPanel receives resolved tokens
-    ↓
-POST /api/build-tokens { tokens: resolvedTokens, namespace, collectionName }
-    ↓
-style-dictionary.service.buildTokens() — no change needed
-    ↓
-BuildTokensPanel displays result
-```
-
-### Flow 4: Theme-Aware Figma Export (Modes) — Modified
-
-```
-CollectionConfigPage: user triggers Figma export
-    ↓
-ExportToFigmaDialog receives themes array (all enabled themes)
-    ↓
-POST /api/export/figma {
-  tokenSet,         // collection.tokens (base structure)
-  figmaToken,
-  fileKey,
-  collectionId,
-  themes: [         // NEW — each enabled theme becomes a Figma mode
-    { id, name, tokens },
-    ...
-  ]
-}
-    ↓
-export/figma/route.ts: when themes present, build valuesByMode:
-  {
-    [themeId or themeName]: mapTokenValueToFigmaValue(themeToken.$value)
+declare module 'next-auth' {
+  interface Session {
+    user: {
+      id: string;
+      role: string;
+    } & DefaultSession['user'];
   }
-    ↓
-POST Figma Variables API with multi-mode variables
-```
-
----
-
-## API Contract Changes
-
-### POST /api/collections/[id]/themes — Response Change
-
-```typescript
-// BEFORE (v1.3)
-// Response: { theme: { id, name, groups } }
-
-// AFTER (v1.4)
-// Response: { theme: { id, name, groups, tokens: Record<string, unknown> } }
-```
-
-The `tokens` field is the full copy of `collection.tokens` at creation time. Clients already store the returned `theme` object in React state — the field is added transparently. No client-side response parsing change is required because the existing code does `setThemes(prev => [...prev, newTheme])` where `newTheme = data.theme`.
-
-### PATCH /api/collections/[id]/themes/[themeId]/tokens — New Endpoint
-
-```typescript
-// Request
-PATCH /api/collections/:id/themes/:themeId/tokens
-Content-Type: application/json
-{
-  tokens: Record<string, unknown>  // Full replacement of theme.tokens
 }
 
-// Response 200
-{
-  theme: ITheme  // Full updated theme including new tokens
-}
-
-// Response 400
-{ error: 'tokens is required and must be an object' }
-
-// Response 404
-{ error: 'Collection or theme not found' }
-```
-
-The implementation uses the same positional `$` operator pattern already established in the existing PUT route:
-```typescript
-await TokenCollection.findOneAndUpdate(
-  { _id: params.id, 'themes.id': params.themeId },
-  { $set: { 'themes.$.tokens': tokens } },
-  { new: true }
-).lean();
-```
-
-### PUT /api/collections/[id]/themes/[themeId] — No Breaking Change
-
-The existing PUT body type is extended to optionally accept `tokens`:
-```typescript
-// Before
-{ name?: string; groups?: Record<string, ThemeGroupState> }
-
-// After — backwards compatible
-{ name?: string; groups?: Record<string, ThemeGroupState>; tokens?: Record<string, unknown> }
-```
-
-However, the preferred approach is to keep the PUT route for metadata only (name, groups) and use the dedicated PATCH route for token data updates. This maintains single-responsibility and allows the PATCH to have targeted validation.
-
-### POST /api/export/figma — Extended Request Body
-
-```typescript
-// Before
-{
-  tokenSet: Record<string, unknown>;
-  figmaToken: string;
-  fileKey: string;
-  collectionId?: string;
-  mongoCollectionId?: string;
-}
-
-// After — backwards compatible (themes optional)
-{
-  tokenSet: Record<string, unknown>;
-  figmaToken: string;
-  fileKey: string;
-  collectionId?: string;
-  mongoCollectionId?: string;
-  themes?: Array<{ id: string; name: string; tokens: Record<string, unknown> }>;  // NEW
+declare module 'next-auth/jwt' {
+  interface JWT {
+    id?: string;
+    role?: string;
+  }
 }
 ```
 
-When `themes` is absent, the route behaves identically to v1.3 (single `default` mode). When present, each theme becomes a Figma variable mode.
-
----
-
-## Mongoose Schema Evolution
-
-No schema migration is required. The `themes` field is already `Schema.Types.Mixed` with `default: []`. MongoDB is schema-less — adding a `tokens` property to each theme object in the array is handled automatically.
-
-The only required changes are:
-1. TypeScript `ITheme` interface gains `tokens: Record<string, unknown>`
-2. The POST /themes handler sets `theme.tokens` before pushing
-3. The PATCH /themes/:themeId/tokens handler updates it
-
-**Backward compatibility:** Existing theme documents in MongoDB will not have a `tokens` field. All code reading `theme.tokens` must treat it as potentially `undefined` and fall back to `collection.tokens`. The `ITheme` type should mark it as optional during the transition period:
-
-```typescript
-export interface ITheme {
-  id: string;
-  name: string;
-  groups: Record<string, ThemeGroupState>;
-  tokens?: Record<string, unknown>;  // Optional for backward compat with pre-v1.4 theme docs
-}
-```
-
----
-
-## State Management Changes: Tokens Page
-
-The Tokens page (`CollectionTokensPage`) currently holds:
-- `rawCollectionTokens` — the collection's tokens from MongoDB
-- `themes` — array of ITheme (now including `.tokens`)
-- `activeThemeId` — which theme is selected
-
-**New state needed:**
-```typescript
-// Derived from themes[activeThemeId].tokens — no separate fetch needed
-// because themes are already loaded in loadCollection()
-```
-
-The active theme's tokens are accessible as:
-```typescript
-const activeTheme = themes.find(t => t.id === activeThemeId);
-const activeThemeTokens = activeTheme?.tokens ?? rawCollectionTokens;
-```
-
-**Group-state-aware token source selection:**
-```typescript
-// When rendering a group under an active theme:
-// - 'disabled'  → group not shown (existing filteredGroups handles this)
-// - 'source'    → show group, read from rawCollectionTokens (read-only)
-// - 'enabled'   → show group, read from activeThemeTokens (editable)
-```
-
-The `TokenGeneratorForm` currently receives `collectionToLoad` with the full token set. To support per-group source switching, the Tokens page needs to pass either `rawCollectionTokens` or `activeThemeTokens` depending on the selected group's state.
-
-**Recommended approach:** Pass both `rawCollectionTokens` and `activeThemeTokens` as separate props to the form/editor layer. The form checks `activeGroupState` to decide which dataset to render and edit.
-
----
-
-## Component Boundaries
-
-### ThemeTokenEditor (New)
-
-Responsibility: Inline editing of token values within a theme's token set for a specific group.
-
-```
-Props:
-  groupId: string
-  groupState: ThemeGroupState      // 'enabled' | 'source'
-  themeTokens: Record<string, unknown>   // theme.tokens
-  collectionTokens: Record<string, unknown>  // fallback for source groups
-  onSave: (updatedTokens: Record<string, unknown>) => Promise<void>
-```
-
-This component renders the same kind of token row editing as `TokenGeneratorForm` but:
-- For `source` groups: read-only display of collection token values
-- For `enabled` groups: editable inputs that call `onSave` on change/blur
-
-**Implementation note:** The component does NOT need to be a full replacement for `TokenGeneratorForm`. It operates at the group level — it receives only the tokens in the currently-selected group, not the whole collection.
-
-### ThemeExportSelector (New)
-
-Responsibility: UI to select which token set to export from the Config page.
-
-```
-Props:
-  themes: ITheme[]
-  selectedExportTarget: string | null   // null = collection default; theme.id = theme
-  onSelect: (themeId: string | null) => void
-```
-
-Renders as a `Select` component (reusing shadcn/ui Select already in the codebase) with:
-- "Collection default" as the first option (value `__default__`)
-- One entry per theme
-
----
-
-## Build Order (Dependency-Ordered)
-
-The features have clear dependencies. This is the correct implementation sequence:
-
-### Step 1: Type + Schema Foundation
-**File:** `src/types/theme.types.ts`
-**Change:** Add `tokens?: Record<string, unknown>` to `ITheme`
-**Why first:** Every subsequent step depends on this type being correct.
-
-### Step 2: Theme Creation — Copy Tokens on POST
-**File:** `src/app/api/collections/[id]/themes/route.ts`
-**Change:** Set `theme.tokens = structuredClone(collection.tokens)` before `$push`
-**Why second:** All new themes must embed tokens from the moment they are created. This is the data foundation that all subsequent UI steps read from.
-
-### Step 3: New PATCH Endpoint
-**File:** `src/app/api/collections/[id]/themes/[themeId]/tokens/route.ts` (new file)
-**Change:** New route with `PATCH` handler using positional `$` operator
-**Why third:** The Tokens page inline editor cannot save until this endpoint exists.
-
-### Step 4: Tokens Page — Inline Editing
-**Files:** `src/app/collections/[id]/tokens/page.tsx`, new `src/components/themes/ThemeTokenEditor.tsx`
-**Change:** When active theme + enabled group: render editable inputs backed by `theme.tokens`; save via PATCH
-**Why fourth:** Depends on Step 2 (themes have tokens to read) and Step 3 (endpoint to save to).
-
-### Step 5: Config Page — Theme-Aware SD Export
-**Files:** `src/app/collections/[id]/config/page.tsx`, `src/components/themes/ThemeExportSelector.tsx`, `src/components/dev/BuildTokensPanel.tsx`
-**Change:** Theme selector dropdown; pass theme tokens to build endpoint when selected
-**Why fifth:** Depends on Step 2 (themes have tokens). Independent of Step 4.
-
-### Step 6: Config Page — Theme-Aware Figma Export
-**Files:** `src/app/api/export/figma/route.ts`, `src/components/figma/ExportToFigmaDialog.tsx`
-**Change:** Accept themes array; generate `valuesByMode` structure; each theme = one Figma mode
-**Why sixth:** Depends on Step 2 (themes have tokens). More complex than SD export; deferred last.
-
----
-
-## Architectural Patterns to Follow
-
-### Pattern 1: Positional Array Updates in MongoDB
-
-**What:** Theme mutations use `{ _id: params.id, 'themes.id': params.themeId }` as the query filter and `$set: { 'themes.$.tokens': ... }` as the update. This is the established pattern from the existing PUT route.
-
-**When to use:** Any time a field on a specific theme (inside the `themes` Mixed array) must be updated.
-
-**Trade-offs:** The positional `$` operator only matches the first array element. Since theme `id` fields are UUIDs and guaranteed unique, this is safe. No risk of multi-element match.
-
-### Pattern 2: Repository Bypass for Theme Mutations
-
-**What:** Theme mutations (POST/PUT/DELETE/PATCH on themes) import `TokenCollection` directly and bypass `ICollectionRepository`. The GET route uses the repository.
-
-**When to use:** Any mutation requiring MongoDB array operators (`$push`, `$pull`, `$set` on nested path). The repository's `update()` method accepts `UpdateTokenCollectionInput` which is a shallow partial — it does not support dotted-path updates like `themes.$.tokens`.
-
-**Trade-offs:** Direct model access loses the repository abstraction. This is a documented pragmatic decision in PROJECT.md. The new PATCH endpoint follows the same pattern.
-
-### Pattern 3: Optimistic UI with Revert
-
-**What:** `CollectionThemesPage.handleStateChange` applies the state change to local React state immediately, then fires the API call. If the API call fails, the original state is restored.
-
-**When to use:** Theme token edits on the Tokens page. Apply the value change to `themes` state immediately (fast perceived response), then PATCH. On failure, revert to previous theme tokens.
-
-**Trade-offs:** Requires keeping a pre-edit snapshot in the event handler closure. Already established pattern — follow it for the new PATCH calls.
-
-### Pattern 4: Token Source Resolution at Render Time
-
-**What:** The Tokens page does not store a "merged view" of tokens — it holds `rawCollectionTokens` and `activeThemeTokens` as separate state slices. The render path decides which source to use based on `groupState`.
-
-**When to use:** When a group is rendered inside the Tokens page editor area.
-
-**Trade-offs:** Requires the group state to be checked on every render of the group content area. This is inexpensive because `activeTheme.groups[selectedGroupId]` is a direct object lookup.
-
----
-
-## Anti-Patterns to Avoid
-
-### Anti-Pattern 1: Merging Theme Tokens Back to Collection
-
-**What people do:** When a user edits a token under a theme, write the change back to `collection.tokens` instead of `theme.tokens`.
-
-**Why it's wrong:** This destroys the separation between the collection default and theme-specific values. The entire purpose of theme token sets is that each theme has its own mutable copy.
-
-**Do this instead:** Always PATCH `themes.$.tokens`. Only collection-level saves (the existing Ctrl+S flow) touch `collection.tokens`.
-
-### Anti-Pattern 2: Fetching Theme Tokens as a Separate API Call
-
-**What people do:** Add a GET endpoint for a single theme's tokens and fetch it every time the user switches theme.
-
-**Why it's wrong:** The Tokens page already fetches the full themes array (including tokens) on mount. `theme.tokens` is embedded in the ITheme object in local state. A separate fetch adds latency and network overhead for data already present.
-
-**Do this instead:** Read `themes.find(t => t.id === activeThemeId)?.tokens` from the in-memory `themes` state array.
-
-### Anti-Pattern 3: Storing Token Copies Outside the Theme Document
-
-**What people do:** Create a separate MongoDB collection or a separate top-level field like `themeTokenSets` to avoid nesting tokens in each theme.
-
-**Why it's wrong:** The existing architecture stores themes as a `Mixed` array embedded in the collection document. Splitting this requires joins/lookups and breaks the existing GET/PUT/POST pattern. The embedded approach works well for the single-user, moderate-collection-count use case this tool targets.
-
-**Do this instead:** Keep `tokens` embedded in each ITheme object. The `Schema.Types.Mixed` type already supports arbitrary depth nesting.
-
-### Anti-Pattern 4: Making ThemeTokenEditor a Full Form Replacement
-
-**What people do:** Build a separate full-page editor that replaces the TokenGeneratorForm entirely when a theme is active.
-
-**Why it's wrong:** The Tokens page layout (sidebar tree + breadcrumb + resizable panels) is already established. The graph panel on the right still needs to function regardless of theme context. Replacing the form entirely would break the graph integration.
-
-**Do this instead:** Build ThemeTokenEditor as a targeted component that renders within the existing form panel space, scoped to the currently selected group and theme. It supplements the form panel, it does not replace the page layout.
+This file is picked up by the existing `tsconfig.json` via `include: ["**/*.ts"]`. No `typeRoots` change is needed since the file is inside the project source tree.
 
 ---
 
 ## Integration Points
 
-### TokenGeneratorForm ↔ Tokens Page
+### New Modules vs Modified Existing Modules
 
-**Current:** The page passes `collectionToLoad` with the full collection token set to the form. The form renders all groups.
+| Module | Status | Change |
+|--------|--------|--------|
+| `src/middleware.ts` | NEW | Created; protects all routes via withAuth |
+| `src/lib/auth/nextauth.config.ts` | NEW | Core NextAuth options with CredentialsProvider |
+| `src/lib/auth/session.ts` | NEW | `getSession()` helper wrapper |
+| `src/lib/auth/permissions.ts` | NEW | `canPerform()` pure function + role type constants |
+| `src/lib/auth/invite.ts` | NEW | Invite token sign/verify via jsonwebtoken |
+| `src/lib/email/resend.ts` | NEW | Resend client singleton + `sendInviteEmail()` |
+| `src/lib/email/invite-email.tsx` | NEW | React Email template (TSX) |
+| `src/lib/db/models/User.ts` | NEW | User Mongoose model |
+| `src/lib/db/models/Invite.ts` | NEW | Invite Mongoose model |
+| `src/lib/db/models/CollectionPermission.ts` | NEW | Per-collection override Mongoose model |
+| `src/types/next-auth.d.ts` | NEW | Module augmentation for Session + JWT |
+| `src/app/api/auth/[...nextauth]/route.ts` | NEW | NextAuth catch-all route handler |
+| `src/app/api/auth/invite/route.ts` | NEW | Admin creates invite |
+| `src/app/api/auth/invite/[token]/route.ts` | NEW | Verify invite token + redeem (create user) |
+| `src/app/api/auth/register-first/route.ts` | NEW | First-user bootstrap (no auth gate) |
+| `src/app/api/org/users/route.ts` | NEW | List org users (admin-only) |
+| `src/app/api/org/users/[id]/route.ts` | NEW | PATCH role + DELETE user (admin-only) |
+| `src/app/api/org/permissions/[collectionId]/route.ts` | NEW | GET/PUT per-collection override (admin-only) |
+| `src/app/auth/sign-in/page.tsx` | NEW | Sign-in page (public) |
+| `src/app/auth/invite/[token]/page.tsx` | NEW | Account setup page (public, token-gated) |
+| `src/app/org/users/page.tsx` | NEW | Admin org users management page |
+| `src/components/auth/AuthProviders.tsx` | NEW | SessionProvider + PermissionsProvider wrapper |
+| `src/components/auth/PermissionsProvider.tsx` | NEW | React context + `usePermissions` hook |
+| `src/components/auth/SignInForm.tsx` | NEW | Sign-in form component |
+| `src/components/auth/InviteSetupForm.tsx` | NEW | Account setup form for invited users |
+| `src/components/auth/index.ts` | NEW | Barrel export |
+| `src/components/org/UserTable.tsx` | NEW | Org users list table |
+| `src/components/org/InviteUserDialog.tsx` | NEW | Invite dialog (admin) |
+| `src/components/org/RoleChangeSelect.tsx` | NEW | Role dropdown per user row |
+| `src/components/org/index.ts` | NEW | Barrel export |
+| `src/app/layout.tsx` | MODIFIED | Add `<AuthProviders>` wrapper around `<LayoutShell>` and `<Toaster>` |
+| `src/app/api/collections/[id]/route.ts` | MODIFIED | Add auth guard at top (3 lines); viewer block on PUT |
+| `src/app/api/collections/[id]/themes/route.ts` | MODIFIED | Add auth guard; viewer block on POST/DELETE |
+| `src/app/api/collections/[id]/themes/[themeId]/route.ts` | MODIFIED | Add auth guard; viewer block on PUT/DELETE |
+| `src/app/api/collections/route.ts` | MODIFIED | Add auth guard; viewer + editor block on POST (editor can create) |
+| `src/app/api/export/figma/route.ts` | MODIFIED | Add auth guard; viewer block |
+| `src/app/api/build-tokens/route.ts` | MODIFIED | Add auth guard |
+| `src/app/api/github/route.ts` | MODIFIED | Add auth guard; viewer block |
+| Other existing API routes | MODIFIED | Add auth guard; role check where appropriate |
 
-**After v1.4:** When active theme + enabled group, the page needs to intercept the display and save path for that group. Two options:
-- Option A: Pass `activeThemeTokens` as an override to the form so the form renders from theme tokens for enabled groups.
-- Option B: Render `ThemeTokenEditor` instead of the form section when an enabled group is active under a theme.
+### External Services
 
-Option B is recommended because it avoids threading theme-awareness deep into `TokenGeneratorForm` (which already manages considerable internal state). `ThemeTokenEditor` is a focused, simpler component.
+| Service | Integration Pattern | Package | Notes |
+|---------|---------------------|---------|-------|
+| NextAuth.js v4 | `next-auth` pkg; route handler + SessionProvider | `next-auth@^4.24.x` | Peer deps: `next@^12.2.5\|^13\|^14\|^15` — compatible with 13.5.6. React 17-18 — compatible with 18.2.0. No adapter. |
+| Resend | `resend` SDK — `new Resend(RESEND_API_KEY)` + `.emails.send()` | `resend@latest` | `RESEND_API_KEY` env var. Domain must be verified for production; use `onboarding@resend.dev` in dev. |
+| bcryptjs | Password hashing — `bcrypt.hash()` + `bcrypt.compare()` | `bcryptjs` + `@types/bcryptjs` | Pure JS, no native bindings. Prefer over `bcrypt` which requires node-gyp compilation. |
+| jsonwebtoken | Invite token signing/verification | `jsonwebtoken` + `@types/jsonwebtoken` | Server-only. Used only in `src/lib/auth/invite.ts`. Never imported in client components. |
 
-### CollectionConfigPage ↔ BuildTokensPanel
+### Internal Boundaries
 
-**Current:** Config page fetches collection and passes `tokens` and `namespace` to `BuildTokensPanel`. The panel sends these to `/api/build-tokens`.
+| Boundary | Communication | Constraint |
+|----------|---------------|------------|
+| Auth layer -> Token management | One-way: token API routes call `getSession()` from `src/lib/auth/session.ts` only | Token management never imports from `src/lib/auth/` except via `getSession()`. No circular dependencies. |
+| Auth layer -> Email layer | `src/lib/auth/invite.ts` calls `sendInviteEmail()` from `src/lib/email/resend.ts` | Email layer has zero dependency on auth layer. |
+| PermissionsProvider -> App components | Components call `usePermissions()` hook only — never `useSession()` directly | Single source of truth for all permission logic. |
+| Middleware -> Auth layer | Middleware imports `withAuth` from `next-auth/middleware` only | Middleware MUST NOT import `src/lib/auth/`, Mongoose models, or any Node.js-only module. Edge runtime constraint. |
+| New models -> Existing models | CollectionPermission references TokenCollection._id as a plain string | No Mongoose refs/populate. Consistent with existing `userId: String` pattern in TokenCollection. |
 
-**After v1.4:** Config page additionally fetches themes, renders `ThemeExportSelector`. When a theme is selected, `tokens` passed to `BuildTokensPanel` is `selectedTheme.tokens`. When "Collection default" is selected, `tokens` is `collection.tokens` (unchanged behavior).
+---
 
-**BuildTokensPanel change:** The panel only needs to receive different `tokens`. No internal change to the panel or the `/api/build-tokens` route is needed — the caller controls which token set is passed.
+## Build Order
 
-### ExportToFigmaDialog ↔ Figma Export Route
+The build order respects dependency direction: infrastructure before API, API before UI, route protection after sign-in works.
 
-**Current:** The dialog collects Figma token + file key from the per-collection settings. It posts the full `collection.tokens` as `tokenSet` to `/api/export/figma`. The route calls `transformToFigmaVariables(tokenSet)` which produces single-mode variables with `valuesByMode: { default: ... }`.
+**Phase A: Auth Infrastructure (zero UI, zero API changes)**
+1. Install packages: `next-auth`, `bcryptjs`, `jsonwebtoken`, `resend` + type packages
+2. Create `src/types/next-auth.d.ts` — Session + JWT module augmentation
+3. Create `src/lib/db/models/User.ts`, `Invite.ts`, `CollectionPermission.ts`
+4. Create `src/lib/auth/nextauth.config.ts` — authOptions + CredentialsProvider
+5. Create `src/lib/auth/session.ts` — thin `getSession()` wrapper
+6. Create `src/lib/auth/permissions.ts` — `canPerform()` + role type constants
+7. Create `src/lib/auth/invite.ts` — token generate/verify with jsonwebtoken
+8. Create `src/lib/email/resend.ts` + `src/lib/email/invite-email.tsx`
+9. Verify: `yarn build` still passes — no new routes yet, no imports in existing code
 
-**After v1.4:** The dialog also receives the `themes` array from the Config page. It posts `themes` alongside `tokenSet`. The route's `transformToFigmaVariables` function is extended (or a new function added) that, when `themes` is present, builds `valuesByMode` with one entry per theme using that theme's token values.
+**Phase B: Auth API Routes**
+1. Create `src/app/api/auth/[...nextauth]/route.ts` — NextAuth handler
+2. Create `src/app/api/auth/register-first/route.ts` — first-user bootstrap
+3. Create `src/app/api/auth/invite/route.ts` and `invite/[token]/route.ts`
+4. Create `src/app/api/org/users/route.ts` and `users/[id]/route.ts`
+5. Verify: sign-in API responds; invite flow works end-to-end (manual test)
 
-**Figma API constraint:** Each theme (mode) must be pre-created in Figma before values can be assigned. The current route uses the Figma Variables API POST. Multi-mode export requires the Figma collection to have modes that match the theme names. This is a product-level constraint that may require creating modes in Figma as part of the export call or documenting that the Figma collection must be pre-configured.
+**Phase C: Sign-in + Invite UI (public pages, no middleware yet)**
+1. Create `src/components/auth/` — AuthProviders, PermissionsProvider, SignInForm, InviteSetupForm + barrel
+2. Create `src/app/auth/sign-in/page.tsx`
+3. Create `src/app/auth/invite/[token]/page.tsx`
+4. Modify `src/app/layout.tsx` — wrap with `<AuthProviders>`
+5. Add env vars: `NEXTAUTH_SECRET`, `NEXTAUTH_URL`, `RESEND_API_KEY`
+6. Verify: sign in, session persists across refresh, sign out works — all without middleware active
+
+**Phase D: Middleware (route protection)**
+1. Create `src/middleware.ts` — `withAuth` + matcher pattern
+2. Verify: unauthenticated browser access redirects to `/auth/sign-in`
+3. Verify: `/auth/sign-in` and `/auth/invite/…` are still reachable without a session
+4. Verify: all existing collection routes still work when authenticated
+
+**Phase E: Auth Guards on Existing API Routes**
+1. Add `getSession()` auth guard to all existing API routes that modify data
+2. Add role check — reject `viewer` on all write operations
+3. Verify: unauthenticated API calls return 401; viewer calls return 403 on writes; editor/admin calls succeed
+
+**Phase F: Org Users UI + Per-collection Permissions**
+1. Create `src/components/org/` — UserTable, InviteUserDialog, RoleChangeSelect + barrel
+2. Create `src/app/org/users/page.tsx`
+3. Create `src/app/api/org/permissions/[collectionId]/route.ts`
+4. Add `usePermissions()`-gated UI elements in existing components (hide write controls for viewer)
+5. Verify: all AUTH-*, USER-*, PERM-*, UI-* requirements from PROJECT.md pass
 
 ---
 
 ## Scaling Considerations
 
-This is a single-user localhost tool — scaling is not a concern for v1.4. The one relevant consideration:
+This is an internal design system tool for a small team. Scale targets are 10-50 users, not enterprise scale.
 
-**Token copy size:** Each theme stores a full copy of `collection.tokens`. For collections with large token sets, the MongoDB document grows proportionally with the number of themes. At typical design-token scales (hundreds to low thousands of tokens), this is negligible. Each token is a small JSON object (~100 bytes), so a collection with 1,000 tokens and 10 themes adds ~1MB to the document — well within MongoDB's 16MB document limit.
+| Scale | Architecture Adjustments |
+|-------|--------------------------|
+| 1-50 users (v1.5 target) | JWT sessions — no session table; Mongoose models sufficient; single MongoDB instance; Resend free tier (3,000 emails/month) is more than ample |
+| 50-500 users | Still fine; add explicit index on `User.email` (already implicit from `unique: true`); document `NEXTAUTH_SECRET` rotation procedure |
+| 500+ users | Role changes mid-session become operationally visible (user must sign out/in to pick up role change); consider adding a `sessionVersion` field to User and validating it in the jwt callback to force session refresh on role change |
+
+---
+
+## Anti-Patterns
+
+### Anti-Pattern 1: Importing Mongoose or authOptions in Middleware
+
+**What people do:** Import `authOptions` or any Mongoose model inside `src/middleware.ts` to check roles at the edge.
+
+**Why it's wrong:** Mongoose requires Node.js `net` APIs. The Next.js middleware runtime does not provide `net`. This causes a build error or runtime crash. Additionally, a database call on every request through middleware would be a performance and reliability problem.
+
+**Do this instead:** Middleware only checks JWT existence (`!!token`). Role enforcement happens inside individual API route handlers using `getServerSession()` after middleware confirms a session exists.
+
+### Anti-Pattern 2: Defining authOptions Inside the Route Handler File
+
+**What people do:** Define `authOptions` directly in `src/app/api/auth/[...nextauth]/route.ts` and import it from there for use with `getServerSession`.
+
+**Why it's wrong:** In Next.js 13 App Router, importing from a route handler file in other server files can produce circular dependency issues and "Module not found" errors during build. Next.js handles route handler files differently from regular modules.
+
+**Do this instead:** Define `authOptions` in `src/lib/auth/nextauth.config.ts`. Import from there in both the route handler and in all `getServerSession()` calls. This is the documented pattern for App Router.
+
+### Anti-Pattern 3: Using the NextAuth MongoDB Adapter Alongside Mongoose
+
+**What people do:** Install `@next-auth/mongodb-adapter` and pass it to NextAuth while also managing User models via Mongoose.
+
+**Why it's wrong:** The MongoDB adapter uses raw MongoClient and creates its own `accounts`, `sessions`, `users`, and `verification_tokens` collections parallel to the application's Mongoose User model. This creates two disconnected User representations requiring complex synchronization.
+
+**Do this instead:** Use CredentialsProvider + JWT strategy with no adapter. Manage User documents entirely through the custom Mongoose User model. NextAuth writes nothing to MongoDB in this configuration.
+
+### Anti-Pattern 4: Calling useSession in Components Directly for Permission Checks
+
+**What people do:** Call `useSession()` in individual components and check `session?.data?.user?.role === 'admin'` inline.
+
+**Why it's wrong:** Permission logic scatters across dozens of components. Changing what "editor" can do requires finding every inline check. Loading states must be handled redundantly.
+
+**Do this instead:** All components call `usePermissions()` from `PermissionsProvider`. Permission logic has one home in one file. The hook returns pre-computed booleans that map directly to the requirements (`canEdit`, `canCreate`, `canGitHub`, `canFigma`, `isAdmin`).
+
+### Anti-Pattern 5: Skipping Auth Guards on Existing API Routes
+
+**What people do:** Add middleware and hide write controls in the UI but do not add `getSession()` guards to the existing `src/app/api/collections/` routes.
+
+**Why it's wrong:** Middleware protects page navigation; an authenticated client (or a direct API call from curl/Postman) still reaches the route handler after passing the JWT check. A Viewer could call `PUT /api/collections/[id]` directly and modify data unless the handler also enforces the role.
+
+**Do this instead:** Every API route that modifies data calls `getSession()` and checks the role at the top of the handler. This is belt-and-suspenders alongside the UI hiding the controls.
 
 ---
 
 ## Sources
 
-- Direct code inspection: `src/app/api/collections/[id]/themes/route.ts`
-- Direct code inspection: `src/app/api/collections/[id]/themes/[themeId]/route.ts`
-- Direct code inspection: `src/app/collections/[id]/tokens/page.tsx`
-- Direct code inspection: `src/app/collections/[id]/config/page.tsx`
-- Direct code inspection: `src/app/api/export/figma/route.ts`
-- Direct code inspection: `src/app/api/build-tokens/route.ts`
-- Direct code inspection: `src/services/style-dictionary.service.ts`
-- Direct code inspection: `src/services/token.service.ts`
-- Direct code inspection: `src/lib/db/models/TokenCollection.ts`
-- Direct code inspection: `src/lib/db/repository.ts`
-- Direct code inspection: `src/types/theme.types.ts`
-- Direct code inspection: `src/types/collection.types.ts`
-- Direct code inspection: `src/components/themes/ThemeList.tsx`
-- Direct code inspection: `src/components/themes/ThemeGroupMatrix.tsx`
-- Direct code inspection: `src/components/dev/BuildTokensPanel.tsx`
-- Architectural decisions table in `.planning/PROJECT.md`
+- [NextAuth.js v4 — Next.js Configuration (Official)](https://next-auth.js.org/configuration/nextjs) — withAuth middleware, getServerSession, JWT-only limitation. HIGH confidence.
+- [NextAuth.js v4 — Initialization (Official)](https://next-auth.js.org/configuration/initialization) — Route Handler export pattern for App Router. HIGH confidence.
+- [NextAuth.js v4 — TypeScript (Official)](https://next-auth.js.org/getting-started/typescript) — Module augmentation for Session + JWT types. HIGH confidence.
+- [NextAuth.js v4 — Securing Pages and API Routes (Official)](https://next-auth.js.org/tutorials/securing-pages-and-api-routes) — getServerSession in API route handlers. HIGH confidence.
+- [Auth.js — Role Based Access Control (Official)](https://authjs.dev/guides/role-based-access-control) — jwt() + session() callbacks for role propagation. HIGH confidence.
+- [Mongoose — Using Mongoose With Next.js (Official)](https://mongoosejs.com/docs/nextjs.html) — Connection management, App Router patterns, hot-reload guard. HIGH confidence.
+- [Resend — Send with Next.js (Official)](https://resend.com/docs/send-with-nextjs) — Route handler pattern, React Email template. HIGH confidence.
+- [nextauthjs/next-auth Issue #13313](https://github.com/nextauthjs/next-auth/issues/13313) — Confirmed `next-auth@4.24.x` peer dep supports Next.js 12-15 (not 16). Next.js 13.5.6 is compatible. HIGH confidence.
+- [NextAuth.js — Adapters (Official)](https://next-auth.js.org/adapters) — Confirmed no official Mongoose adapter; only raw MongoDB adapter exists. HIGH confidence.
+- Direct codebase inspection: `src/lib/db/models/TokenCollection.ts`, `src/lib/mongodb.ts`, `src/app/layout.tsx`, `next.config.js`, `tsconfig.json`, `package.json`.
 
 ---
 
-*Architecture research for: ATUI Tokens Manager — v1.4 Theme Token Sets*
-*Researched: 2026-03-20*
+*Architecture research for: ATUI Tokens Manager v1.5 — Auth + Org User Management*
+*Researched: 2026-03-28*

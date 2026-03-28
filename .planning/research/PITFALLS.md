@@ -1,251 +1,344 @@
 # Pitfalls Research
 
-**Domain:** Design token manager — per-theme token value sets, inline editing, SD/Figma export
-**Researched:** 2026-03-20
-**Confidence:** HIGH (codebase directly inspected; external claims verified against official docs and community sources)
+**Domain:** Adding NextAuth.js credentials provider + Resend invite flow + RBAC to an existing Next.js 13.5.6 App Router + MongoDB/Mongoose app
+**Researched:** 2026-03-28
+**Confidence:** HIGH (official docs + confirmed CVEs + codebase directly inspected + Mongoose issue tracker)
 
 ---
 
 ## Critical Pitfalls
 
-### Pitfall 1: Embedded Token Copy Blows the 16 MB MongoDB BSON Limit
+### Pitfall 1: Middleware-Only Auth Is Bypassable via CVE-2025-29927
 
 **What goes wrong:**
-Each theme stores a full copy of all token groups. The collection document already holds the master `tokens` field (Schema.Types.Mixed). Adding `N` themes each with a full copy multiplies document size by `N+1`. A collection with 500 tokens at ~2 KB each is already ~1 MB raw JSON. Three themes triples that to ~3 MB inside a single document. With descriptions, graph state, and Mongoose overhead the ceiling is reachable before any users notice.
+Next.js 13.5.6 (the current version in this project) is directly vulnerable to CVE-2025-29927 (CVSS 9.1). An attacker can bypass all middleware-based authentication by adding the `x-middleware-subrequest` header with a crafted value. This means a `middleware.ts` that redirects unauthenticated users to `/login` provides zero protection against a direct HTTP request with the bypass header. All existing API routes — collection CRUD, GitHub push/pull, Figma export — remain fully accessible without a session.
 
 **Why it happens:**
-MongoDB's hard BSON limit is 16 mebibytes per document. The existing schema stores everything — master tokens, graphState, and the themes array — in one `TokenCollection` document. The themes field is `Schema.Types.Mixed` with `default: []`, and theme creation uses `$push`, so nothing prevents unbounded growth. The `tokens` field on each theme is not bounded.
+Next.js uses the `x-middleware-subrequest` header internally to prevent infinite middleware loops. In versions before 13.5.9, the check trusts this header from external requests. The fix ships in Next.js 13.5.9.
 
 **How to avoid:**
-- Before adding `tokens` to the theme type, calculate a realistic worst-case size: count the largest collection's token JSON size, multiply by `(max expected themes + 1)`, add overhead for graphState and other fields.
-- Enforce a per-collection theme limit in the POST handler (e.g., 10 themes max) and return a 422 with a clear message when exceeded.
-- If collections regularly exceed ~2 MB with master tokens alone, treat theme token data as a separate document referenced by ID (bucket pattern). This adds a fetch per theme switch but removes the size risk entirely.
-- Monitor document size server-side in the theme POST route before confirming creation: use `BSON.calculateObjectSize()` or estimate from JSON string length.
+Two-pronged approach:
+1. Upgrade Next.js from 13.5.6 to at least 13.5.9 before shipping any auth (the patch is a point release on the same minor, no breaking changes). This must be the first step in the auth phase.
+2. Even after patching, never treat middleware as the sole auth gate. Verify the session token in every Route Handler that mutates data, using `getServerSession(authOptions)` at the top of each handler. Middleware is a UX convenience (redirect to login page); the Route Handler check is the security boundary.
 
 **Warning signs:**
-- `BSONObjectTooLarge` error from MongoDB on theme creation or collection update.
-- Slow `findById` on the collection document (MongoDB loads the entire document into memory; large documents slow all reads even when projecting).
-- `themes` array length approaching 5+ with a collection that has 200+ tokens.
+- A curl request with `-H "x-middleware-subrequest: src/middleware:src/middleware:src/middleware:src/middleware:src/middleware"` reaches a protected route and returns 200 instead of being redirected.
+- Auth "works" in browser (middleware redirects correctly) but automated tests against the API with headers set manually succeed without a session cookie.
 
 **Phase to address:**
-Theme data model extension phase (schema migration + theme POST route). Enforce the theme limit and document size guard before writing any token data to themes.
+Auth setup phase (first auth phase) — upgrade Next.js to 13.5.9 as prerequisite step 0. Add `getServerSession` checks to all collection write routes in the same phase.
 
 ---
 
-### Pitfall 2: `$set themes.$.tokens` Fails When `themes` Is `Schema.Types.Mixed`
+### Pitfall 2: Credentials Provider Requires JWT Session Strategy — Cannot Use Database Sessions
 
 **What goes wrong:**
-The current schema defines `themes: { type: Schema.Types.Mixed, default: [] }`. The positional operator `$set: { 'themes.$.tokens': ... }` requires Mongoose to know the array element schema to correctly cast and update. With `Schema.Types.Mixed`, Mongoose loses type information and can miscast or silently drop updates. This is a known Mongoose bug (issue #14595, #12530) where positional filtered operators on Mixed-typed arrays produce unexpected results.
+NextAuth.js Credentials provider only works with JWT session strategy. The official docs state: "users authenticated in this manner are not persisted in the database, and consequently that the Credentials provider can only be used if JSON Web Tokens are enabled for sessions." If a developer installs `@auth/mongodb-adapter` hoping it will persist Credentials-based sessions to MongoDB (like OAuth sessions), it does not — the adapter is ignored for Credentials login. Sessions will appear to work during testing but user records are never created in the `nextauth_users` collection.
 
 **Why it happens:**
-`Schema.Types.Mixed` was chosen for the themes field to match the same pattern as `graphState` (also Mixed). This works for whole-field replacement but becomes fragile for surgical updates to individual array elements. When you add a `tokens` sub-field to each theme object, the update path `themes.$.tokens` requires Mongoose to understand that `themes` is an array of objects — which it cannot infer from Mixed.
+NextAuth considers Credentials too flexible to safely auto-create user records. The adapter pattern is designed for OAuth, where the provider asserts identity. With Credentials, identity assertion is the application's responsibility.
 
 **How to avoid:**
-Two options:
-1. Keep `Schema.Types.Mixed` but always update the entire themes array atomically: fetch the document, modify the theme in-process, write the entire array back with `$set: { themes: updatedArray }`. This avoids positional operators entirely and is consistent with how the v1.3 PUT already works for group states.
-2. Define a proper subdocument schema for themes (with `_id: false`, `id`, `name`, `groups`, `tokens` fields). This enables positional operators safely and makes Mongoose schema validation a first-class guard.
-
-Option 1 has a TOCTOU risk (two concurrent writes overwrite each other's changes) but is acceptable for single-user, non-collaborative use. Option 2 is cleaner for the long term. Either way: never use `$set: 'themes.$.tokens'` with a Mixed-typed array.
+- Configure `session: { strategy: "jwt" }` explicitly in `authOptions`. Do not add `@auth/mongodb-adapter` to the NextAuth config if only Credentials is used — it adds a dependency and a second MongoDB connection without benefit.
+- User documents live in the app's own `User` Mongoose model (not in NextAuth's adapter collections). The `authorize` callback queries the `User` model directly and returns `{ id, email, role }`.
+- Store user ID and role in the JWT via the `jwt` callback; expose them in the session via the `session` callback. This is the only way custom fields like `role` are available in `useSession()` or `getServerSession()`.
 
 **Warning signs:**
-- Updates to theme tokens silently succeed (200 response) but the stored value is unchanged or wrapped in an extra array.
-- Mongoose throws `CastError` when writing token objects to a Mixed positional path.
-- `findOneAndUpdate` with `themes.$.tokens` returns the document but the token data is not persisted.
+- No `users` or `accounts` collections appear in MongoDB after sign-in.
+- `session.user` has `name`, `email`, `image` but no `id` or `role` — means the JWT/session callbacks are missing.
+- `getServerSession()` returns `null` in Route Handlers when a user is signed in — means `NEXTAUTH_SECRET` is missing or the session strategy is inconsistent.
 
 **Phase to address:**
-Theme data model extension phase — decide the update strategy before writing any API route that modifies theme token data.
+Auth setup phase — establish JWT strategy and User Mongoose model before writing any permission check code. The data shape of the JWT (what fields it carries) is a contract that all later RBAC code depends on.
 
 ---
 
-### Pitfall 3: Inline Token Edit Writes to Master Collection Tokens Instead of Theme Tokens
+### Pitfall 3: MongoDB Adapter Requires a Separate Native MongoClient — Conflicts with Mongoose Singleton
 
 **What goes wrong:**
-The Tokens page (`page.tsx`) currently calls `handleSave` which issues `PUT /api/collections/${id}` with the full `tokens` object. When an active theme is selected and an Enabled group is being edited, this save path writes changes back to the master `tokens` field — not to the active theme's embedded token data. The user sees their edit reflected in the UI, but on next load the theme's token value is unchanged while the master collection has been silently mutated.
+The existing `src/lib/mongodb.ts` manages a Mongoose connection singleton. `@auth/mongodb-adapter` requires a separate `MongoClient` (native MongoDB driver, not Mongoose). If a developer tries to extract the native client from Mongoose (`mongoose.connection.getClient()`) and pass it to the adapter, it may work intermittently but is not officially supported and breaks with Mongoose reconnection events. Running two separate `MongoClient` instances pointing at the same MongoDB URI is safe but must be managed as two separate singletons.
 
 **Why it happens:**
-`handleSave` is the single primary save action used for all editing contexts. The tokens page does not yet distinguish between "editing master" and "editing an active theme's Enabled group." The `activeThemeId` state exists but is not consulted during save. This will remain the default behavior unless the save path is explicitly branched.
+The MongoDB adapter does not handle connections automatically — it requires the caller to pass an already-connected `MongoClient`. Mongoose uses its own internal `MongoClient` that is not designed to be shared. The NextAuth maintainers explicitly state the adapter is incompatible with an active Mongoose connection.
 
 **How to avoid:**
-When an `activeThemeId` is set and a group is in `enabled` state:
-- Route saves to `PUT /api/collections/${id}/themes/${activeThemeId}` with a `tokens` payload.
-- Block the master `PUT /api/collections/${id}` token save entirely (or gray out the Save button with a tooltip explaining the theme context).
-- Make the active theme context visually obvious so users understand which data layer they are editing.
-
-For Source groups, writes must be blocked at the UI level — Source = read-only in the context of theme editing.
+Since this project uses JWT strategy (no adapter needed for auth), avoid installing `@auth/mongodb-adapter` entirely for v1.5. The `User`, `Invite`, and permission models all go through Mongoose. If the adapter is needed in a future OAuth milestone, create a second singleton file (`src/lib/mongo-client.ts`) that manages a native `MongoClient` separate from the Mongoose connection — never reuse Mongoose's internal client.
 
 **Warning signs:**
-- Master collection token values change after editing while in theme mode.
-- Theme switch shows the old values even after a confirmed save.
-- No distinction between "Save" behavior in theme mode vs. no-theme mode.
+- `MongoNotConnectedError` in NextAuth adapter operations after Mongoose reconnects.
+- Sessions randomly fail after the development server hot-reloads (Mongoose recreates its connection; the adapter's shared client reference goes stale).
+- Duplicate `_ensureIndex` log lines from two clients connecting to the same database.
 
 **Phase to address:**
-Inline token editing phase — the conditional save routing must be implemented in the same phase as the editing UI, not a later cleanup.
+Auth setup phase — make the decision to skip the adapter (JWT strategy) explicit in the phase plan so no one installs it by mistake.
 
 ---
 
-### Pitfall 4: Optimistic Update Race Condition on Rapid Token Value Changes
+### Pitfall 4: Existing API Routes Have No Auth Guard — Retrofitting Requires Touching Every Route
 
 **What goes wrong:**
-The existing `ThemeGroupMatrix` already uses an optimistic update pattern for group state changes (immediately updates local `themes` state, then PUTs to the API, reverts on error). When inline token value editing is added with debounce, a race condition can occur: user edits token A (debounced, in-flight), immediately edits token B (new debounce starts), first request completes and the response is used to reconcile state — overwriting token B's optimistic value with the server's stale response that doesn't include B's change.
+The app has 18 Route Handler files, all currently unprotected. When auth is added, the natural instinct is to protect only the new auth-related routes and rely on middleware for the existing ones. Due to CVE-2025-29927 (Pitfall 1) and the architectural principle that middleware is not a security boundary, every write Route Handler must independently call `getServerSession(authOptions)` and check for a valid session before executing. Missing even one route (e.g., `PUT /api/collections/[id]` or `POST /api/export/github`) leaves a real data-write endpoint unguarded.
 
 **Why it happens:**
-Debounced saves fire asynchronously. If the response from request 1 is used to replace local state, it will contain server token data that predates request 2's optimistic write. This is especially risky if the theme's token data is fetched fresh from the API response and set into React state.
+Retrofitting auth into an existing codebase is non-obvious: the developer adds the middleware redirect and tests the UI, which correctly sends them to login. But the Route Handlers are tested via browser interactions, not direct HTTP calls, so the missing guards are not caught until someone curls the endpoint.
 
 **How to avoid:**
-- Do not reconcile local state from API responses during an active edit session. Issue `PUT` fire-and-forget (catch errors for toast) and trust the local optimistic state.
-- Use a `useRef` for the pending token data (same pattern as `generateTabTokensRef` / `graphStateMapRef` already in the Tokens page) so the debounced function always reads the latest values, not a stale closure.
-- Cancel the in-flight debounce timer when a new edit arrives (already the correct pattern with `clearTimeout` before scheduling).
-- If the API returns an error, revert to the pre-edit snapshot, not the most recent in-flight state.
+Create a shared `requireAuth(request)` utility that calls `getServerSession(authOptions)` and returns `NextResponse.json({ error: 'Unauthorized' }, { status: 401 })` early if no session exists. Apply this utility to every existing write Route Handler in a single phase:
+- `POST /api/collections` — create collection
+- `PUT /api/collections/[id]` — update collection
+- `DELETE /api/collections/[id]` — delete (handled via PUT with delete flag, or dedicated route)
+- `POST /api/collections/[id]/duplicate`
+- `POST/PUT/DELETE /api/collections/[id]/themes` and `[themeId]`
+- `POST /api/export/github`
+- `POST /api/export/figma`
+- `POST /api/figma/import`
+- `POST /api/import/github`
+
+Read-only routes (`GET`) can return data to authenticated users; the RBAC check (Viewer vs Editor) determines whether write controls appear in the UI.
 
 **Warning signs:**
-- After rapid edits, one or more token values snap back to a previous value on focus-out.
-- Console shows API responses returning token values that contradict what the user typed.
-- Edit of token A at t=0ms, edit of token B at t=200ms, save of A completes at t=600ms — B's value disappears.
+- Direct `curl -X PUT https://app/api/collections/[id]` with a JSON body returns 200 without a session cookie.
+- The GitHub export endpoint is callable without auth — a real risk for credential exposure.
 
 **Phase to address:**
-Inline token editing phase — implement the save strategy with explicit handling of concurrent edits before wiring the UI.
+Auth setup phase — apply `requireAuth()` to all write routes in the same phase as adding the middleware redirect. Do not split this across phases.
 
 ---
 
-### Pitfall 5: Group State Permission Check Not Applied at API Layer
+### Pitfall 5: Permission Context Not Available in Server Components — Wrong Layer for RBAC Checks
 
 **What goes wrong:**
-The plan is that `enabled` groups are editable per-theme, `source` groups use the master collection token values (read-only), and `disabled` groups are hidden. If this permission check is only enforced in the UI (by disabling input fields), a direct API call to `PUT /api/collections/${id}/themes/${themeId}` with a tokens payload for a Source group will succeed and overwrite the Source group's values — even though the intent is that Source groups are always read-only in theme context.
+The v1.5 requirements include "Permissions are available globally via a React context (no prop drilling)" (PERM-06). React context only works in Client Components. The `LayoutShell` is already `'use client'`, but the collection layout and page components (e.g., `src/app/collections/[id]/tokens/page.tsx`) are Server Components. If a developer adds a `PermissionsContext` provider inside `LayoutShell`, child Server Components cannot consume it via `useContext`. They can only receive permission data as props passed down from the nearest Client Component parent, or by re-fetching the session themselves via `getServerSession`.
 
 **Why it happens:**
-The existing theme PUT route only validates the `name` and `groups` fields from the request body. When a `tokens` field is added to the PUT body, nothing in the API currently checks the group state before accepting the write.
+The App Router Server/Client boundary is frequently misunderstood. `useContext`, `useState`, `useEffect` are Client-only hooks. A Server Component inside a Client Component subtree is still a Server Component — it cannot call `useContext`.
 
 **How to avoid:**
-In the theme tokens PUT handler, look up the theme's `groups` map for each group being written. Reject writes to groups that are in `source` state with a 422 and a clear error message. This server-side guard is the authoritative check; the UI disable is secondary UX affordance only.
+Two-layer approach:
+1. **Client Components** (token table, action bar, nav items, buttons): consume `usePermissions()` from a `PermissionsContext` provided by a `PermissionsProvider` client component near the root. The provider receives the session data as a serialized prop from the nearest Server Component parent.
+2. **Server Components and Route Handlers** (page.tsx, API routes): call `getServerSession(authOptions)` directly. Do not rely on context. The session is the source of truth; derive permissions from `session.user.role` inline.
+
+Practically: the `LayoutShell` (already `'use client'`) is the right place for `PermissionsProvider`. It can call `useSession()` and provide `{ role, canEdit, canAdmin, ... }` to all client child components. Server Components alongside it call `getServerSession` independently.
 
 **Warning signs:**
-- Postman or curl can write to Source groups without error.
-- Token values in Source groups diverge between the theme and the master collection.
-- UI shows Source group values as read-only but a reload shows different values.
+- `useContext` in a Server Component throws: "createContext is not a function" or "cannot read properties of undefined".
+- Permission checks work in the browser but API routes allow writes regardless of role (means the server-side check is missing).
+- Write controls appear for Viewer role users (means client-side check is missing or context is not reaching the component).
 
 **Phase to address:**
-Theme tokens API route phase — add the group-state authorization check in the same PR that adds the tokens write endpoint.
+RBAC + permissions context phase — establish the two-layer pattern (context for clients, `getServerSession` for servers) as the canonical pattern before writing any permission-dependent UI.
 
 ---
 
-### Pitfall 6: Style Dictionary Programmatic API — `tokens` Property vs. `source/include` for Theme Merging
+### Pitfall 6: JWT Token Does Not Auto-Update After Role Change
 
 **What goes wrong:**
-The existing `style-dictionary.service.ts` uses the `tokens` property to pass a raw object directly to SD v5 (`new StyleDictionary({ tokens: sanitizedTokens })`). This works for single-token-set builds. For theme-aware export, the natural instinct is to merge the theme token values with the master tokens before passing to SD. If done naively (e.g., `Object.assign(masterTokens, themeTokens)`), Source groups get overwritten by the master values, Enabled groups may not correctly override base values if the merge strategy is wrong, and reference resolution (`{colors.base.blue.200}`) can silently resolve against the merged set rather than the intended source.
+An Admin changes a user's org role from Viewer to Editor in the Users management page. The change is written to MongoDB. But the affected user's session JWT still carries `role: "viewer"` — it was encoded when the user signed in and will not change until the JWT expires (typically 30 days). During that window, the user's client-side `usePermissions()` context shows the old role, and any server-side `getServerSession()` call in Route Handlers also returns the old role from the JWT payload.
 
 **Why it happens:**
-SD v5's `source`/`include` array approach handles override semantics natively (source files override include files). The programmatic `tokens` property bypasses this — it's a single merged object, so override priority must be implemented manually. Developers often reach for a simple shallow merge but token structures are deeply nested.
+JWT sessions are stateless by design — NextAuth does not re-query the database on every request. The JWT payload is frozen at sign-in time unless the `jwt` callback explicitly re-fetches user data from the database.
 
 **How to avoid:**
-- Use the existing `deepMerge()` function in `style-dictionary.service.ts` — it already implements non-destructive deep merge (target wins on key conflict).
-- For theme export: start with master tokens as the base, deep-merge the theme's Enabled group token data on top (theme values win). Source groups: use master values only. Disabled groups: exclude.
-- Test the merge output before passing to SD by serializing to JSON and checking that each path resolves to the expected value.
-- Log broken references at `console` level (already configured in the service) — do not throw on reference errors during theme export.
+Add a database re-read in the `jwt` callback that runs on each request (not just on first sign-in). Guard it with a timestamp to avoid querying on every single request:
+
+```typescript
+// In authOptions jwt callback:
+async jwt({ token, user }) {
+  if (user) {
+    // First sign-in: populate from user object
+    token.id = user.id;
+    token.role = user.role;
+    token.roleLastFetched = Date.now();
+  } else if (token.roleLastFetched && Date.now() - token.roleLastFetched > 60_000) {
+    // Re-fetch role from DB every 60 seconds
+    const dbUser = await UserModel.findById(token.id).lean();
+    if (dbUser) {
+      token.role = dbUser.role;
+      token.roleLastFetched = Date.now();
+    }
+  }
+  return token;
+}
+```
+
+For an internal tool with a small user base, 60-second staleness is acceptable. For immediate effect, the affected user must sign out and back in.
 
 **Warning signs:**
-- Exported CSS has wrong values for theme-specific overrides (showing base values instead of theme overrides).
-- SD throws `BrokenReferences` errors because a Source group token reference points to a group that was excluded.
-- Theme export output is identical to the no-theme export.
+- Role change in Users admin page takes no effect until user logs out and back in.
+- Viewer can still access write controls in the UI after being promoted to Editor (or vice versa).
+- Automated test: change user role, make request with existing session, expect new role in response — test fails.
 
 **Phase to address:**
-Style Dictionary theme export phase — the merge strategy must be specified in the phase plan before any SD export code is written.
+RBAC phase — implement the re-fetch pattern in the `jwt` callback when user roles are first being persisted. Do not defer to a "role refresh" improvement later.
 
 ---
 
-### Pitfall 7: Style Dictionary New SD Instance Per Build Accumulates State Across Multiple Theme Exports
+### Pitfall 7: Invite Token Security — Predictable Tokens, Reuse, and No Expiry Enforcement
 
 **What goes wrong:**
-The current `buildBrandTokens` creates `new StyleDictionary(...)` per format. When exporting multiple themes in sequence, if SD holds any global or static state (registered transforms, formatters, etc.), the second instance may inherit state from the first, producing inconsistent output or caching resolved references from the previous theme's tokens.
+The invite flow generates a magic link with a token that the invited user clicks to set up their account. Three common mistakes: (1) Using a short or predictable token (e.g., UUID v4 without additional entropy, or a hash of the email). (2) Not marking the token as used after the account is created — the same link can be clicked multiple times (by forwarded email, double-click, etc.) and creates duplicate accounts or sessions. (3) Not enforcing expiry — a token stored in MongoDB without an expiry check allows invitations to remain valid indefinitely, bypassing the "Pending invitations with expiry status" requirement.
 
 **Why it happens:**
-SD v5 is designed for CLI use with `buildAllPlatforms()`. The `formatPlatform()` programmatic path is less tested for rapid successive instantiation. Some SD versions maintained a module-level cache for registered tokens. The `log.verbosity: 'silent'` configuration suppresses warning output that would otherwise reveal this.
+Invite flows feel simple but have multiple failure modes. Developers focus on the happy path (click link, set password, land on dashboard) and miss the edge cases that matter for security.
 
 **How to avoid:**
-- Instantiate a fresh `StyleDictionary` object for each theme export, not reusing the same instance.
-- Do not register custom transforms or formats outside the constructor (use inline configuration).
-- After exporting all themes, verify at least two themes produce demonstrably different output (run a diff in the test).
-- Call `sd.init()` before `sd.formatPlatform()` for every instance — this is already done in the current service.
+- Generate tokens with `crypto.randomBytes(32).toString('hex')` — 256 bits of entropy, not predictable.
+- Store a `used: boolean` field and a `expiresAt: Date` field in the `Invite` MongoDB document. Set `expiresAt` to `Date.now() + 72 * 60 * 60 * 1000` (72 hours) at creation.
+- In the account-setup handler, verify: token exists in DB + `used === false` + `expiresAt > Date.now()`. On success, set `used = true` before creating the user — do not create the user first.
+- Return the same generic error message ("This invitation link is invalid or has expired.") for all failure cases — do not distinguish between "token not found" and "token expired" or "already used", as the difference leaks information.
+- Rate-limit the invite email sending endpoint: one invite per email per 5 minutes to prevent Admin from accidentally spamming or a user from triggering repeated Resend charges.
 
 **Warning signs:**
-- Second theme export produces identical output to the first.
-- Reference values from theme 1 appear in theme 2's output.
-- `sd.formatPlatform()` throws a "tokens already registered" or similar error on second call.
+- Visiting the same magic link twice succeeds both times.
+- The `Invite` collection in MongoDB has documents with no `expiresAt` field.
+- A pending invite 30 days old still shows "active" in the Users list.
+- Invite resend can be triggered rapidly without throttling.
 
 **Phase to address:**
-Style Dictionary theme export phase — test with at least two themes with distinct values before shipping.
+Email invite + account setup phase — the token generation, storage, one-time use enforcement, and expiry check must all be in the same implementation unit. They are not separable.
 
 ---
 
-### Pitfall 8: Figma Variables API — Modes Require Separate Creation Before Values Can Be Set
+### Pitfall 8: Superadmin Env Var Bypass — Role Hardcoded in JWT vs Derived From DB
 
 **What goes wrong:**
-The current Figma export route (`/api/export/figma/route.ts`) sends variables with a single `valuesByMode: { default: ... }` payload. For multi-theme (multi-mode) export, the intuitive approach is to include all mode values inline in the variable creation payload. The Figma Variables API does not work this way: mode IDs must exist before `variableModeValues` can reference them. If you try to create variables with mode references that do not yet exist, the entire atomic operation returns a 400 error and nothing is written.
-
-**Why it happens:**
-The Figma POST `/v1/files/:file_key/variables` endpoint treats all operations as one atomic transaction. The four sections — `variableCollections`, `variableModes`, `variables`, `variableModeValues` — are processed in order. You can use temporary IDs (prefixed with `"temp:"`) to reference objects created earlier in the same request, but the order must be correct: collections first, then modes referencing collections, then variables referencing collections, then mode values referencing both variables and modes.
+The requirement is: "Superadmin account is configured via `SUPER_ADMIN_EMAIL` env var; always Admin, cannot be removed." If the superadmin bypass is implemented only in the `jwt` callback (checking if the email matches the env var and setting `role: 'admin'`), then the role in MongoDB for that user can be anything, and the JWT override only takes effect at sign-in or during JWT refresh. Two specific risks:
+1. If the `jwt` callback forgets to re-apply the superadmin override during re-fetches (Pitfall 6), a role change to "viewer" in MongoDB would propagate to the superadmin's token after 60 seconds.
+2. If the env var `SUPER_ADMIN_EMAIL` is unset or misspelled in production, the superadmin loses admin access and cannot manage users.
 
 **How to avoid:**
-Always structure the payload in the correct dependency order:
-1. `variableCollections` — create the collection if it doesn't exist yet.
-2. `variableModes` — create one mode per theme, using `variableCollectionId: "temp:col1"` to reference the collection created in step 1.
-3. `variables` — create each variable, referencing the collection.
-4. `variableModeValues` — set values, referencing variable IDs and mode IDs from steps 2–3.
-
-Use `"temp:X"` prefix for IDs that are created in the same request. The API returns a mapping of temp IDs to real IDs in the response, which must be stored for subsequent update requests.
+- Apply the superadmin override at two layers: (a) in the `jwt` callback — always override `token.role = 'admin'` if `token.email === process.env.SUPER_ADMIN_EMAIL`; (b) in every server-side permission check — `const effectiveRole = user.email === process.env.SUPER_ADMIN_EMAIL ? 'admin' : user.role`.
+- In the Users management page, the "Remove" and "Change Role" actions must be disabled for the user whose email matches `SUPER_ADMIN_EMAIL` — checked server-side in the API handler, not just client-side UI.
+- On app startup (or in a health check route), verify `SUPER_ADMIN_EMAIL` is set and is a valid email format. Log a warning at startup if it is missing — do not fail silently.
+- Never store the superadmin role in MongoDB; derive it always from the env var at runtime.
 
 **Warning signs:**
-- 400 response with "variable mode not found" or "invalid modeId" message.
-- Variables created but with no values (mode values silently skipped).
-- Figma file shows the collection but all variable values are empty.
+- The Users admin page shows a "Remove" button for the superadmin user — it should be absent.
+- `SUPER_ADMIN_EMAIL` is set in `.env.local` but not in the production environment — superadmin logs in as Viewer.
+- After a role DB re-fetch (Pitfall 6), superadmin's role temporarily shows "viewer" in the UI for 60 seconds.
 
 **Phase to address:**
-Figma Variables export phase — the payload construction logic must be rewritten from scratch; the existing single-mode approach cannot be extended incrementally.
+Auth setup phase (superadmin bootstrap) and RBAC phase (disable remove/change-role for superadmin). Both layers must be in place before the Users page is shipped.
 
 ---
 
-### Pitfall 9: Figma Variables API — 4 MB Request Body Limit With Large Token Sets
+### Pitfall 9: Per-Collection Permission Query Performance — N+1 on Collection Listing
 
 **What goes wrong:**
-The Figma POST variables endpoint has a hard 4 MB request body limit (documented: "Request payload too large. The max allowed body size is 4MB"). Exporting multiple themes as modes multiplies the `variableModeValues` array by the number of themes. A collection with 500 tokens and 5 themes generates 2,500 mode value entries. Each entry is a JSON object with variableId, modeId, and a value (color objects are 5 fields). The payload can easily exceed 4 MB before minification.
+The requirement PERM-04 adds per-collection access overrides for individual users. If the `GET /api/collections` listing route fetches all collections and then, for each collection, makes a separate MongoDB query to check whether the current user has a per-collection override, the listing page makes `N+1` database queries for `N` collections. A user with 50 collections triggers 50 extra permission queries per page load.
 
 **Why it happens:**
-The current export sends all variables in a single POST. This was acceptable for single-mode export but does not scale to multi-theme mode values.
+Per-entity permissions feel natural to implement as a per-document lookup, especially when the permission model is "org-level role, with override per collection." The override check is added naively as an async loop over the collection list.
 
 **How to avoid:**
-- Estimate payload size before sending: `JSON.stringify(payload).length` in bytes. If over 3.5 MB, batch the `variableModeValues` across multiple requests.
-- On the first request, create collections, modes, and variables. Subsequent requests only update `variableModeValues` in batches of 200–300 entries.
-- Store the mode ID and variable ID mapping returned from the first request to use in subsequent batches.
+- Store per-collection overrides in a dedicated `CollectionPermission` collection with a compound index on `{ collectionId, userId }`.
+- On the collections listing, fetch all overrides for the current user in a single query: `CollectionPermission.find({ userId: currentUser.id })`. Then merge the results in memory with the collection list. Two queries total, not N+1.
+- For the single-collection view (`GET /api/collections/[id]`), a single `findOne({ collectionId, userId })` is acceptable.
+- For Viewer and Editor users with no overrides (the common case), skip the override query entirely by checking the org role first.
 
 **Warning signs:**
-- 413 response from Figma API.
-- Export works for small collections but fails silently for large ones.
-- `fetch` throws a payload size error before the request even reaches Figma.
+- `/api/collections` becomes noticeably slow as the collection count grows.
+- MongoDB profiler shows `N` consecutive `findOne` queries on `CollectionPermission` for a single GET request.
+- The API route has a `for...of` loop calling `await Permission.findOne(...)` inside it.
 
 **Phase to address:**
-Figma Variables export phase — implement chunked export as part of the initial implementation, not as a later fix.
+RBAC phase — implement the batch permission fetch before the collections listing is connected to the permission layer.
 
 ---
 
-### Pitfall 10: Migration of Existing Themes — Missing `tokens` Field Causes Runtime Errors
+### Pitfall 10: NextAuth Route File Location — App Router Requires Different Path Than Pages Router
 
 **What goes wrong:**
-The current `ITheme` type has `id`, `name`, and `groups` only. Existing themes in MongoDB have no `tokens` field. When the Tokens page tries to read `activeTheme.tokens` to display per-theme token values, it will get `undefined`. If token display code does not guard against this, the page will either throw a runtime error or silently show no tokens for existing themes. The `ThemeGroupMatrix` renders based on `theme.groups` and will not be affected, but any new code that assumes `theme.tokens` exists will fail for all pre-existing theme documents.
+Most NextAuth examples and tutorials use the Pages Router path: `pages/api/auth/[...nextauth].js`. In Next.js 13 App Router, this route does not exist. The correct path is `src/app/api/auth/[...nextauth]/route.ts` with named exports `GET` and `POST`. If the Pages Router path is used in an App Router project, NextAuth silently fails to register the auth routes. Sign-in pages return 404, OAuth callbacks fail, and `getServerSession` returns `null` everywhere.
 
 **Why it happens:**
-MongoDB is schemaless at the document level even though Mongoose defines a schema. Existing documents written before the schema migration will not have the new `tokens` field — Mongoose defaults only apply to new documents, not to reads of existing ones. The `Schema.Types.Mixed` definition for themes means Mongoose does not apply defaults to array elements.
+NextAuth.js v4 documentation primarily shows Pages Router examples. The App Router migration is documented but not prominently. Many blog posts and Stack Overflow answers still show the Pages Router path.
 
 **How to avoid:**
-- Add a Mongoose `get` transform or a service-layer normalization that ensures `theme.tokens` always defaults to `{}` when absent (nullish coalescing in every consumer: `theme.tokens ?? {}`).
-- Write a one-time migration script that runs on server startup: fetch all collections, find themes without a `tokens` field, initialize their tokens as a copy of the collection's master tokens, and write back. Gate this on an environment variable flag so it only runs once.
-- After migration, validate by counting themes in MongoDB that still lack a `tokens` field: `db.tokencollections.find({ 'themes.tokens': { $exists: false } }).count()` should return 0.
+Use exactly this file path and export pattern:
+
+```typescript
+// src/app/api/auth/[...nextauth]/route.ts
+import NextAuth from 'next-auth';
+import { authOptions } from '@/lib/auth'; // centralized authOptions
+
+const handler = NextAuth(authOptions);
+export { handler as GET, handler as POST };
+```
+
+Export `authOptions` from a separate `src/lib/auth.ts` file — not from the route file itself — so it can be imported in Route Handlers and Server Components without creating circular dependencies.
 
 **Warning signs:**
-- `TypeError: Cannot read properties of undefined (reading 'X')` in the Tokens page console when switching to an existing theme.
-- Token table renders empty when an existing theme is active.
-- Theme export for pre-migration themes produces empty output.
+- Navigating to `/api/auth/signin` returns 404.
+- `getServerSession()` always returns `null` even after a successful sign-in appears in the browser.
+- The NextAuth session cookie (`next-auth.session-token`) is never set.
 
 **Phase to address:**
-Theme data model extension phase — the migration script must run (or migration guard must be in place) before any code that reads `theme.tokens` is deployed.
+Auth setup phase — verify the route is reachable and session cookie is set before writing any permission-dependent code.
+
+---
+
+### Pitfall 11: SessionProvider Must Live in a Client Component — Cannot Be in Root layout.tsx
+
+**What goes wrong:**
+`SessionProvider` from `next-auth/react` is a Client Component. Next.js App Router requires the root `layout.tsx` to be a Server Component (so it can export `metadata`). If `SessionProvider` is placed directly in `layout.tsx`, the build fails or Next.js downgrades `layout.tsx` to a Client Component, breaking `metadata` export. The existing app already uses `LayoutShell` as a `'use client'` wrapper — this is the correct pattern, and `SessionProvider` belongs inside `LayoutShell`.
+
+**Why it happens:**
+The Pages Router had `_app.tsx` as a natural Client Component entry point. App Router has no equivalent; developers unfamiliar with the boundary try to wrap the root layout.
+
+**How to avoid:**
+Place `SessionProvider` inside `LayoutShell` (already `'use client'`):
+
+```typescript
+// src/components/layout/LayoutShell.tsx
+'use client';
+import { SessionProvider } from 'next-auth/react';
+
+export function LayoutShell({ children }) {
+  return (
+    <SessionProvider>
+      {/* existing layout content */}
+      {children}
+    </SessionProvider>
+  );
+}
+```
+
+Keep `src/app/layout.tsx` as a Server Component with `metadata` export.
+
+**Warning signs:**
+- Build error: "You are attempting to export 'metadata' from a component marked with 'use client'."
+- `useSession()` throws "No SessionProvider found" in client components.
+
+**Phase to address:**
+Auth setup phase — verify `LayoutShell` wraps `SessionProvider` as the first integration check.
+
+---
+
+### Pitfall 12: TypeScript Module Augmentation for Custom JWT Fields Is Easy to Break
+
+**What goes wrong:**
+Adding `role` and `id` to `session.user` requires TypeScript module augmentation in a `next-auth.d.ts` file. Two common failures: (1) The file exists but TypeScript does not pick it up because the `types/` directory is not listed in `tsconfig.json`'s `typeRoots` or `include`. (2) The `jwt` callback populates `token.role` correctly but the `session` callback does not forward it to `session.user.role` — so the runtime value is `undefined` even though TypeScript thinks it's a `string`.
+
+**Why it happens:**
+TypeScript module augmentation is a non-obvious pattern. The disconnect between "TypeScript thinks the type is right" and "runtime value is undefined" is especially confusing because there are no type errors — the augmentation type declaration suppresses them.
+
+**How to avoid:**
+Always implement both sides:
+1. The `next-auth.d.ts` type declaration (tells TypeScript the shape).
+2. The `jwt` + `session` callback pair that actually puts the value there at runtime.
+
+Write an integration test that signs in a test user and asserts `session.user.role !== undefined`. The TypeScript types alone are not sufficient validation.
+
+Add `next-auth.d.ts` to the project root or to `src/types/` and ensure the path is covered by `tsconfig.json`'s `include` glob.
+
+**Warning signs:**
+- TypeScript compiles without errors but `session.user.role` is `undefined` at runtime.
+- Changing the declared type in `next-auth.d.ts` makes no TypeScript errors appear in consuming code.
+- `console.log(session)` shows `{ user: { name, email, image } }` — missing `id` and `role`.
+
+**Phase to address:**
+Auth setup phase — write a sanity-check test or manual verification step that confirms `id` and `role` are present in the decoded session before the RBAC phase begins.
 
 ---
 
@@ -253,11 +346,13 @@ Theme data model extension phase — the migration script must run (or migration
 
 | Shortcut | Immediate Benefit | Long-term Cost | When Acceptable |
 |----------|-------------------|----------------|-----------------|
-| Keep `themes` as `Schema.Types.Mixed`, update whole array on every write | No schema migration needed; consistent with existing pattern | Full array round-trips on every edit; TOCTOU risk if multi-user ever added; no Mongoose validation | Acceptable for single-user v1.4; revisit before multi-user |
-| Merge master + theme tokens in memory before SD export, skip `source`/`include` | Simpler than multi-file SD setup; no temp files needed | Manual merge must exactly replicate SD override semantics; bugs are silent | Acceptable if deepMerge() is unit-tested with known inputs and expected outputs |
-| No per-theme document size guard (rely on MongoDB throwing) | Saves implementation time | 500 error with no useful user message; document may be partially written | Never — always guard before write |
-| Inline group-state permission check in UI only (disable input) | Faster to implement | API remains writable; future consumers bypass UI guard | Never — server-side guard is required |
-| Use the existing Figma export route with `valuesByMode: { default: ... }` for all themes | Zero new code | Wrong format — multiple modes require separate mode creation; will 400 on multi-mode export | Never — API contract is incompatible with this approach |
+| Protect only the middleware, not Route Handlers | Fast to implement; UI redirects correctly | CVE-2025-29927 bypass; API remains fully open | Never — always add Route Handler guards |
+| Use `getSession()` instead of `getServerSession()` in API routes | Familiar, same result in testing | Extra HTTP round-trip per API call; session fetch doubles latency in server context | Never — always use `getServerSession` server-side |
+| Store role only in JWT, never re-fetch from DB | Simple; no extra queries | Role changes take up to 30 days to take effect without logout | Never for role changes that need near-real-time effect |
+| Use `@auth/mongodb-adapter` with Credentials provider, no `session: "jwt"` | Matches OAuth adapter usage pattern | Sessions not persisted; adapter ignored; confusing behavior | Never — adapter and Credentials are incompatible without `session: "jwt"` |
+| Skip per-collection override query for the listing route (check overrides lazily on open) | Faster listing implementation | Permissions appear correctly only when a collection is opened; listing shows no indication of override | Acceptable as MVP deferral if overrides are rare (PERM-04 is lower priority) |
+| Hardcode admin check in UI only (no server-side admin guard) | Faster to build; no extra API calls | Any user with devtools can call admin endpoints directly | Never for any mutation endpoint |
+| Use UUID v4 as invite token | Simple; UUID library already available | UUID v4 has 122 bits of entropy — sufficient, but lacks explicit "invite" context. Acceptable if combined with expiry + single-use enforcement | Acceptable if expiry and `used` flag are enforced |
 
 ---
 
@@ -265,12 +360,15 @@ Theme data model extension phase — the migration script must run (or migration
 
 | Integration | Common Mistake | Correct Approach |
 |-------------|----------------|------------------|
-| MongoDB / Mongoose | Using `$set: 'themes.$.tokens'` to update token data in a Mixed-typed array | Fetch the document, mutate the theme object in memory, write the entire `themes` array back with `$set: { themes: updatedArray }` |
-| Style Dictionary v5 | Passing theme + master tokens merged as the `tokens` property without accounting for Source groups | Build the merged token set explicitly: master for Source groups, theme values for Enabled groups, exclude Disabled groups; then pass to SD |
-| Style Dictionary v5 | Calling `buildAllPlatforms()` instead of `formatPlatform()` for in-memory export | Always use `formatPlatform()` for server-side in-memory output; `buildAllPlatforms()` writes to disk and will fail in Next.js API routes |
-| Figma Variables API | Sending all themes as mode values in a single flat payload without first creating modes | Create collections and modes in step 1; create variables in step 2; set mode values in step 3 — all in one atomic POST with correct ordering |
-| Figma Variables API | Reusing a hardcoded `variableCollectionId: 'default'` (current code) | Use the collection ID returned from a prior GET or from the collection's `figmaCollectionId` metadata; `'default'` will cause 400 |
-| Figma Variables API | Assuming the write API is available on all Figma plans | The POST variables endpoint requires Enterprise plan; test against a real Enterprise file or document the requirement clearly in the UI |
+| NextAuth + App Router | Placing the handler at `pages/api/auth/[...nextauth].js` | Place at `src/app/api/auth/[...nextauth]/route.ts` with `export { handler as GET, handler as POST }` |
+| NextAuth + App Router | Calling `getSession()` in Server Components or Route Handlers | Call `getServerSession(authOptions)` — avoids extra HTTP round-trip |
+| NextAuth Credentials + MongoDB | Using `@auth/mongodb-adapter` with Credentials provider | Use JWT strategy; manage User model directly in Mongoose; skip the adapter |
+| NextAuth + Mongoose | Extracting `mongoose.connection.getClient()` to pass to MongoDB adapter | Keep a separate `MongoClient` singleton in `src/lib/mongo-client.ts` if adapter is ever needed; never share Mongoose's internal client |
+| SessionProvider + App Router | Wrapping root `layout.tsx` with `SessionProvider` | Place `SessionProvider` inside `LayoutShell` (`'use client'`) — root layout stays Server Component |
+| NextAuth JWT + custom fields | Declaring fields in `next-auth.d.ts` without the runtime callback | Must implement both: type declaration AND `jwt` + `session` callbacks that assign the values |
+| Resend + invite flow | Sending invite emails without rate limiting | Rate-limit invite sends to 1 per email per 5 minutes; guard the invite POST route with auth + admin role check |
+| Next.js middleware + MongoDB | Attempting to call `dbConnect()` / Mongoose inside `middleware.ts` | Middleware runs in Edge Runtime which does not support Node.js `net` module — no Mongoose in middleware. Use JWT decode only (stateless) in middleware |
+| Per-collection RBAC | Checking overrides with a `for...of` + `findOne` loop in the collections listing handler | Fetch all overrides for the current user in one query (`find({ userId })`), then merge in memory |
 
 ---
 
@@ -278,10 +376,24 @@ Theme data model extension phase — the migration script must run (or migration
 
 | Trap | Symptoms | Prevention | When It Breaks |
 |------|----------|------------|----------------|
-| Fetching full collection document on every token edit to check group state | Noticeable latency on each keystroke or blur in inline edit; server load spikes | Cache the group state map in the Tokens page React state (already loaded on mount); do not re-fetch from API on each edit | Immediately at any typing speed; already problematic with current debounce |
-| Re-running `tokenService.processImportedTokens()` on every theme switch to rebuild groups | UI freezes or stutters when switching themes with large token sets | Call `processImportedTokens` once on load; store result in state; filtering for active theme uses the already-computed `masterGroups` (existing pattern) | Collections with 500+ tokens; noticeable at 200ms+ parse time |
-| SD building all 6 formats for all themes in a single API call | Config page hangs or times out; Next.js API route hits the 10-second default timeout | Build formats on demand (user selects format + theme before building); or build asynchronously and stream progress | Any theme count >= 3 with a large collection; Next.js serverless functions have a 10s default limit |
-| Figma mode values payload growing linearly with `tokens * themes` | 413 from Figma API; or response timeout before 413 | Batch variableModeValues in groups of 200 per request | ~500 tokens * 3 themes = 1500 entries, approaching 4MB limit |
+| N+1 permission queries on collection listing | Collections page slow; MongoDB shows many sequential queries per request | Batch-fetch all user overrides in one query; merge in memory | Noticeable at 10+ collections; serious at 50+ |
+| Calling `getServerSession` in every Server Component in the render tree | Cascading DB reads on a single page load; waterfall latency | Call `getServerSession` once at the page level; pass session/role down as props to child Server Components | Immediately on any page with more than 2–3 nested Server Component fetches |
+| JWT re-fetch on every request (not throttled) | Every authenticated API call triggers a MongoDB `findById` | Add a `roleLastFetched` timestamp to the JWT; re-fetch only if older than 60 seconds | Immediately — every API call doubles its DB load |
+| Loading the full collection document to check permissions before returning it | Extra read for permission check; then second read inside the handler | Embed the permission check in the same query projection, or use the user's org role (which is already in the JWT) for the common case | Any collection endpoint under load |
+
+---
+
+## Security Mistakes
+
+| Mistake | Risk | Prevention |
+|---------|------|------------|
+| Relying solely on middleware for route protection (not upgrading from 13.5.6) | Complete auth bypass via CVE-2025-29927 — any external attacker can reach all API routes | Upgrade Next.js to 13.5.9; add `getServerSession` checks in all write Route Handlers |
+| Returning different error messages for "invalid token" vs "expired token" in invite flow | Timing/content oracle — attacker can enumerate valid invite emails | Return one generic message: "This invitation link is invalid or has expired." |
+| Storing raw invite tokens in MongoDB (not hashed) | If MongoDB is compromised, all pending invite links are usable | Hash the token with `crypto.createHash('sha256').update(token).digest('hex')` before storing; compare hash on redemption. Store only the hash. |
+| Not enforcing SUPER_ADMIN_EMAIL server-side in role-change API | Admin can demote the superadmin via the UI if the API doesn't check | In the `PUT /api/users/[id]/role` handler, check if the target user's email equals `SUPER_ADMIN_EMAIL` and return 403 |
+| Not rate-limiting the sign-in endpoint | Credential stuffing / brute force against the email+password endpoint | Apply in-memory or Redis rate limiting to `POST /api/auth/callback/credentials`; NextAuth does not rate-limit by default |
+| Exposing per-collection Figma tokens to Viewer-role users via the collection GET response | Viewer can extract API keys they should not have | Project the response in `GET /api/collections/[id]` to exclude `figmaToken` and `githubRepo` config for users without Editor or Admin role |
+| Setting `NEXTAUTH_SECRET` to a weak or static value in production | JWT forgery — attacker crafts valid session tokens | Generate with `openssl rand -base64 32`; rotate annually; never commit to source |
 
 ---
 
@@ -289,24 +401,26 @@ Theme data model extension phase — the migration script must run (or migration
 
 | Pitfall | User Impact | Better Approach |
 |---------|-------------|-----------------|
-| No visual distinction between "editing master" and "editing theme Enabled group" | User believes they are editing the theme but actually mutates the master collection | Show a clearly labeled banner ("Editing theme: Dark Mode") with a different background or accent color when an active theme with Enabled group is selected |
-| Save button behavior changes silently based on active theme | User hits Ctrl+S expecting to save the collection; instead saves the theme — or vice versa | Make the Save button label reflect context: "Save Collection" vs. "Save Theme Tokens"; disable Ctrl+S for theme edits or re-route it explicitly |
-| Source groups look the same as Enabled groups but do not respond to editing | User repeatedly tries to edit Source group tokens, gets no feedback on why inputs are unresponsive | Show a lock icon and "Source" badge on read-only groups; show a tooltip: "This group uses collection default values" |
-| Disabled groups simply disappear from the tree when a theme is active | User cannot tell if a group is Disabled vs. genuinely absent from the collection | Add a faint "N groups hidden" count below the tree when theme filtering is active; link to the Themes page to change states |
-| No indication when a theme's token data was last synced from the master collection | After the master collection is edited, theme token copies are stale | Show a "synced from collection on [date]" note per theme; offer a "Resync from collection" action that re-copies master values to Enabled groups |
+| No feedback when invite link is expired | User sees a generic 404 or error page with no path forward | Show a specific "This invitation has expired" page with a link to contact the admin |
+| Write controls are hidden but page still loads for Viewer (no loading state) | Momentary flash of enabled controls before permission context loads | Derive initial permission state from the server-rendered session; avoid client-side permission loading flicker by seeding `PermissionsProvider` with server-fetched data |
+| Admin user list shows no indication of pending invites | Admin cannot tell who has accepted and who has not | Show status badges: "Active", "Invited (expires in 2d)", "Expired" — each with distinct color |
+| Sign-in page is the app's own `/login` route but `NEXTAUTH_URL` is not set | NextAuth generates callback URLs pointing to `localhost` in production | Set `NEXTAUTH_URL` explicitly in production environment variables; never rely on auto-detection |
+| "First user becomes Admin" logic fires on every cold start if the user count check is not atomic | Multiple concurrent first-user registrations both get Admin role | Use a MongoDB upsert with `{ $setOnInsert: { role: 'admin' } }` + check for zero existing users inside a transaction, or use a dedicated "org bootstrap" document as a lock |
 
 ---
 
 ## "Looks Done But Isn't" Checklist
 
-- [ ] **Theme token copy on creation:** Theme creation copies master tokens — verify that token references (`{colors.base.blue}`) are preserved as-is (not resolved) in the copied data.
-- [ ] **Inline edit permission check:** UI disables Source group inputs — verify that the API also rejects writes to Source groups (not just the UI guard).
-- [ ] **Save routing:** Ctrl+S works in theme mode — verify it routes to the theme PUT route, not the master collection PUT.
-- [ ] **Migration guard:** Existing themes work after schema addition — verify that `theme.tokens` is initialized before any code reads it on pre-migration documents.
-- [ ] **SD export includes theme merge:** Theme export produces different CSS output than no-theme export — verify by diffing the two outputs with a token that differs between theme and master.
-- [ ] **Figma export mode ordering:** Figma collection shows N modes (one per theme) after export — verify the mode count in the Figma file matches the number of enabled themes.
-- [ ] **BSON size guard:** Creating the Nth theme on a large collection succeeds with a clear error, not a 500 from MongoDB — verify by attempting to add a theme to a collection at 80% of the estimated BSON limit.
-- [ ] **Theme selector on Config page:** Selecting a theme on the Config page changes the SD output — verify it actually changes the token input to SD, not just a label.
+- [ ] **Next.js version:** Upgraded from 13.5.6 to 13.5.9 before any middleware auth — verify `package.json` shows `"next": "13.5.9"` and CVE-2025-29927 is not exploitable.
+- [ ] **Route Handler guards:** Every write API route (PUT, POST, DELETE, PATCH) calls `getServerSession` and returns 401 if null — verify with a curl request without a session cookie.
+- [ ] **JWT fields at runtime:** `session.user.id` and `session.user.role` are non-null after sign-in — verify in browser devtools or a test that decodes the session.
+- [ ] **Superadmin cannot be removed:** The Users admin page returns 403 from the API when attempting to change or remove the `SUPER_ADMIN_EMAIL` user — verify with a direct API call.
+- [ ] **Invite token single-use:** Clicking the same magic link twice returns the "invalid or expired" page on the second click — verify by completing signup and revisiting the same URL.
+- [ ] **Invite token expiry:** Manually setting `expiresAt` to a past date in MongoDB causes the link to be rejected — verify the expiry check is server-side, not only `expiresAt` display in the UI.
+- [ ] **Role change propagates:** After changing a user's role in the admin UI, the user's write controls change within 60 seconds (or after re-login) — verify the `jwt` callback re-fetch is in place.
+- [ ] **Viewer cannot write:** A Viewer-role session receives 403 from `PUT /api/collections/[id]` — verify with a direct API call using a Viewer's session cookie.
+- [ ] **SessionProvider does not break metadata:** `src/app/layout.tsx` still exports `metadata` without TypeScript or build errors after `SessionProvider` is added to `LayoutShell`.
+- [ ] **Mongoose not in middleware:** `middleware.ts` has zero imports from `mongoose`, `dbConnect`, or any Mongoose model — verify with a grep.
 
 ---
 
@@ -314,11 +428,12 @@ Theme data model extension phase — the migration script must run (or migration
 
 | Pitfall | Recovery Cost | Recovery Steps |
 |---------|---------------|----------------|
-| BSON limit hit — document write fails | MEDIUM | Drop the newest themes until the document is under limit; implement chunked theme storage (separate documents) retroactively |
-| Mixed array $set writes silently fail | LOW | Switch to whole-array replacement strategy: `setThemes` with full array in `$set` instead of positional operator; no data migration needed |
-| Master tokens mutated instead of theme tokens | HIGH | Restore master tokens from MongoDB `updatedAt` timestamp (latest correct backup); add diff review to catch future instances |
-| Figma export 400 on mode payload | LOW | Restructure payload to correct order (collections → modes → variables → values) in a single deploy; no user data affected |
-| Pre-migration themes throw on `theme.tokens` | MEDIUM | Deploy migration script immediately; script is non-destructive (only adds missing fields); run against production with dry-run flag first |
+| CVE-2025-29927 middleware bypass discovered in production | HIGH | Immediately add `x-middleware-subrequest` header block at CDN/proxy level; deploy Next.js 13.5.9 upgrade; audit API logs for unauthorized access |
+| Route Handler missing auth guard — write endpoint exposed | MEDIUM | Add `requireAuth()` guard and deploy; audit MongoDB for unauthorized mutations via `updatedAt` timestamps; notify affected users if data was changed |
+| JWT role not propagating after role change | LOW | Document workaround: affected user must sign out and back in; implement DB re-fetch in `jwt` callback in next deploy |
+| Invite token reuse vulnerability discovered | MEDIUM | Set `used = true` for all existing invite tokens in MongoDB immediately; deploy fix; re-issue invites that were affected |
+| Superadmin locked out (SUPER_ADMIN_EMAIL not set in production) | HIGH | SSH to server, set env var, restart. Or: directly update user role in MongoDB via `mongo` CLI: `db.users.updateOne({ email: '...' }, { $set: { role: 'admin' } })` |
+| MongoClient conflict between adapter and Mongoose | MEDIUM | Remove adapter, confirm JWT strategy, restart; no data loss since JWT sessions were never in the DB |
 
 ---
 
@@ -326,34 +441,37 @@ Theme data model extension phase — the migration script must run (or migration
 
 | Pitfall | Prevention Phase | Verification |
 |---------|------------------|--------------|
-| BSON limit from embedded token copies | Theme data model + schema migration | After creating max themes on largest collection, `Object.keys(theme.tokens).length > 0` and no 500 errors |
-| `$set themes.$.tokens` fails with Mixed | Theme data model + schema migration | Unit test: update theme tokens via whole-array $set and verify round-trip equality |
-| Inline edit writes to master instead of theme | Inline token editing phase | Edit a token in theme mode; confirm master collection token unchanged; confirm theme token updated |
-| Optimistic update race condition | Inline token editing phase | Simulate rapid edits: 5 values in 500ms; all 5 values persist correctly after debounce settles |
-| Group state permission not enforced at API | Theme tokens API route | Direct curl PUT to Source group tokens; expect 422 response |
-| SD `tokens` property merge strategy | SD theme export phase | SD output for theme with 1 overridden token differs from master export by exactly 1 value |
-| SD new instance state accumulation | SD theme export phase | Export 2+ themes sequentially; diff outputs and confirm expected differences |
-| Figma mode creation ordering | Figma Variables export phase | POST results in Figma collection with correct mode count and non-empty variable values |
-| Figma 4 MB limit | Figma Variables export phase | Test export with 500+ tokens and 3+ themes; no 413 error |
-| Migration of existing themes | Theme data model + schema migration phase | After migration, `db.tokencollections.find({'themes.tokens': {$exists:false}}).count() === 0` |
+| CVE-2025-29927 middleware bypass | Auth setup phase — step 0: upgrade Next.js | curl with bypass header returns 401/redirect; `package.json` shows 13.5.9+ |
+| Credentials provider + JWT strategy confusion | Auth setup phase | No adapter installed; `session: { strategy: 'jwt' }` explicit; MongoDB has no `nextauth_*` collections |
+| MongoDB adapter / Mongoose connection conflict | Auth setup phase | Single connection in `mongodb.ts`; no `MongoClient` singleton needed for auth |
+| All write routes unprotected | Auth setup phase — apply `requireAuth()` | All write routes return 401 for unauthenticated curl requests |
+| Permission context not in Server Components | RBAC + permissions context phase | Server Components call `getServerSession`; client components use `usePermissions()`; no `useContext` in Server Components |
+| JWT role stale after role change | RBAC phase — `jwt` callback re-fetch | Role change reflects in UI within 60 seconds without logout |
+| Invite token security | Email invite + account setup phase | Single-use enforced; expiry enforced; hash stored |
+| Superadmin env var bypass | Auth setup phase + RBAC phase | API returns 403 on superadmin role-change attempt; env var missing logs warning at startup |
+| N+1 collection permission queries | RBAC phase — permission query design | Collections listing triggers 2 queries (collections + user overrides) not N+1 |
+| NextAuth route location | Auth setup phase | `/api/auth/signin` returns 200; session cookie set on credentials login |
+| SessionProvider in wrong component | Auth setup phase | `layout.tsx` exports `metadata`; no build errors; `useSession()` works in client components |
+| TypeScript augmentation without runtime values | Auth setup phase — verified before RBAC | `session.user.id` and `session.user.role` are non-undefined at runtime |
 
 ---
 
 ## Sources
 
-- MongoDB BSON 16 MB limit: [MongoDB Limits and Thresholds](https://docs.mongodb.com/manual/reference/limits/) — HIGH confidence (official docs)
-- MongoDB unbounded arrays anti-pattern: [Avoid Unbounded Arrays](https://www.mongodb.com/docs/atlas/schema-suggestions/avoid-unbounded-arrays/) — HIGH confidence (official Atlas docs)
-- Mongoose Mixed type positional operator bug: [Issue #14595](https://github.com/Automattic/mongoose/issues/14595), [Issue #12530](https://github.com/Automattic/mongoose/issues/12530) — HIGH confidence (confirmed Mongoose bug reports)
-- Mongoose Mixed type deep modification: [Issue #1694](https://github.com/Automattic/mongoose/issues/1694) — MEDIUM confidence (older, but pattern confirmed by multiple subsequent issues)
-- React optimistic update + debounce race conditions: [tkdodo.eu — Concurrent Optimistic Updates](https://tkdodo.eu/blog/concurrent-optimistic-updates-in-react-query) — HIGH confidence (authoritative React Query maintainer)
-- React stale closure with debounce: [developerway.com — Debouncing in React](https://www.developerway.com/posts/debouncing-in-react) — MEDIUM confidence (verified by React documentation on useRef pattern)
-- Style Dictionary v5 programmatic API (`formatPlatform`, `tokens` property vs `source/include`): [styledictionary.com/reference/config](https://styledictionary.com/reference/config/) and [styledictionary.com/reference/hooks/formats](https://styledictionary.com/reference/hooks/formats/) — HIGH confidence (official SD v5 docs)
-- Style Dictionary multi-theme pattern: [Multi-axis design tokens with SD — Matt McAdams, 2025](https://mattmcadams.com/posts/2025/multi-axis-design-tokens/) — MEDIUM confidence (verified against SD v5 docs)
-- Figma Variables API POST format, atomic operations, 4 MB limit: [developers.figma.com/docs/rest-api/variables-endpoints](https://developers.figma.com/docs/rest-api/variables-endpoints/) — HIGH confidence (official Figma developer docs, accessed 2026-03-20)
-- Figma Variables API modes and temp IDs: [developers.figma.com/docs/rest-api/variables-types](https://developers.figma.com/docs/rest-api/variables-types/) — HIGH confidence (official Figma docs)
-- Codebase inspection: `src/lib/db/models/TokenCollection.ts`, `src/app/api/collections/[id]/themes/route.ts`, `src/app/api/collections/[id]/themes/[themeId]/route.ts`, `src/app/api/export/figma/route.ts`, `src/services/style-dictionary.service.ts`, `src/app/collections/[id]/tokens/page.tsx`, `src/components/themes/ThemeGroupMatrix.tsx` — HIGH confidence (direct inspection of current production code)
+- Next.js CVE-2025-29927 (middleware bypass): [ProjectDiscovery Technical Analysis](https://projectdiscovery.io/blog/nextjs-middleware-authorization-bypass), [NVD CVE-2025-29927](https://nvd.nist.gov/vuln/detail/CVE-2025-29927), [JFrog Analysis](https://jfrog.com/blog/cve-2025-29927-next-js-authorization-bypass/) — HIGH confidence (multiple official security advisories; fixed in Next.js 13.5.9)
+- NextAuth Credentials provider + JWT only: [NextAuth credentials docs](https://next-auth.js.org/providers/credentials), [Discussion #4394](https://github.com/nextauthjs/next-auth/discussions/4394) — HIGH confidence (official NextAuth documentation)
+- MongoDB adapter incompatibility with Mongoose: [Discussion #5004](https://github.com/nextauthjs/next-auth/discussions/5004), [Discussion #9468](https://github.com/nextauthjs/next-auth/discussions/9468), [Auth.js MongoDB adapter docs](https://authjs.dev/getting-started/adapters/mongodb) — HIGH confidence (official docs + confirmed community reports)
+- App Router route file location for NextAuth: [NextAuth.js Next.js configuration](https://next-auth.js.org/configuration/nextjs), [Auth.js reference](https://authjs.dev/reference/nextjs) — HIGH confidence (official docs)
+- `getServerSession` vs `getSession` performance: [NextAuth securing pages](https://next-auth.js.org/tutorials/securing-pages-and-api-routes) — HIGH confidence (official docs)
+- React context unavailable in Server Components: [Next.js Server and Client Components](https://nextjs.org/docs/app/getting-started/server-and-client-components) — HIGH confidence (official Next.js docs)
+- Middleware not a security boundary: [Next.js authentication guide](https://nextjs.org/docs/app/guides/authentication), [WorkOS guide 2026](https://workos.com/blog/nextjs-app-router-authentication-guide-2026) — HIGH confidence (official docs)
+- TypeScript module augmentation for NextAuth: [NextAuth TypeScript docs](https://next-auth.js.org/getting-started/typescript), [Discussion #9120](https://github.com/nextauthjs/next-auth/discussions/9120) — HIGH confidence (official docs + confirmed community pattern)
+- Invite token security (single-use, expiry, hashing): [Clerk magic link security](https://clerk.com/blog/secure-authentication-nextjs-email-magic-links), [AppMaster transactional email flows](https://appmaster.io/blog/transactional-email-flows-tokens-expiration-deliverability) — MEDIUM confidence (verified against standard security practices; no official NextAuth doc for custom invite flows)
+- Resend rate limits: [Resend rate limit docs](https://resend.com/docs/api-reference/rate-limit) — HIGH confidence (official Resend docs)
+- JWT role re-fetch pattern: community-verified pattern; no official NextAuth doc but widely recommended in [Discussion #1571](https://github.com/nextauthjs/next-auth/discussions/1571) — MEDIUM confidence
+- Codebase inspection: `src/lib/mongodb.ts`, `src/lib/db/models/TokenCollection.ts`, `src/app/api/collections/[id]/route.ts`, all 18 Route Handler files, `src/components/layout/LayoutShell.tsx` — HIGH confidence (direct inspection of current production code)
 
 ---
 
-*Pitfalls research for: ATUI Tokens Manager v1.4 — Theme Token Sets*
-*Researched: 2026-03-20*
+*Pitfalls research for: ATUI Tokens Manager v1.5 — Org User Management (Auth + RBAC)*
+*Researched: 2026-03-28*

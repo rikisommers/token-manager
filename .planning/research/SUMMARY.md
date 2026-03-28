@@ -1,17 +1,17 @@
 # Project Research Summary
 
-**Project:** ATUI Tokens Manager — v1.4 Theme Token Sets
-**Domain:** Design token management — per-theme value sets, inline editing, multi-format export
-**Researched:** 2026-03-20
-**Confidence:** HIGH (stack and architecture based on direct codebase inspection; MEDIUM for Figma Variables API integration)
+**Project:** ATUI Tokens Manager v1.5 — Org User Management + Authentication
+**Domain:** Auth layer + RBAC on an existing Next.js 13.5.6 App Router + MongoDB/Mongoose brownfield app
+**Researched:** 2026-03-28
+**Confidence:** HIGH
 
 ## Executive Summary
 
-ATUI Tokens Manager v1.4 extends an already-shipped milestone (v1.3) by making themes actual token value stores rather than visibility filters. The product already has theme CRUD, a ThemeGroupMatrix (Enabled/Source/Disabled group states), and a theme selector on the Tokens page — what is missing is the data layer that gives each theme its own embedded copy of token values, and the UI and export layers that read from it. Research across all four domains converges on a single clear verdict: **no new packages are required**, all capability is achievable with the existing stack (Next.js 13.5.6, React 18.2.0, Mongoose 9.3.0, Style Dictionary 5.3.3), and the implementation order is strictly dependency-driven.
+ATUI Tokens Manager v1.5 adds multi-user authentication, email invite-based onboarding, and role-based access control (Admin/Editor/Viewer) to an existing single-user design token management tool. This is a brownfield milestone: the entire token management stack (Next.js 13.5.6, React 18.2.0, Mongoose 9.2.2, shadcn/ui, MongoDB) is locked and working. The v1.5 scope adds exactly three new production packages (next-auth@^4.24.13, bcryptjs@^3.0.3, resend@^6.0.0) and builds on well-documented, established patterns. The recommended approach is credentials-based auth with JWT sessions, a custom Mongoose User model, and a global React permissions context — no NextAuth database adapter needed or wanted.
 
-The recommended approach is to treat embedded token data as the foundation everything else builds on. Themes should receive a deep copy of the collection's master tokens at creation time, inline editing on the Tokens page should route saves to a new `PATCH /themes/:themeId/tokens` endpoint (not the existing collection PUT), and export should pass the active theme's tokens to SD and Figma rather than the master collection. The existing debounce pattern (`useRef` + `setTimeout` already used in `tokens/page.tsx`) and the optimistic-update-with-rollback pattern (already in `ThemeGroupMatrix`) are the correct React primitives — no additional libraries are needed.
+The primary risk for this milestone is security, not complexity. The existing codebase runs on Next.js 13.5.6, which is directly vulnerable to CVE-2025-29927 (CVSS 9.1) — a middleware authentication bypass via a crafted HTTP header. This must be patched to 13.5.9 as the literal first step before any auth code ships. The second risk is a pattern that trips up nearly every NextAuth + MongoDB project: the Credentials provider only works with JWT sessions, making a database adapter both incompatible and counterproductive. The entire auth layer must be built assuming stateless JWT sessions, with role-enforcement living in individual Route Handlers rather than in middleware or a database adapter.
 
-The dominant risks are: (1) the `Schema.Types.Mixed` Mongoose pattern makes positional `$set` on nested theme array elements unreliable — the safe path is whole-array replacement; (2) the Figma Variables API requires a strict object creation order (`variableCollections` → `variableModes` → `variables` → `variableModeValues`) and a 4 MB payload ceiling that requires chunked batching for large token sets; and (3) pre-existing theme documents in MongoDB have no `tokens` field, so every consumer must guard against `undefined` and a one-time migration must seed the field before any reading code is deployed.
+The architecture is straightforward in concept but cross-cutting in execution. Authentication introduces a two-layer permission system: a React context (`usePermissions()`) for client components to control UI visibility, and `getServerSession()` calls at the top of every Route Handler for server-side enforcement. The challenge is discipline — it is easy to add middleware and consider the job done. The research is clear that UI hiding is UX and server-side guards are security; both layers must be implemented without exception. With a team of 10-50 users and an internal tool context, the chosen patterns scale well within this milestone's needs.
 
 ---
 
@@ -19,191 +19,146 @@ The dominant risks are: (1) the `Schema.Types.Mixed` Mongoose pattern makes posi
 
 ### Recommended Stack
 
-The existing stack is sufficient for all v1.4 requirements. No new packages are needed, and several obvious candidates were explicitly rejected: `useOptimistic` (requires React 19, not React 18.2.0), `use-debounce` (trivial 8-line pattern already in the codebase), `@tanstack/react-query` (overkill for this fetch pattern), and a separate `ThemeTokenSet` MongoDB collection (joins and complexity not justified at this scale).
+The existing stack (Next.js 13.5.6, React 18.2.0, Mongoose 9.2.2, shadcn/ui, Tailwind) is unchanged. Three new production packages are added and nothing else. `next-auth@^4.24.13` is the only viable choice — the v5 (Auth.js) rewrite requires Next.js 14+ minimum, and this project cannot upgrade without risk to the 27K LOC codebase. `bcryptjs` is preferred over `bcrypt` (native) because it is pure JavaScript, requires zero Webpack configuration, and is appropriate for low-throughput login flows. `resend` is preferred over nodemailer for its API-first model and React email template support.
 
-**Core technologies and their v1.4 roles:**
-- **Mongoose 9.3.0** — embed `tokens: Record<string, unknown>` on `ITheme`; update via whole-array `$set: { themes: updatedArray }` (NOT positional `$set` — Mixed type makes that unreliable)
-- **React 18.2.0** — inline editing via `useState` + `useRef` + `setTimeout` debounce; optimistic display with rollback on error; same pattern as existing `graphAutoSaveTimerRef`
-- **Style Dictionary 5.3.3** — one `new StyleDictionary({ tokens: themeTokens })` instance per theme; call `sd.init()` then `sd.formatPlatform('css')`; integrate into existing `buildBrandTokens` function
-- **Next.js 13.5.6** — new `PATCH /api/collections/[id]/themes/[themeId]/tokens` route; extend Figma export route to accept optional `themes` array for multi-mode output
+The explicit decision to skip `@auth/mongodb-adapter` is load-bearing. NextAuth's Credentials provider cannot use database sessions, making the adapter inert for this use case. Adding it would create a parallel MongoDB connection via raw MongoClient that conflicts with the existing Mongoose singleton. JWT sessions are the correct and only viable strategy. One additional package referenced in ARCHITECTURE.md is `jsonwebtoken` — used for invite token signing/verification in `src/lib/auth/invite.ts`. Whether to use `jsonwebtoken` or the simpler `crypto.randomBytes` approach (no new dep) should be resolved during Phase 1 planning; the PITFALLS.md recommendation favors the no-dep approach.
+
+**Core technologies:**
+- `next-auth@^4.24.13`: Session management, credentials auth, JWT cookies, withAuth middleware — only stable v4 compatible with Next.js 13
+- `bcryptjs@^3.0.3`: Password hashing — pure JS, no native bindings, same API as bcrypt
+- `resend@^6.0.0`: Transactional email for invite delivery — API-first, React template support
+- No NextAuth database adapter: JWT strategy makes the adapter incompatible and unnecessary
+
+**Environment variables required:** `NEXTAUTH_SECRET`, `NEXTAUTH_URL`, `RESEND_API_KEY`, `SUPER_ADMIN_EMAIL`
 
 ### Expected Features
 
-The feature dependency chain is strict and linear. Embedded token data is the prerequisite for everything else. Research identified a clear MVP scope for v1.4 and explicit deferral decisions.
+The full v1.5 feature set is well-defined with no ambiguity about scope. All items in the MVP list are P1 (required); the anti-features (OAuth, custom roles, per-permission toggles) are correctly deferred.
 
-**Must have (table stakes — v1.4 launch required):**
-- Theme document stores a full embedded copy of collection tokens on creation — every other feature depends on this
-- Inline value editing in the tokens table routes saves to the active theme's embedded data (not the master collection)
-- Source group state = read from collection default, read-only; Enabled group state = read from and write to theme tokens
-- Visual override indicator distinguishing theme-overridden values from collection-default values — without this editors are blind
-- Theme selector on Config page for export target selection
-- SD export: theme-selected output uses theme token values (not master collection)
-- Figma export: each enabled theme becomes one Figma Variable mode
+**Must have (table stakes):**
+- Email + password sign-in with session persistence across refresh — users expect a basic credential gate
+- Redirect unauthenticated users to sign-in — middleware + Route Handler enforcement (belt-and-suspenders)
+- Admin/Editor/Viewer roles in JWT, enforced on all write API routes — the central security requirement
+- Admin invite flow: email + role input, Resend magic link, one-time-use token (72h expiry), account setup form
+- Pending invites visible in admin list with expiry badges; resend and revoke actions
+- Admin can change org-level role and remove users, with last-Admin lockout guards
+- Write controls hidden (not just disabled) for Viewer role — clean UX
+- Users admin page at `/org/users` (Admin-only)
 
-**Should have (competitive differentiators — v1.4.x after validation):**
-- Override indicator with reset-to-collection-default action per token
-- Multi-theme ZIP export (all themes in one SD build action)
-- "Resync from collection" action when master tokens have changed since theme creation
+**Should have (v1.5 required by spec):**
+- Per-collection permission override: Admin grants elevated or restricted access to specific collections
+- Superadmin via `SUPER_ADMIN_EMAIL` env var — lockout prevention, no UI surface required
+- First user auto-assigned Admin — zero-config bootstrap
+- Role change propagates within 60 seconds via JWT re-fetch (not requiring logout)
 
-**Defer to v2+:**
-- Theme inheritance chains (Theme B inherits Theme A) — requires resolver complexity; flat per-theme model covers current use case
-- Multi-dimensional theme permutation (mode x brand matrix) — needs `sd-transforms permutateThemes` and UX redesign
-- Real-time cross-theme diff view — analytical feature, not core authoring
+**Defer (v2+):**
+- OAuth / SSO providers — explicit scope exclusion
+- Custom role creation / per-permission matrices — three named roles are sufficient
+- Activity audit log
+- Invite reminder emails (day 3, day 6 nudge)
+- Multi-org / tenant support
 
-**Anti-features to explicitly reject:**
-- Token alias resolution across theme boundaries (circular reference explosions)
-- Automatic propagation of master collection edits into all themes (silent mutations)
-- Live component preview (out of scope for a token manager)
+**Hide vs disable rule:** Hide when the user's role means they will never be able to perform the action. Disable (with tooltip) when the restriction is temporary or contextual (e.g., Source group in theme mode). Never disable without explanation.
 
 ### Architecture Approach
 
-The implementation follows a six-step dependency-ordered sequence grounded in the existing codebase patterns. The data layer must be completed first (ITheme type extension, theme creation token copy, PATCH endpoint) before any UI or export work begins. Two new components are added (`ThemeTokenEditor`, `ThemeExportSelector`) and four existing files are modified (`CollectionTokensPage`, `CollectionConfigPage`, `BuildTokensPanel`, `ExportToFigmaDialog`). No new pages, no new services, no new MongoDB collections.
+The architecture adds an isolated auth layer and email layer to the existing codebase without modifying the token management layer except to add auth guards. New `src/lib/auth/`, `src/lib/email/`, `src/components/auth/`, and `src/components/org/` domain folders follow the existing `src/[domain]/` convention. All auth business logic (`authOptions`, session helper, permissions pure function, invite token sign/verify) is isolated in `src/lib/auth/`. Middleware is stateless (JWT-only, no DB), and role enforcement runs inside individual Route Handlers via a shared `getSession()` helper.
 
-**Major components and responsibilities:**
-1. **`ITheme` type extension** (`src/types/theme.types.ts`) — adds `tokens?: Record<string, unknown>`; optional for backward compatibility with pre-v1.4 documents
-2. **Theme creation handler** (`POST /api/collections/[id]/themes`) — deep-copies `collection.tokens` into `theme.tokens` via `structuredClone` before `$push`
-3. **`PATCH /api/collections/[id]/themes/[themeId]/tokens`** (new file) — accepts full token replacement; uses whole-array `$set` to avoid Mixed-type positional operator issues; validates that source-state groups are not written to
-4. **`ThemeTokenEditor`** (new component) — inline editing UI for Enabled groups under an active theme; replaces the form panel section (not the page layout) when theme context is active
-5. **`ThemeExportSelector`** (new component) — shadcn/ui `Select` on Config page; "Collection default" or a named theme; drives which token set is passed to SD and Figma export
-6. **Figma export route extension** (`/api/export/figma`) — when `themes` array present in request body, build `variableCollections` + `variableModes` + `variables` + `variableModeValues` in correct dependency order with temp IDs
+The session-to-permissions flow is: MongoDB User.role (read at sign-in only) → NextAuth JWT cookie → `useSession()` → `PermissionsProvider` → `usePermissions()` hook in client components. For Server Components and API routes, `getServerSession(authOptions)` is called directly — React context is unavailable in Server Components. This two-layer pattern is a hard constraint of the Next.js App Router, not an option.
 
-**Key patterns to follow (all established in existing code):**
-- Whole-array theme update: fetch document, mutate theme in memory, `$set: { themes: updatedArray }` — bypass positional operator entirely
-- Optimistic UI with revert: apply changes to local state immediately, PATCH to API, revert to pre-edit snapshot on failure
-- Token source resolution at render time: `activeGroupState === 'source'` reads `rawCollectionTokens`; `'enabled'` reads `activeThemeTokens`; no merged store
-- Repository bypass for theme mutations: direct `TokenCollection` model access for array operator updates (established pattern, documented in PROJECT.md)
+**Major components:**
+1. `src/middleware.ts` — JWT-only route protection (withAuth); redirects unauthenticated page requests; no DB access
+2. `src/lib/auth/nextauth.config.ts` — authOptions; CredentialsProvider + jwt/session callbacks; single import point for all `getServerSession()` callers
+3. `src/lib/auth/permissions.ts` — pure `canPerform(role, action)` function; no React, no Next.js
+4. `src/components/auth/PermissionsProvider.tsx` — React context client component; exposes `usePermissions()` hook with pre-computed booleans (`canEdit`, `canCreate`, `isAdmin`, `canGitHub`, `canFigma`)
+5. `src/lib/db/models/User.ts`, `Invite.ts`, `CollectionPermission.ts` — three new Mongoose models; no adapter
+6. `src/lib/email/resend.ts` + `invite-email.tsx` — isolated email layer; zero dependency on auth layer
+7. Org Users admin page at `src/app/org/users/page.tsx` — Admin-only; UserTable, InviteUserDialog, RoleChangeSelect components
+8. Auth guard additions to all 8+ existing write Route Handlers — 3-line addition per handler, no restructuring of existing logic
 
 ### Critical Pitfalls
 
-1. **`$set themes.$.tokens` silently fails on Mixed-typed array** — Mongoose does not correctly cast positional updates on `Schema.Types.Mixed` arrays (confirmed bugs #14595, #12530). Prevention: fetch document, modify theme in memory, write full `themes` array back. Decide this before writing any PATCH endpoint code.
+1. **CVE-2025-29927 middleware bypass** — Upgrade Next.js 13.5.6 to 13.5.9 as step zero before any auth code is written. Any middleware-only auth on 13.5.6 is completely bypassable with a crafted header. After upgrading, still add `getServerSession()` guards to all write Route Handlers — middleware is UX, not security.
 
-2. **Inline edit writes to master collection instead of theme** — The existing `handleSave` in `tokens/page.tsx` issues `PUT /api/collections/${id}` regardless of active theme. Prevention: explicitly branch the save path on `activeThemeId` + group state; block the master PUT while in theme editing context.
+2. **Credentials provider cannot use database sessions** — Configure `session: { strategy: "jwt" }` explicitly. Do not install `@auth/mongodb-adapter`. Role and ID must be embedded in the JWT via `jwt` + `session` callbacks; without this, `session.user.role` is `undefined` at runtime despite TypeScript compiling cleanly.
 
-3. **Pre-existing themes have no `tokens` field — runtime crashes** — MongoDB does not backfill new fields on existing documents. Prevention: mark `ITheme.tokens` as optional; add `theme.tokens ?? {}` guards everywhere; run a one-time migration script before any v1.4 reading code ships.
+3. **JWT role staleness after role change** — An Admin changing a user's role writes to MongoDB, but the user's existing JWT still carries the old role for up to 30 days. Add a `roleLastFetched` timestamp to the JWT and re-fetch from DB in the `jwt` callback if older than 60 seconds. Implement in the same phase as role persistence.
 
-4. **Figma Variables API requires strict creation order** — `variableModes` must reference an already-created `variableCollectionId`; `variableModeValues` must reference already-created variable and mode IDs. All within one atomic POST using `"temp:X"` prefix IDs. The entire POST fails if order is wrong — nothing is written. Prevention: always structure payload as collections → modes → variables → mode values; do not attempt to extend the existing single-mode export incrementally.
+4. **All existing write routes are currently unprotected** — There are 18 Route Handler files, all without auth guards. A shared `requireAuth()` utility must be applied to every write Route Handler in a single dedicated phase. Splitting this across phases leaves live data-write endpoints unguarded.
 
-5. **Figma 4 MB request body limit with multi-theme exports** — 500 tokens × 5 themes = 2,500 mode value entries, easily approaching 4 MB. Prevention: estimate `JSON.stringify(payload).length` before sending; batch `variableModeValues` in groups of 200–300 across sequential requests if over 3.5 MB threshold.
+5. **TypeScript module augmentation without runtime values** — `next-auth.d.ts` module augmentation tells TypeScript the session has `id` and `role`, but TypeScript compiles cleanly even if the runtime callbacks never assign these values. Both the type declaration and the `jwt` + `session` callbacks must be verified with a live sign-in check before the RBAC phase begins.
 
-6. **BSON document size** — each theme embeds a full token copy; with many themes on large collections the 16 MB MongoDB document limit is reachable. Prevention: enforce a per-collection theme count limit (e.g., 10 max) in the POST handler; calculate estimated size before writing.
+6. **N+1 permission queries on collection listing** — Naive per-collection override lookup (one `findOne` per collection in a loop) triggers N+1 DB queries. Use a single `find({ userId })` on `CollectionPermission`, then merge in memory. Two queries total for any N.
 
-7. **SD instance state accumulation on sequential theme exports** — SD v5 may retain state across successive instantiations. Prevention: create a fresh `StyleDictionary` instance for each theme build; always call `sd.init()` before `sd.formatPlatform()`; verify two themes produce distinct output in testing.
+7. **Invite token security is an atomic unit** — Token generation (`crypto.randomBytes(32)`), SHA-256 hash storage, single-use enforcement, and `expiresAt` validation must all be implemented together. All failure cases must return the same generic error to avoid information leakage. These are not separable concerns.
 
 ---
 
 ## Implications for Roadmap
 
-Based on the strict dependency chain identified in research, four implementation phases are recommended. The first two are purely backend and must complete before any UI work.
+Based on the dependency ordering in ARCHITECTURE.md and the pitfall-to-phase mapping in PITFALLS.md, the natural phase structure is 6 phases. The build order is strictly dependency-driven: infrastructure before API, API before UI, middleware after sign-in works, auth guards before org management UI.
 
-### Phase 1: Data Model Foundation
+### Phase 1: Auth Infrastructure and Security Baseline
 
-**Rationale:** Every other v1.4 feature reads from `theme.tokens`. Nothing can be built until themes store their own token data. This is a pure backend phase with zero UI changes.
+**Rationale:** CVE-2025-29927 must be patched before any auth code ships. Mongoose models and the `authOptions` configuration are the foundation everything else depends on. The JWT contract (which fields it carries) must be established and verified at runtime before any RBAC code is written.
+**Delivers:** Next.js upgraded to 13.5.9; User/Invite/CollectionPermission Mongoose models; `authOptions` with CredentialsProvider + JWT callbacks; `getSession()` helper; `permissions.ts` pure function; invite token utility; Resend client singleton; TypeScript module augmentation for Session + JWT with live runtime verification.
+**Addresses:** AUTH-01 foundation, AUTH-06 (superadmin env var logic), security baseline
+**Avoids:** CVE-2025-29927, Credentials + JWT confusion, MongoDB adapter conflict, TypeScript augmentation without runtime values
 
-**Delivers:**
-- `ITheme` interface gains `tokens?: Record<string, unknown>` (optional for backward compat)
-- Theme creation (`POST /themes`) deep-copies `collection.tokens` into `theme.tokens`
-- One-time migration script seeds `tokens` on all existing theme documents
-- Document size guard (theme count limit) in POST handler
+### Phase 2: Auth API Routes and Sign-In Flow
 
-**Features addressed:** "Theme embeds full copy of token data on creation" (table stakes, P1 foundation)
+**Rationale:** Once infrastructure exists, the NextAuth route handler and sign-in UI can be built. Middleware is intentionally deferred until sign-in is verified working end-to-end — this prevents development lockout.
+**Delivers:** `src/app/api/auth/[...nextauth]/route.ts` (NextAuth handler at the correct App Router path); first-user bootstrap route; sign-in and invite setup pages; `SessionProvider` + `PermissionsProvider` wired into `LayoutShell`; env vars configured.
+**Addresses:** AUTH-01, AUTH-02 (sign-in page), AUTH-03 (session persistence), AUTH-04 (sign-out), AUTH-05 (first user = Admin)
+**Avoids:** SessionProvider in root layout (breaks metadata export), NextAuth route at Pages Router path (silent failure), missing runtime callbacks for session fields
 
-**Pitfalls to avoid:**
-- Mark `tokens` as optional type; add nullish coalescing guards before migration runs (Pitfall 10)
-- Enforce theme count limit before size becomes a problem (Pitfall 1)
-- Use `structuredClone` for deep copy — no shared references between theme and master (functional correctness)
+### Phase 3: Middleware and Route Handler Auth Guards
 
-**Research flag:** Standard patterns — no additional research needed. `structuredClone`, Mongoose `$push`, and TypeScript interface extension are all well-documented.
+**Rationale:** Middleware is activated only after sign-in is verified end-to-end. The same phase adds auth guards to all existing write Route Handlers — splitting this creates a window where live endpoints are unguarded.
+**Delivers:** `src/middleware.ts` with `withAuth` + correct matcher; `requireAuth()` utility; auth guards added to all 8+ existing write Route Handlers; 401/403 responses verified via curl without session cookie.
+**Addresses:** AUTH-02 (middleware redirect), all existing routes protected
+**Avoids:** Middleware-only auth (CVE bypass), split implementation leaving routes unguarded, Mongoose imported in middleware (Edge Runtime incompatibility)
 
----
+### Phase 4: RBAC and Permissions Context
 
-### Phase 2: Theme Tokens API Route
+**Rationale:** Role-based enforcement depends on working auth. The `PermissionsProvider` context and `usePermissions()` hook are built here, establishing the two-layer permission pattern (context for clients, `getServerSession` for servers) before any permission-dependent UI is built. Per-collection override query is designed correctly from the start to avoid N+1 problems.
+**Delivers:** `PermissionsProvider` + `usePermissions()` hook app-wide; role checks (Viewer → 403) added to all write Route Handlers; JWT role re-fetch every 60 seconds in `jwt` callback; `canEdit` / `canCreate` / `isAdmin` / `canGitHub` / `canFigma` booleans available to all client components; batch permission fetch for per-collection overrides.
+**Addresses:** PERM-01, PERM-02, PERM-03, PERM-04, PERM-05, PERM-06
+**Avoids:** React context in Server Components, JWT role staleness, N+1 permission queries
 
-**Rationale:** The inline editing UI (Phase 3) cannot save until this endpoint exists. Building the API first allows the endpoint to be tested independently before the UI is wired.
+### Phase 5: Email Invite Flow and Account Setup
 
-**Delivers:**
-- New `PATCH /api/collections/[id]/themes/[themeId]/tokens` route
-- Accepts `{ tokens: Record<string, unknown> }` — full replacement of theme's embedded data
-- Server-side group-state validation: rejects writes to Source-state groups with 422
-- Uses whole-array `$set` pattern (fetch → mutate → `$set: { themes: updatedArray }`)
+**Rationale:** Invite flow is operationally independent from RBAC. It requires the User and Invite Mongoose models (Phase 1) and Resend (Phase 1), but not the permissions context. All invite token security requirements (token generation, hash storage, single-use, expiry) are implemented as one atomic unit.
+**Delivers:** `POST /api/auth/invite` (Admin creates invite); invite token with `crypto.randomBytes(32)`, SHA-256 hash, 72h expiry, single-use enforcement; Resend email delivery; `/auth/invite/[token]` account setup page; invite redemption creates active User; all edge cases handled (duplicate email, expired link, re-invite invalidates previous token).
+**Addresses:** USER-02, USER-03, USER-04, all invite edge cases from FEATURES.md
+**Avoids:** Predictable tokens, token reuse, missing expiry enforcement, information leakage via differentiated error messages
 
-**Features addressed:** Save routing for theme token edits (table stakes, P1); server-side permission enforcement (security)
+### Phase 6: Org Users Admin UI and Permission-Gated Existing UI
 
-**Pitfalls to avoid:**
-- Do not use positional `$set: 'themes.$.tokens'` on a Mixed-typed array (Pitfall 2)
-- Add group-state check at API layer — UI guard alone is insufficient (Pitfall 5)
-
-**Research flag:** Standard patterns — established positional array update approach is already used in the existing PUT route. No additional research needed.
-
----
-
-### Phase 3: Inline Token Editing UI
-
-**Rationale:** With data model (Phase 1) and API (Phase 2) in place, the UI can be built against real endpoints. This is the core authoring UX and the most visible user-facing change in v1.4.
-
-**Delivers:**
-- `ThemeTokenEditor` component: inline editable inputs for Enabled groups under active theme; read-only display for Source groups
-- `CollectionTokensPage` extended: branches save path on `activeThemeId` + group state; passes `rawCollectionTokens` for source groups and `activeThemeTokens` for enabled groups
-- Visual override indicator: badge/dot on cells where `theme.$value !== collection.$value`
-- Debounced save using existing `useRef` + `setTimeout` pattern; optimistic display with rollback on error
-
-**Features addressed:** Inline editing (P1 table stakes), visual override indicator (P1 table stakes), group-state-aware display (P1)
-
-**Pitfalls to avoid:**
-- Save path must route to PATCH theme tokens, never to master collection PUT (Pitfall 3)
-- Use `useRef` for pending token data to avoid stale closure in debounce (Pitfall 4)
-- Make active theme context visually obvious (UX pitfall — "Editing theme: Dark Mode" banner)
-
-**Research flag:** Standard patterns — existing `graphAutoSaveTimerRef` debounce and `ThemeGroupMatrix` optimistic update are direct precedents. No additional research needed.
-
----
-
-### Phase 4: Theme-Aware Export (SD + Figma)
-
-**Rationale:** SD and Figma exports are independent of each other but both depend on themes having token data (Phase 1). SD export is lower risk and should be implemented first. Figma export requires careful payload ordering and batching.
-
-**Delivers (SD export):**
-- `ThemeExportSelector` component on Config page: "Collection default" or named theme
-- `BuildTokensPanel` receives resolved tokens (theme or collection) — no internal change to the panel or `/api/build-tokens` route
-- SD build uses `deepMerge(masterTokens, themeEnabledGroupTokens)`: master in base, theme values on top; Source groups use master values only; Disabled groups excluded
-
-**Delivers (Figma export):**
-- `ExportToFigmaDialog` receives themes array from Config page
-- Figma export route builds payload in correct order: `variableCollections` → `variableModes` → `variables` → `variableModeValues`
-- Temp ID scheme (`"temp:X"`) for cross-referencing within single atomic POST
-- Payload size estimation before sending; chunked `variableModeValues` batches if over 3.5 MB
-
-**Features addressed:** Theme-aware SD export (P1), Figma export with modes (P1), Config page export selector (P1)
-
-**Pitfalls to avoid:**
-- SD merge must use `deepMerge` — not `Object.assign` (shallow merge breaks nested token structure) (Pitfall 6)
-- Fresh SD instance per theme; always call `sd.init()` before `sd.formatPlatform()` (Pitfall 7)
-- Figma payload must be structured in dependency order — cannot extend existing single-mode code incrementally (Pitfall 8)
-- Batch `variableModeValues` if payload exceeds 3.5 MB threshold (Pitfall 9)
-
-**Research flag:** SD export is standard. Figma multi-mode export needs careful implementation against the verified API docs — no additional research needed, but plan for integration testing against a real Figma file as the Figma API error messages are opaque.
-
----
+**Rationale:** Admin UI and permission-gating of existing components are the final integration layer. All prior phases must be complete. Write control hiding in existing components (TokenTable, BulkActionBar, Config page) is a low-complexity addition using the already-wired `usePermissions()` hook.
+**Delivers:** `src/app/org/users/page.tsx` (Admin-only); UserTable, InviteUserDialog, RoleChangeSelect components; role change + user removal API routes with lockout guards (last Admin, self-removal, superadmin protection); write controls hidden for Viewer in all existing collection UI; per-collection override management surface; existing collections backfilled to first Admin user.
+**Addresses:** USER-01, USER-05, USER-06, USER-07, UI-01 through UI-04, PERM-05
+**Avoids:** Showing all controls and blocking at click, greying out entire pages for Viewer
 
 ### Phase Ordering Rationale
 
-The sequence (Data Model → API Route → Inline Editing → Export) is forced by the dependency chain:
-- All phases require `theme.tokens` to exist in MongoDB — Phase 1 cannot be skipped or deferred
-- Inline editing cannot save until the PATCH endpoint exists — Phase 2 before Phase 3
-- Export can be parallelized in Phase 4 (SD and Figma are independent), but both require Phase 1
-- The migration script (Phase 1) must run before any code that reads `theme.tokens` is deployed — this means Phase 1 must ship as a complete atomic unit before Phase 2 or 3 reaches production
+- **Infrastructure before API, API before UI:** The Mongoose models and `authOptions` are the contract all later code depends on. Building them first prevents rework.
+- **Middleware deferred until sign-in works:** Activating middleware before sign-in is verified creates a development lockout. Phase 3 activation is safe because Phase 2 verified the full round-trip.
+- **Auth guards in the same phase as middleware:** CVE-2025-29927 means middleware alone is not sufficient. Splitting guards across phases violates the security requirement.
+- **RBAC before invite flow:** The invite flow creates users with roles. The role enforcement layer must exist before the invite flow is tested end-to-end.
+- **Permission-gating of existing UI last:** The `usePermissions()` hook is wired in Phase 4; existing components can adopt it in Phase 6 with minimal change. Deferring avoids modifying existing components before the context is stable.
 
-### Research Flags Summary
+### Research Flags
 
-Phases needing deeper research during planning: **none** — all patterns are documented and verified.
+Phases needing deeper research during planning:
+- **Phase 4 (RBAC):** Per-collection override resolution (`usePermissions(collectionId)`) — specifically, how the collection ID reaches the context for lazy override loading and whether overrides are fetched eagerly at session start or lazily on collection page mount. MEDIUM confidence on this sub-pattern; resolve during phase planning.
 
-Phases with well-established patterns (skip research-phase):
-- **Phase 1** — TypeScript interface extension, `structuredClone`, Mongoose `$push`
-- **Phase 2** — whole-array Mongoose update, Next.js API route structure
-- **Phase 3** — React `useRef` debounce, optimistic update with rollback
-- **Phase 4 (SD)** — Style Dictionary v5 `formatPlatform` API, existing `buildBrandTokens` extension point
-
-One integration requiring careful testing (not research):
-- **Phase 4 (Figma)** — validate payload construction against a live Figma Enterprise file before considering complete; Figma API errors are opaque and the atomic transaction semantics make debugging difficult
+Phases with standard, well-documented patterns (skip research-phase):
+- **Phase 1 (Auth Infrastructure):** Official NextAuth v4 docs cover all patterns; Mongoose models follow existing project conventions.
+- **Phase 2 (Sign-In Flow):** NextAuth CredentialsProvider + App Router is fully documented in official sources.
+- **Phase 3 (Middleware + Guards):** `withAuth` pattern documented; `getServerSession()` guard is a 3-line addition per handler.
+- **Phase 5 (Invite Flow):** Token security requirements fully specified in PITFALLS.md. Invite flow patterns documented via official and community sources.
+- **Phase 6 (Org UI):** shadcn/ui table + dialog + select components follow existing patterns in the codebase.
 
 ---
 
@@ -211,45 +166,51 @@ One integration requiring careful testing (not research):
 
 | Area | Confidence | Notes |
 |------|------------|-------|
-| Stack | HIGH | All four capability areas verified against installed package versions; `useOptimistic` absence confirmed by direct `node_modules` inspection; SD v5 `formatPlatform` return type confirmed from official docs |
-| Features | HIGH | Dependency chain is unambiguous; industry precedent (Tokens Studio) validates the Source/Enabled/Disabled model; MVP scope is conservative and well-bounded |
-| Architecture | HIGH | Based entirely on direct codebase inspection — existing routes, components, services, and type files all reviewed; no guesswork about existing code structure |
-| Pitfalls | HIGH | Critical Mongoose Mixed-type positional operator issue confirmed against open bug reports; Figma API constraints from official developer docs; React 18.2 stale closure pattern from authoritative sources |
+| Stack | HIGH | All packages verified against official docs and npm. next-auth@4.24.13 + Next.js 13.5.6 compatibility confirmed via GitHub issue #13313. No conflicting peer deps identified. |
+| Features | HIGH | Full feature set specified with dependency graph. Hide vs disable rule sourced from Smashing Magazine and Smart Interface Design Patterns (2024). Invite edge cases exhaustively enumerated. |
+| Architecture | HIGH | Official NextAuth + App Router docs, official Resend docs, official Mongoose Next.js guide. Direct codebase inspection of all 18 Route Handlers, LayoutShell, layout.tsx, mongodb.ts. Build order fully specified. |
+| Pitfalls | HIGH | CVE-2025-29927 confirmed via NVD, ProjectDiscovery, JFrog (multiple security advisories; fixed in 13.5.9). NextAuth credentials + JWT limitation from official docs. MongoDB adapter incompatibility from official docs + GitHub discussions. |
 
-**Overall confidence: HIGH**
+**Overall confidence:** HIGH
 
 ### Gaps to Address
 
-- **Figma Enterprise plan requirement** — the Figma Variables POST API requires Enterprise plan. This is a product constraint that must be surfaced in the export UI (tooltip or documentation) rather than a technical gap. Validate during Phase 4 testing.
+- **`jsonwebtoken` vs `crypto.randomBytes` for invite tokens:** ARCHITECTURE.md references `jsonwebtoken` for invite token signing, but STACK.md does not list it and PITFALLS.md recommends `crypto.randomBytes(32).toString('hex')` (no additional dep). Resolve in Phase 1 planning: the no-dep approach is simpler and sufficient unless a JWT-signed token provides a specific benefit (e.g., embedding email/role in the token for verification without a DB lookup).
 
-- **BSON document size on real collections** — the 16 MB limit analysis is based on estimates. Before Phase 1 ships, measure the actual size of the largest current collection document (`BSON.calculateObjectSize()`) to calibrate the theme count limit accurately.
+- **Per-collection override loading strategy:** PERM-04 requires per-collection overrides to be reflected in the UI without re-login. The data model and server-side batch query are documented, but the exact mechanism for surfacing collection-specific overrides through `PermissionsProvider` (lazy fetch on collection page mount vs. eager load of all user overrides at session start) is unresolved. Resolve during Phase 4 planning.
 
-- **SD deep merge correctness for alias references** — the `deepMerge` function in `style-dictionary.service.ts` is the assumed merge tool. Verify it preserves `{colors.base.blue.200}` reference strings as-is rather than resolving them, because SD must do alias resolution after merge, not before.
+- **Resend domain verification in production:** The Resend integration works with `onboarding@resend.dev` in development. Production requires a verified sending domain. This is an operational gap, not a code gap — must be addressed in the deployment checklist for v1.5.
 
-- **Figma "modes must exist before values" in update scenarios** — the Figma API atomic POST handles creation. For subsequent updates to an already-synced collection (re-export after token edits), the route needs to handle the `UPDATE` action variant rather than `CREATE`. This is a Phase 4 edge case to plan for.
+- **Sign-in rate limiting:** The `POST /api/auth/callback/credentials` endpoint is unprotected against brute force. NextAuth does not rate-limit by default. Given this is an internal tool, acceptable to document as a known gap and defer to v1.5.1, but it should be flagged explicitly in the Phase 3 plan.
 
 ---
 
 ## Sources
 
 ### Primary (HIGH confidence)
-- [MongoDB Filtered Positional Operator](https://www.mongodb.com/docs/manual/reference/operator/update/positional-filtered/) — `$set` + `arrayFilters` pattern
-- [MongoDB Limits and Thresholds](https://docs.mongodb.com/manual/reference/limits/) — 16 MB BSON limit
-- [MongoDB Avoid Unbounded Arrays](https://www.mongodb.com/docs/atlas/schema-suggestions/avoid-unbounded-arrays/) — embedded token copy design
-- [Mongoose 9.x SchemaTypes](https://mongoosejs.com/docs/schematypes.html) — Mixed type behavior with `$set`
-- [Style Dictionary v5 API Reference](https://styledictionary.com/reference/api/) — `formatPlatform` return type, `tokens` constructor, `init()` requirement
-- [Figma Variables REST API Endpoints](https://developers.figma.com/docs/rest-api/variables-endpoints/) — POST payload schema, 4 MB limit, 40-mode limit, atomic transaction behavior
-- [Figma Variables REST API Types](https://developers.figma.com/docs/rest-api/variables-types/) — temp ID scheme, `variableModeValues` structure
-- Direct codebase inspection: `src/types/theme.types.ts`, `src/app/api/collections/[id]/themes/route.ts`, `src/app/api/collections/[id]/themes/[themeId]/route.ts`, `src/app/collections/[id]/tokens/page.tsx`, `src/app/collections/[id]/config/page.tsx`, `src/app/api/export/figma/route.ts`, `src/services/style-dictionary.service.ts`, `src/lib/db/models/TokenCollection.ts`
+- [NextAuth.js v4 Official Docs](https://next-auth.js.org/) — CredentialsProvider, JWT strategy, withAuth middleware, getServerSession, TypeScript augmentation
+- [Auth.js Migrating to v5](https://authjs.dev/getting-started/migrating-to-v5) — Confirmed v4 is correct for Next.js 13; v5 requires Next.js 14+
+- [Resend Send with Next.js](https://resend.com/docs/send-with-nextjs) — Route Handler integration pattern, React Email template
+- [NVD CVE-2025-29927](https://nvd.nist.gov/vuln/detail/CVE-2025-29927) — Middleware bypass vulnerability; fixed in Next.js 13.5.9
+- [ProjectDiscovery CVE-2025-29927 Analysis](https://projectdiscovery.io/blog/nextjs-middleware-authorization-bypass) — Technical details and exploit pattern
+- [Mongoose Using Mongoose With Next.js](https://mongoosejs.com/docs/nextjs.html) — App Router connection management, hot-reload guard
+- [npm: next-auth](https://www.npmjs.com/package/next-auth) — v4.24.13 latest stable confirmed (Oct 2025)
+- [npm: bcryptjs](https://www.npmjs.com/package/bcryptjs) — v3.0.3 latest, pure JS confirmed
+- [npm: resend](https://www.npmjs.com/package/resend) — v6.9.4 latest confirmed
+- Direct codebase inspection — `src/lib/mongodb.ts`, `src/app/layout.tsx`, all 18 Route Handlers, `LayoutShell.tsx`, `package.json`, `tsconfig.json`
 
 ### Secondary (MEDIUM confidence)
-- [Mongoose issue #14595](https://github.com/Automattic/mongoose/issues/14595), [#12530](https://github.com/Automattic/mongoose/issues/12530) — confirmed Mixed-type positional operator bugs
-- [Tokens Studio documentation](https://docs.tokens.studio/) — Source/Enabled/Disabled state semantics; industry precedent for override indicator
-- [sd-transforms README](https://github.com/tokens-studio/sd-transforms/blob/main/README.md) — `permutateThemes` pattern reference for v2 consideration
-- [Multi-axis design tokens with Style Dictionary — Matt McAdams, 2025](https://mattmcadams.com/posts/2025/multi-axis-design-tokens/) — multi-file SD export pattern
-- [tkdodo.eu — Concurrent Optimistic Updates](https://tkdodo.eu/blog/concurrent-optimistic-updates-in-react-query) — debounce race condition analysis
-- [Figma Variables overview](https://help.figma.com/hc/en-us/articles/14506821864087-Overview-of-variables-collections-and-modes) — mode limit (40 per collection, Enterprise plan)
+- [EnterpriseReady RBAC Guide](https://www.enterpriseready.io/features/role-based-access-control/) — Three-role RBAC pattern for SaaS
+- [Smashing Magazine — Hidden vs. Disabled In UX (2024)](https://www.smashingmagazine.com/2024/05/hidden-vs-disabled-ux/) — Hide vs disable decision rule
+- [NextAuth JWT role re-fetch pattern](https://github.com/nextauthjs/next-auth/discussions/1571) — Community-verified; no official NextAuth documentation
+- [Magic Link Security — Guptadeepak](https://guptadeepak.com/mastering-magic-link-security-a-deep-dive-for-developers/) — Invite token security requirements
+- [Permit.io — Implementing RBAC in React](https://www.permit.io/blog/implementing-react-rbac-authorization) — PermissionsProvider context pattern
+- [WorkOS — Multi-tenant RBAC design](https://workos.com/blog/how-to-design-multi-tenant-rbac-saas) — Per-collection override design
+
+### Tertiary (LOW confidence)
+- Per-collection override loading through PermissionsProvider — inferred from context architecture; no single authoritative pattern documented. Validate during Phase 4 planning.
 
 ---
-*Research completed: 2026-03-20*
+
+*Research completed: 2026-03-28*
 *Ready for roadmap: yes*

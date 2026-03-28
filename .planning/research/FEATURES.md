@@ -1,189 +1,288 @@
 # Feature Research
 
-**Domain:** Per-theme token value sets in a design token manager (v1.4 milestone)
-**Researched:** 2026-03-20
-**Confidence:** HIGH (core patterns), MEDIUM (export format specifics)
+**Domain:** Org user management + authentication for a Next.js design token tool (v1.5 milestone)
+**Researched:** 2026-03-28
+**Confidence:** HIGH (core auth + RBAC patterns), MEDIUM (invite flow edge cases), HIGH (hide vs disable UI patterns)
 
 ---
 
 ## Context: What Already Exists
 
-This is a subsequent milestone on an existing tool. The following features are already built and must not be re-planned:
+This is a subsequent milestone. The following features are already built and must not be re-planned:
 
-- Per-collection theme CRUD (create/rename/delete themes)
-- ThemeGroupMatrix: sets each group's state to Disabled/Enabled/Source
-- Theme selector on Tokens page filters the group tree
-- Token group tree sidebar with hierarchical navigation and breadcrumbs
-- Tokens table (currently read-only)
-- Figma import/export (variables collections)
-- Style Dictionary v5 export (multi-format ZIP)
+- MongoDB collection CRUD (TokenCollection model, `userId` field nullable — designed for this upgrade)
+- Figma and GitHub integrations (push/pull controls)
+- Theme system, token table, graph editor
+- Collection-scoped routing (`/collections/[id]/...`)
+- shadcn/ui component system throughout
 
-The v1.4 milestone adds: themes become actual token value stores, inline editing writes to the active theme, and export is theme-aware.
+The v1.5 milestone adds: email/password auth, email invite flow, Admin/Editor/Viewer RBAC, per-collection permission overrides, org users admin page, global permissions React context, and superadmin via env var.
 
 ---
 
 ## Feature Landscape
 
-### Table Stakes (Users Expect These)
+### Auth: Email / Password Sign-In
 
-Features that any multi-theme token system must have. Missing these makes the feature feel incomplete or broken.
+#### Table Stakes
 
 | Feature | Why Expected | Complexity | Dependencies on Existing |
 |---------|--------------|------------|--------------------------|
-| Theme embeds a full copy of token data on creation | Themes need isolated values; shared-reference model produces confusing cross-contamination | MEDIUM | Theme CRUD (v1.3), token group tree structure |
-| Source group state = always reads collection default, not per-theme copy | The Tokens Studio Source concept is the industry standard; read-only reference semantics are expected by design system practitioners | LOW | ThemeGroupMatrix (v1.3) |
-| Enabled group state = per-theme editable, shows theme value in table | Standard theme editing flow; seeing the theme's value (not collection default) when a theme is active is a baseline expectation | MEDIUM | Token table (v1.3), theme selector (v1.3) |
-| Disabled group state = group hidden in tree when theme active | Already shipping in v1.3 — hidden groups stay hidden | ALREADY DONE | Tree sidebar (v1.2), theme selector (v1.3) |
-| Inline value editing directly in the tokens table | Users expect spreadsheet-style editing, not a separate edit dialog for each token; a dedicated edit form per token is too slow | MEDIUM | Tokens table (v1.3) |
-| Edited value saved to the active theme's embedded data, not the collection default | Without this, editing under a theme is meaningless — changes must be scoped to that theme | MEDIUM | Theme model (v1.3 MongoDB) |
-| Visual distinction between "this value is overridden in the theme" vs "this value falls through to the collection default" | Users need to understand what is theme-specific vs inherited; Tokens Studio uses a visual indicator for this; without it, editors can't tell what they've customized | MEDIUM | Tokens table (v1.3) |
-| Theme-aware SD export: select a theme, get theme values in output | SD multi-theme output (looping SD builds per theme, CSS class or file per theme) is the standard pattern | HIGH | SD export (v1.0), Config page (v1.1) |
-| Figma Variables export: each enabled theme becomes a mode in the collection | Figma's own mode system is one-mode-per-collection-variable, one-mode-per-theme; this is the direct mapping all practitioners expect | HIGH | Figma export (v1.1) |
-| Export collection default as a baseline mode or "Default" theme output | Users need a known-good fallback; SD and Figma both support a default mode | LOW | SD export (v1.0), Figma export (v1.1) |
+| Email + password sign-in form | Users expect a username/password gate as the minimum credential type; no auth = no multi-user | LOW | NextAuth.js CredentialsProvider + JWT session strategy |
+| Session persists across refresh | Standard browser expectation; losing session on refresh is broken UX | LOW | NextAuth.js JWT cookie (`httpOnly`) |
+| Sign-out from any page | User can always exit their session; accessible from nav or avatar | LOW | NextAuth.js `signOut()`, sidebar nav item |
+| Redirect unauthenticated users to sign-in | Protecting all routes is baseline; unauthenticated users must not see any collection data | LOW | Next.js `middleware.ts` with `withAuth` or custom session check |
+| Sign-in page accessible without auth | Sign-in page itself must not require a session | LOW | middleware matcher excludes `/auth/...` routes |
+| Signed-in session includes role | Role must travel in the session JWT to avoid per-request DB lookups in middleware | LOW | NextAuth.js `callbacks.jwt` + `callbacks.session` |
 
-### Differentiators (Competitive Advantage)
-
-Features that go beyond table stakes for this specific context.
+#### Differentiators
 
 | Feature | Value Proposition | Complexity | Notes |
 |---------|-------------------|------------|-------|
-| Override indicator with reset-to-default action | Lets users see at a glance which tokens have been customized in the active theme, and revert individual overrides without clearing the whole theme | MEDIUM | Tokens Studio has this; enhances inline editing UX significantly |
-| Source group values always displayed from collection default (live passthrough) | Unlike a cloned copy that diverges silently, Source groups always show the current collection value — changes to collection propagate instantly | LOW | Semantically natural; avoids stale-copy bugs |
-| Multi-theme SD export in a single ZIP (one file per theme) | Export all themes in one action rather than per-theme runs; aligns with the `permutateThemes` pattern from `sd-transforms` | MEDIUM | Useful for CI; requires looping SD builds server-side |
-| Figma Variables JSON format conforming to REST API POST payload | The Figma Variables REST API POST body (`variableCollections`, `variableModes`, `variables`, `variableModeValues`) is the correct format for direct API sync — not just a readable JSON dump | HIGH | Already partially done for Figma export; extend to include modes per theme |
+| Superadmin via env var (`SUPER_ADMIN_EMAIL`) | Prevents lockout if last Admin is removed; bootstrap safety net; no UI surface needed | LOW | Check at sign-in: if email matches env var, force role = Admin regardless of DB |
+| First-registrant becomes Admin | Zero-config onboarding: the first user to complete account setup is automatically Admin | LOW | Count users at registration time; if `count === 0`, assign Admin role |
 
-### Anti-Features (Commonly Requested, Often Problematic)
+#### Anti-Features
 
 | Feature | Why Requested | Why Problematic | Alternative |
 |---------|---------------|-----------------|-------------|
-| Token inheritance / alias resolution across themes | Users want `{color.brand.primary}` to resolve differently per theme | Aliases that cross theme boundaries create resolution ambiguity; the collection-default model with Source groups is simpler and avoids circular reference explosions | Use Source group state for shared reference tokens; only override primitive values per theme |
-| Real-time cross-theme diff view | Seeing all themes side by side seems useful | Requires rendering multiple complete token sets simultaneously; massive complexity for a single-user internal tool | Single-theme view is sufficient; diff belongs in a future milestone if needed |
-| Per-token theme inheritance with partial override chains | "Theme B inherits Theme A, overrides only color.bg.primary" | Inheritance chains require a resolver traversal at read time; MongoDB embedded documents make this very complex; Tokens Studio defers this to their multi-group theme system | Flat per-theme value store with Source fallback covers 90% of cases; defer inheritance chains |
-| Automatic sync of theme data when collection tokens are edited | If collection default changes, auto-update all theme copies | Silent background mutations are dangerous; users can't tell what changed and in which themes | Manual "Reset group to collection default" per group; explicit, auditable |
-| Live preview of theme applied to components | Showing rendered components with theme applied | Component rendering is out of scope for this tool (design system consumers render components, not the token manager) | Export theme and apply in Figma or consuming app |
+| OAuth / SSO (Google, GitHub login) | Users have existing Google/GitHub accounts | Adds significant complexity: OAuth redirect flows, account linking, provider config; out of scope for v1.5 | Explicitly deferred; email/password covers internal tool use case |
+| "Remember me" checkbox | Users expect long-lived sessions | NextAuth.js JWT sessions already persist by default via `httpOnly` cookie; an explicit toggle adds complexity for no gain | Default session duration covers the need |
+| Password strength meter on sign-in | Security polish | Sign-in is not the right place; belongs on the account setup (invite acceptance) form only | Apply on the account-creation form |
+
+---
+
+### Auth: Email Invite Flow (Magic Link Account Setup)
+
+The invite flow is distinct from auth: it is how new users are enrolled into the org without self-registration. Invitees do not sign up on their own — an Admin sends an invite, the invitee clicks a one-time link, and sets their name + password.
+
+#### Table Stakes
+
+| Feature | Why Expected | Complexity | Dependencies on Existing |
+|---------|--------------|------------|--------------------------|
+| Admin enters invitee email + role, triggers invite send | Standard invitation entry point for any team tool | LOW | Admin-only Users page, Resend email API |
+| Invitee receives email with magic link | Invite email with a CTA button is the universal invite pattern; no email = no onboarding | MEDIUM | Resend transactional email, invite token stored in DB |
+| Magic link is one-time-use and expires | Open-ended tokens are a security risk; expired email addresses can be recycled | MEDIUM | Crypto-random token (`crypto.randomBytes`), expiry timestamp (72h standard), invalidate on first use |
+| Clicking the link opens an account-setup form (name + password) | Invitee must set their own credentials; pre-filled email; name and password required | LOW | Invite token lookup page at `/auth/accept-invite/[token]` |
+| Pending invites are visible in the Users admin list | Admins need to see who has not yet accepted to follow up or resend | LOW | `status: "pending"` field on user/invite document |
+| Admin can resend an expired or pending invite | Invitee may miss the email; re-send recreates the link with a fresh expiry | LOW | Resend invite action: regenerate token, reset expiry, re-send email |
+| Admin can revoke a pending invite | Security hygiene: wrong email, person left the org | LOW | Delete invite document or mark `status: "revoked"` |
+| Invite accepted user is active and can sign in immediately | After completing account setup the user is created with `status: "active"` and the invite token is deleted | LOW | User creation at invite acceptance, token cleanup |
+
+#### Differentiators
+
+| Feature | Value Proposition | Complexity | Notes |
+|---------|-------------------|------------|-------|
+| Role assigned at invite time | Admin chooses the role when sending the invite rather than after the user joins — less back-and-forth | LOW | Store `role` in invite document; apply at acceptance |
+| Expiry status visible in the Users list | Admins can see "Expires in 2 days" vs "Expired 3 days ago" at a glance | LOW | Display `expiresAt` relative to now; surface as badge ("Pending", "Expired") |
+| Invite email includes sender context | Email states "You were invited by [Admin Name] to [Tool Name]" — establishes trust | LOW | Include inviter name in email template |
+
+#### Edge Cases (Must Handle Correctly)
+
+These are the gaps that cause bugs in invite flows if not planned for:
+
+| Edge Case | What Goes Wrong | Correct Behavior |
+|-----------|-----------------|-----------------|
+| Link clicked after expiry | User sees a confusing error or broken page | Show a clear "This invite link has expired" page with a note to ask the Admin to resend |
+| Same email invited twice (re-invite before acceptance) | Duplicate pending invites; two tokens both valid | Upsert: regenerate the token on re-invite for the same email; only one pending invite per email at a time |
+| Invited user already has an account (email matches existing user) | Duplicate user records or silent failure | Detect at invite creation: if email already exists as an active user, show error "User already exists" — do not send invite |
+| Invitee tries to use link on a different device/browser | Stateless magic link must not rely on session or cookies set at link-click time | Token is validated server-side by DB lookup only; device-agnostic |
+| Admin changes invitee's role after invite is sent but before acceptance | Invite email says "Editor", but role may be stale by acceptance time | Store role in invite doc; role is final at acceptance time; Admin can revoke + re-invite if needed |
+| Admin removes user while invite is still pending | Orphaned invite remains in DB | When an Admin removes a pending user, also purge their invite document |
+| Invitee ignores invite; Admin resends; original link is still valid | Two active tokens for the same invite | Invalidate the previous token when resending; only one active token per pending invite |
+| Account setup form submitted with weak password | Silent acceptance of weak passwords | Enforce minimum password requirements (length ≥ 8, at minimum) on the account-setup form server-side |
+
+---
+
+### RBAC: Role-Based Access Control
+
+Three named roles — Admin, Editor, Viewer — with one per-collection override mechanism.
+
+#### Table Stakes
+
+| Feature | Why Expected | Complexity | Dependencies on Existing |
+|---------|--------------|------------|--------------------------|
+| Admin role: full access including user management | Standard "owner" role for any team tool with user management | LOW | Role stored in user JWT session; checked in middleware and API routes |
+| Editor role: create + read/write collections, GitHub push/pull, Figma push/pull, no user management | Standard "contributor" role; can do everything except manage other users | LOW | Role check in API routes and permission context |
+| Viewer role: read-only across all collections, no create, no push/pull | Standard "read-only" role for stakeholders or external collaborators | LOW | Role check in every write API route and in permission context |
+| All write API routes check role server-side | Client-side hiding is not security; API routes must enforce | MEDIUM | Role from NextAuth.js session, checked in every mutating route |
+| Middleware protects all non-auth routes | Unauthenticated requests never reach collection data | LOW | `middleware.ts` with `withAuth`, matcher excludes `/auth/...` |
+| Role is available in session without DB lookup | Checking role per request via DB is slow and error-prone | LOW | Role stored in JWT via `callbacks.jwt`; surface in `callbacks.session` |
+| First user auto-assigned Admin | No manual bootstrapping step; zero-config | LOW | Check `userCount === 0` at first registration/invite acceptance |
+| Superadmin bypass: env var email always Admin | Lockout prevention; env var is simpler than a separate user type | LOW | Checked at JWT creation time; does not require a special DB role |
+
+#### Differentiators
+
+| Feature | Value Proposition | Complexity | Notes |
+|---------|-------------------|------------|-------|
+| Per-collection permission override | An Admin can grant a Viewer elevated access to a specific collection, or restrict an Editor from a sensitive collection | MEDIUM | Stored as `collectionOverrides: [{ collectionId, role }]` on user document; resolved at request time: override role wins over org role for that collection |
+| Permission context propagated via React context | No prop drilling; any component can call `usePermissions()` to get current user's effective role for the active resource | MEDIUM | `PermissionsProvider` wraps the app; `usePermissions(collectionId?)` resolves effective role |
+| "Owned by first Admin" migration for existing collections | All existing MongoDB collections (with nullable `userId`) are attributed to the first Admin user at migration time | LOW | One-time migration at first user creation: `userId` backfilled on all existing collections |
+
+#### Anti-Features
+
+| Feature | Why Requested | Why Problematic | Alternative |
+|---------|---------------|-----------------|-------------|
+| Per-permission toggles beyond named roles | Fine-grained "can this user export to Figma but not GitHub?" | Role explosion and admin UI complexity grow fast; the three named roles cover all current use cases | Keep named roles; defer custom permission matrices to v2+ if customers request it |
+| Per-token or per-group permissions | Maximum granularity | Extremely complex to enforce across inline editing, graph editor, and exports; not needed for an internal team tool | Collection-level override is the right granularity for this product |
+| Custom role creation | Enterprise flexibility | Named roles already cover the use case; custom roles require a permission matrix editor and complex inheritance logic | Three roles + per-collection override is sufficient for v1.5 |
+
+---
+
+### Permission UI: Hiding and Disabling Controls
+
+This governs how the existing UI adapts to the current user's effective permissions.
+
+#### Table Stakes
+
+| Feature | Why Expected | Complexity | Dependencies on Existing |
+|---------|--------------|------------|--------------------------|
+| Write controls hidden for Viewer (not just disabled) | Viewers should not see controls they can never use; hidden = cleaner, less confusing | LOW | `usePermissions()` + conditional rendering; affects TokenTable, BulkActionBar, theme CRUD |
+| Create-collection button hidden for Viewer | Viewers cannot create; the button should not appear at all | LOW | Collections grid page — show "New Collection" only if `canCreate` |
+| GitHub push/pull controls hidden for Viewer | Viewer has no GitHub access; controls serve no purpose | LOW | Collection Config page GitHub section |
+| Figma push/pull controls hidden for Viewer | Same as GitHub | LOW | Collection Config page Figma section |
+| Write controls disabled (not hidden) for Editor editing a read-only group state | Disabled makes sense when the restriction is temporary/contextual (Source group = read-only); the user has write permission but this resource is in read-only mode | LOW | Token table: Source group tokens show disabled inputs — already handling this for theme Source groups |
+| Permission checks happen server-side on all API routes | UI hiding is UX, not security; every write API route must verify role | MEDIUM | NextAuth.js `getServerSession()` in each API route handler |
+| Disabled controls show a tooltip explaining why | "You don't have permission" is unhelpful; "This group is read-only in the current theme" is actionable | LOW | shadcn Tooltip on disabled inputs/buttons |
+
+#### Decision Rule for Hide vs Disable
+
+Derived from established UX research (Smashing Magazine, Smart Interface Design Patterns):
+
+- **Hide** when: The user's role means they will **never** be able to perform this action under any circumstance. Example: Viewer role seeing "Export to GitHub". Hiding reduces cognitive load and avoids false expectations.
+- **Disable** when: The user **could** perform this action under different conditions (different resource state, waiting for something). Example: an Editor on a Source-state group (read-only because of theme semantics, not role). Disabling signals the action exists but is temporarily unavailable; always pair with a tooltip.
+- **Never disable without explanation**: A disabled button without context is worse than hidden — it suggests the app is broken.
+
+#### Differentiators
+
+| Feature | Value Proposition | Complexity | Notes |
+|---------|-------------------|------------|-------|
+| Per-collection override reflected in UI instantly | If an Admin grants a Viewer elevated access to Collection A, that Viewer's UI for Collection A updates without re-login | MEDIUM | Permissions context derives effective role from `usePermissions(collectionId)` on each navigation |
+| User management page visible only to Admins | The `/admin/users` page (or equivalent) is not linked in nav for non-Admins; direct URL access redirects | LOW | Middleware role check + nav conditional rendering |
+
+#### Anti-Features
+
+| Feature | Why Requested | Why Problematic | Alternative |
+|---------|---------------|-----------------|-------------|
+| Showing all controls to all users and displaying permission error after clicking | "Optimistic UI" approach | Creates frustration; user performs action, gets blocked at the last step; negative surprise | Hide controls for roles that can never use them; disable only for temporary restrictions |
+| Greying out entire pages for Viewer | Visual indicator of restricted access | A Viewer visiting a collection page should still see all read-only content; greying out the whole page obscures useful information | Show content fully, hide or disable write controls only |
+
+---
+
+### Org Users Admin Page
+
+The admin surface for managing org members, invites, and roles.
+
+#### Table Stakes
+
+| Feature | Why Expected | Complexity | Dependencies on Existing |
+|---------|--------------|------------|--------------------------|
+| List all org members with role and status | Admins need a full picture of who has access and at what level | LOW | User model query; display in a table with name, email, role, status columns |
+| "Invite User" flow triggered from this page | Invitation originates here; single entry point | LOW | Form: email input + role selector; triggers invite email |
+| Pending invites visible in the list with expiry status | Unaccepted invites are a security concern; Admins need to track them | LOW | `status: "pending"` rows with expiry badge |
+| Change an existing user's org-level role | Role management is a core Admin capability | LOW | Inline role selector or modal; triggers `PATCH /api/users/[id]/role` |
+| Remove a user from the org | Offboarding is a core Admin capability | LOW | Confirm dialog + `DELETE /api/users/[id]`; also purges pending invites for that email |
+| Resend invite for pending invites | Email may have gone to spam; Admin needs a resend path | LOW | "Resend" action on pending invite rows; regenerates token + resends email |
+| Revoke pending invite | Sent to wrong email or person no longer joining | LOW | "Revoke" action deletes the invite document |
+| Admins cannot remove themselves | Self-removal would create a lockout if they are the last Admin | LOW | Disable "Remove" action for own row; server-side guard also required |
+| Admins cannot downgrade themselves if last Admin | Same lockout prevention | LOW | Server-side check: if demoting last Admin, reject with 409 |
+
+#### Differentiators
+
+| Feature | Value Proposition | Complexity | Notes |
+|---------|-------------------|------------|-------|
+| Per-collection override management surface | Admin can assign an override role per user per collection from this page | MEDIUM | Expandable row or side panel showing collection list with override selectors |
+| Invite expiry shown as relative time ("Expires in 2 days") | Clearer than raw ISO timestamp; makes urgency actionable | LOW | `dayjs` or `date-fns` relative formatting |
 
 ---
 
 ## Feature Dependencies
 
 ```
-[Embedded token data in theme document] (data model)
-    └──required-by──> [Inline editing writes to theme]
-    └──required-by──> [Source group passthrough reads from collection]
-    └──required-by──> [Theme-aware SD export]
-    └──required-by──> [Figma export with modes per theme]
+[NextAuth.js session with role in JWT]
+    └──required-by──> [Middleware route protection]
+    └──required-by──> [API route role checks]
+    └──required-by──> [PermissionsContext + usePermissions()]
+    └──required-by──> [Permission-driven UI hiding/disabling]
 
-[Inline editing in tokens table]
-    └──requires──> [Embedded token data in theme document]
-    └──requires──> [Active theme context in Tokens page state]
-    └──requires──> [Group state awareness (Enabled vs Source vs Disabled)]
+[User model in MongoDB]
+    └──required-by──> [Email/password sign-in]
+    └──required-by──> [Invite flow: pending user storage]
+    └──required-by──> [Role management (change role, remove user)]
+    └──required-by──> [Per-collection override storage]
 
-[Visual override indicator]
-    └──requires──> [Inline editing in tokens table]
-    └──requires──> [Embedded token data] (to compare theme value vs collection default)
+[Invite token model in MongoDB]
+    └──required-by──> [Send invite email]
+    └──required-by──> [Accept invite / account setup]
+    └──required-by──> [Resend + revoke invite]
+    └──required-by──> [Pending invites list in admin UI]
 
-[Theme-aware SD export]
-    └──requires──> [Embedded token data in theme document]
-    └──requires──> [Theme selector on Config page]
+[Resend email integration]
+    └──required-by──> [Send invite email]
+    └──required-by──> [Resend invite action]
 
-[Figma export with modes]
-    └──requires──> [Embedded token data in theme document]
-    └──requires──> [Theme selector on Config page]
-    └──enhances──> [Existing Figma export] (adds mode-per-theme payload)
+[PermissionsContext (React context)]
+    └──required-by──> [Write control hiding (UI-01 through UI-04)]
+    └──required-by──> [Per-collection override reflected in UI]
+    └──requires──> [NextAuth.js session with role]
+    └──requires──> [Per-collection override data from API]
 
-[Existing ThemeGroupMatrix (v1.3)] ──constrains──> [Inline editing]
-    (Enabled = editable, Source = read-only passthrough, Disabled = hidden)
+[Per-collection permission override (DB + API)]
+    └──required-by──> [Per-collection override in PermissionsContext]
+    └──required-by──> [Admin user management page override section]
+    └──requires──> [User model]
+    └──requires──> [Collection ID accessible in current route context]
 
-[Existing theme selector on Tokens page (v1.3)] ──drives──> [Inline editing context]
-    (No active theme = collection default mode, read-only or standard editing)
+[Org Users admin page]
+    └──requires──> [User model + invite token model]
+    └──requires──> [Invite flow complete]
+    └──requires──> [Role management API]
+
+[Existing write controls (TokenTable, BulkActionBar, Config page)]
+    └──enhanced-by──> [PermissionsContext hiding/disabling]
+    └──no structural change needed: controls already isolated in components]
 ```
 
 ### Dependency Notes
 
-- **Embedded token data is the foundation:** Every other v1.4 feature depends on themes storing their own copy of token values in the MongoDB document. This must be the first thing built.
-- **Group state semantics are already defined in the ThemeGroupMatrix (v1.3):** The Enabled/Source/Disabled distinction existed as a visibility filter; v1.4 extends those semantics to edit permissions. No new UX is needed for the states themselves.
-- **Inline editing depends on active theme context:** The Tokens page must know which theme is active to route saves to the right embedded document. The theme selector already exists; it just needs to provide context to the editing layer.
-- **SD and Figma export depend on embedded data but are independent of each other:** They can be built in either order after the data model is in place.
+- **Session with role is the foundation.** Everything — middleware, API enforcement, UI context — depends on the JWT containing the user's effective org role. This must be the first thing wired up.
+- **User + invite models must exist before any invite or admin UI work.** Two separate concerns: `User` (active accounts, roles, overrides) and `InviteToken` (pending invites with expiry). Keep them separate; do not conflate pending invites with active users.
+- **PermissionsContext depends on session, not on the admin page.** The context is used app-wide; the admin page is just one consumer. Wire the context before touching any UI hiding logic.
+- **Per-collection override is independent of the invite flow.** It depends on User model and active session; can be built after the core RBAC is in place.
+- **Existing collection write routes need server-side role checks added.** This is a cross-cutting concern that touches every existing API route. Plan it as an explicit phase, not an afterthought.
+- **Existing UI components (TokenTable, BulkActionBar, Config page) need permission gating.** These components are already structured in feature domain folders; add `usePermissions()` calls without restructuring.
 
 ---
 
-## How Figma Modes Map to Themes
+## MVP Definition for v1.5
 
-Figma's variable system stores one value per variable per mode. The REST API POST body shape is:
+### Launch With (v1.5 scope — all required)
 
-```
-variableCollections[]     — one collection per token collection
-variableModes[]           — one mode per theme (e.g. "Light", "Dark", "Brand-A")
-variables[]               — one variable per token
-variableModeValues[]      — cross-product: one entry per (variable, mode) pair
-```
+- [ ] Email/password sign-in with NextAuth.js CredentialsProvider + JWT session — **AUTH-01, AUTH-02, AUTH-03, AUTH-04**
+- [ ] Role (Admin/Editor/Viewer) stored in JWT and enforced in all write API routes — **AUTH basis for all PERM-01–03**
+- [ ] Middleware redirects unauthenticated users to sign-in — **AUTH-02**
+- [ ] Superadmin via `SUPER_ADMIN_EMAIL` env var — **AUTH-06**
+- [ ] First user auto-assigned Admin — **AUTH-05**
+- [ ] User + InviteToken MongoDB models — **prerequisite for everything else**
+- [ ] Admin invite flow: email input + role selector → Resend email with magic link → Account setup form (name + password) — **USER-02, USER-03, USER-04**
+- [ ] Invite token: crypto-random, stored hashed, one-time-use, 72h expiry — **security baseline**
+- [ ] Pending invites visible in admin list with expiry badge — **USER-07**
+- [ ] Admin can change org-level role for any user — **USER-05**
+- [ ] Admin can remove user (with lockout guards: self, last Admin) — **USER-06**
+- [ ] Admin can resend and revoke pending invites — **USER-07 support**
+- [ ] Per-collection permission override: Admin can set override role per user — **PERM-04**
+- [ ] Existing collections backfilled to first Admin user — **PERM-05**
+- [ ] PermissionsContext + `usePermissions()` hook, app-wide — **PERM-06**
+- [ ] Write controls hidden for users without write permission — **UI-01 through UI-04**
+- [ ] Users admin page at `/admin/users` (Admin-only) — **USER-01**
 
-**The direct mapping is:**
-- One Figma collection = one ATUI token collection
-- One Figma mode = one ATUI theme (Enabled in that theme)
-- The collection's "default mode" = the ATUI collection default (no theme active)
-- Figma mode limit: 40 modes per collection (Figma Enterprise plan)
+### Deferred (v1.5.x or v2+)
 
-**Export rule for Figma:**
-- Source groups: export collection default value for all modes (the token is shared across themes)
-- Enabled groups: export per-theme embedded value for that mode
-- Disabled groups: omit from the collection entirely, or export as collection default with a note
-
----
-
-## How Style Dictionary Themes Map to Token Sets
-
-Style Dictionary's multi-theme pattern (industry standard, confirmed by sd-transforms and SD docs):
-
-**Option A — Multi-file approach (recommended for this codebase):**
-- Run SD once per theme
-- Each run uses: `include: [collection-default-tokens]`, `source: [theme-overrides]`
-- Source groups contribute their collection-default values directly (no override file needed)
-- Enabled groups contribute their per-theme values as the source file
-- Output: one CSS/JSON file per theme, wrapped in a class selector or at-rule
-
-```
-themes/light.css   → .theme-light { --color-bg: #ffffff; ... }
-themes/dark.css    → .theme-dark  { --color-bg: #1a1a1a; ... }
-```
-
-**Option B — SD `permutateThemes` from sd-transforms (if multi-dimensional themes needed):**
-- `$themes.json` with `selectedTokensets` using `source`/`enabled`/`disabled` states maps exactly to ATUI's group state model
-- The ATUI `ThemeGroupMatrix` is semantically identical to sd-transforms' `selectedTokensets`
-- `permutateThemes()` produces all combinations for multi-axis systems (e.g., light+brand-A, dark+brand-A)
-
-**For v1.4, Option A is sufficient.** Multi-dimensional permutation is a future differentiator. Run SD N times (once per theme), merging collection default tokens with the theme's embedded override values.
-
-**$value override semantics in SD:**
-- Later files in `source[]` override earlier ones with the same token path
-- Collection default tokens go into `include[]`; theme-specific overrides go into `source[]`
-- This is a deep merge — only differing token paths need to appear in the theme file
-
----
-
-## MVP Definition for v1.4
-
-### Launch With (v1.4 scope — all required)
-
-- [x] Theme document stores embedded token groups as a 1:1 copy of collection on creation — **data model foundation, everything else depends on this**
-- [x] Tokens page inline editing is enabled for Enabled groups when a theme is active, saving to the theme's embedded data — **core authoring UX**
-- [x] Source groups always read from collection default, never from theme embedded copy — **critical semantic correctness**
-- [x] Visual indicator in the tokens table showing which values have been overridden in the active theme vs matching the collection default — **essential for usability; without this editors are blind**
-- [x] Config page theme selector for export — **ties authoring to export**
-- [x] SD export: generate theme-aware output for the selected theme — **developer-facing deliverable**
-- [x] Figma export: each enabled theme becomes a mode in the variables collection — **designer-facing deliverable**
-
-### Add After Validation (v1.4.x)
-
-- [ ] Reset individual token to collection default (revert override) — trigger: users ask for undo; not blocking for launch
-- [ ] Multi-theme ZIP export (all themes in one SD build run) — trigger: users export frequently and find per-theme export tedious
-- [ ] "Propagate collection default change to theme copies" prompt — trigger: users edit collection defaults and find themes stale
-
-### Future Consideration (v2+)
-
-- [ ] Theme inheritance chains (Theme B inherits Theme A) — defer: full resolver complexity; flat model covers current use case
-- [ ] Multi-dimensional theme permutation (mode x brand matrix) — defer: requires sd-transforms integration and UX redesign
-- [ ] Token-level diff view across themes — defer: analytical feature, not authoring
+- [ ] OAuth / SSO providers — explicitly out of scope; v2+
+- [ ] Custom role creation / per-permission toggles — out of scope; v2+
+- [ ] Activity audit log — deferred; v2+
+- [ ] Invite reminder emails (day 3, day 6 nudge) — nice-to-have; add if invite abandonment is observed
+- [ ] Multi-org / tenant support — architecture allows it; deferred
 
 ---
 
@@ -191,51 +290,58 @@ themes/dark.css    → .theme-dark  { --color-bg: #1a1a1a; ... }
 
 | Feature | User Value | Implementation Cost | Priority |
 |---------|------------|---------------------|----------|
-| Embedded token data on theme creation | HIGH | MEDIUM | P1 |
-| Inline editing saves to theme | HIGH | MEDIUM | P1 |
-| Source group passthrough semantics | HIGH | LOW | P1 |
-| Visual override indicator | HIGH | MEDIUM | P1 |
-| Theme-aware SD export | HIGH | HIGH | P1 |
-| Figma export with modes | HIGH | HIGH | P1 |
-| Reset individual override | MEDIUM | LOW | P2 |
-| Multi-theme ZIP export | MEDIUM | MEDIUM | P2 |
-| Theme inheritance | LOW | HIGH | P3 |
-| Multi-axis permutation | LOW | HIGH | P3 |
+| Email/password sign-in + session | HIGH | LOW | P1 |
+| Middleware route protection | HIGH | LOW | P1 |
+| User + InviteToken models | HIGH | LOW | P1 |
+| Role in JWT + API enforcement | HIGH | MEDIUM | P1 |
+| Invite flow (send + accept) | HIGH | MEDIUM | P1 |
+| Pending invites in admin list | HIGH | LOW | P1 |
+| Resend / revoke invite | HIGH | LOW | P1 |
+| Role change + remove user (with guards) | HIGH | LOW | P1 |
+| PermissionsContext + usePermissions() | HIGH | MEDIUM | P1 |
+| Write control hiding in UI | HIGH | MEDIUM | P1 |
+| Per-collection override | MEDIUM | MEDIUM | P1 (required by spec) |
+| Superadmin env var bypass | MEDIUM | LOW | P1 (lockout prevention) |
+| Invite expiry relative display | LOW | LOW | P2 |
+| Invite reminder emails | LOW | MEDIUM | P3 |
+| OAuth / SSO | LOW (v1.5) | HIGH | P3 |
 
 **Priority key:**
-- P1: Must have for v1.4 launch
-- P2: Add in v1.4.x when core is stable
-- P3: Future milestone consideration
+- P1: Required for v1.5 launch
+- P2: Add when core is stable, within milestone
+- P3: Future consideration
 
 ---
 
-## Competitor Feature Analysis
+## Complexity Notes by Feature Area
 
-Reference tools surveyed: Tokens Studio for Figma, Supernova, Knapsack, sd-transforms.
-
-| Feature | Tokens Studio | Supernova | Our Approach |
-|---------|---------------|-----------|--------------|
-| Per-theme token values | Token sets with enabled/source/disabled states; theme = combination of sets | Themes with per-token value overrides | Embedded token copy per theme; group state controls Source/Enabled/Disabled |
-| Inline editing in theme context | Spreadsheet-style inline editing in token set view | Table view with inline edit per theme | Inline editing in tokens table when Enabled group + active theme |
-| Override indicator | Visual dot/badge on tokens that differ from base | Highlighted cells for overridden values | Badge/dot on cells where theme value !== collection default value |
-| SD export | permutateThemes + sd-transforms; one file per theme combo | Built-in with class-selector output | Run SD per theme with collection default in include[], theme overrides in source[] |
-| Figma modes | One Figma mode per Tokens Studio theme option | Sync via Figma Variables REST API | One Figma mode per ATUI theme; variableModeValues per (token, theme) pair |
+| Area | Complexity Driver | Key Risk |
+|------|-------------------|----------|
+| NextAuth.js JWT sessions | Low — well-documented pattern for Next.js 13 | `withAuth` middleware requires `jwt` session strategy; credentials provider cannot use database sessions — must not mix strategies |
+| Invite token security | Medium — crypto-random token, hashed storage, one-time use, expiry | Do not use `Math.random()`; use `crypto.randomBytes(32).toString('hex')`; store hashed in DB; delete on first use |
+| Cross-cutting API role enforcement | Medium — touches every existing API route | Easy to miss an endpoint; enumerate all write routes explicitly and add session check to each |
+| Per-collection override resolution | Medium — two-level lookup (org role + override) | `usePermissions(collectionId)` must resolve: if override exists for this collection → use override role; else → use org role |
+| PermissionsContext | Medium — must handle loading state + collection-scoped resolution | Avoid loading flicker: if session is loading, do not hide controls yet — show a loading state or skeleton |
+| UI hiding / disabling | Low — conditional rendering | Risk of inconsistency if hiding logic is duplicated per component; centralize in `usePermissions()` and a `<PermissionGate>` component |
+| Last-Admin lockout guard | Low — server-side count check | Must check both for remove-user and for role-downgrade; client-side guard is UX, server-side is required |
 
 ---
 
 ## Sources
 
-- Tokens Studio documentation: token sets enabled/source/disabled states — [Token Sets](https://docs.tokens.studio/manage-tokens/token-sets), [Themes Overview](https://docs.tokens.studio/manage-themes/themes-overview), [Theme Groups and Options](https://documentation.tokens.studio/platform/themes/theme-groups-and-theme-options)
-- Figma Variables REST API: modes structure, variableModeValues, POST payload — [REST API Variables Endpoints](https://developers.figma.com/docs/rest-api/variables-endpoints/)
-- Figma Plugin API: valuesByMode on Variable objects — [Working with Variables](https://developers.figma.com/docs/plugins/working-with-variables/)
-- Figma modes UX overview — [Overview of variables, collections, and modes](https://help.figma.com/hc/en-us/articles/14506821864087-Overview-of-variables-collections-and-modes)
-- Style Dictionary multi-theme multi-file pattern — [Creating Multiple Themes with Style Dictionary](https://www.alwaystwisted.com/articles/a-design-tokens-workflow-part-10)
-- Style Dictionary token file layering (include vs source) — [Design Tokens | Style Dictionary](https://styledictionary.com/info/tokens/)
-- sd-transforms permutateThemes function and $themes.json format — [sd-transforms README](https://github.com/tokens-studio/sd-transforms/blob/main/README.md)
-- Multi-axis SD pattern with SCSS — [Multi axis design tokens with Style Dictionary](https://mattmcadams.com/posts/2025/multi-axis-design-tokens/)
-- Inline editing UX table patterns — [Best Practices for Inline Editing in Table Design](https://uxdworld.com/inline-editing-in-tables-design/)
+- Email invite flow patterns: [Designing an intuitive user flow for inviting teammates — PageFlows.com](https://pageflows.com/resources/invite-teammates-user-flow/)
+- Invite edge cases and expiry strategy: [How to Create Team Invitation Emails for SaaS — Sequenzy](https://www.sequenzy.com/blog/how-to-create-team-invitation-emails-saas), [Invite-API multi-tenant onboarding — Medium](https://tomaszs2.medium.com/stop-rebuilding-user-invites-meet-invite-api-multi-tenant-onboarding-done-right-d4ea4b35e593)
+- Magic link security (crypto-random, one-time use, expiry): [Magic Link Security — Guptadeepak](https://guptadeepak.com/mastering-magic-link-security-a-deep-dive-for-developers/), [Magic Links — Supertokens](https://supertokens.com/blog/magiclinks)
+- RBAC design patterns for SaaS: [EnterpriseReady RBAC Guide](https://www.enterpriseready.io/features/role-based-access-control/), [Cerbos — 3 Common Authorization Designs](https://www.cerbos.dev/blog/3-most-common-authorization-designs-for-saas-products)
+- Per-resource permission override patterns: [How to Design Permissions for SaaS — Department of Product](https://www.departmentofproduct.com/blog/how-to-design-permissions-for-saas-products/), [WorkOS — Multi-tenant RBAC design](https://workos.com/blog/how-to-design-multi-tenant-rbac-saas)
+- Hide vs disable UI controls: [Smart Interface Design Patterns — Hidden vs Disabled](https://smart-interface-design-patterns.com/articles/hidden-vs-disabled/), [Smashing Magazine — Hidden vs. Disabled In UX (2024)](https://www.smashingmagazine.com/2024/05/hidden-vs-disabled-ux/)
+- NextAuth.js credentials + MongoDB session strategy: [NextAuth.js — Credentials Provider](https://next-auth.js.org/configuration/options), [NextAuth.js email invite flow — Medium](https://medium.com/@lacunastrategies/email-invite-auth-flow-w-nextjs-nextauth-and-mongodb-adapter-75b33ce9f042)
+- Resend transactional email in Next.js: [Resend — Send with Next.js](https://resend.com/docs/send-with-nextjs)
+- React RBAC patterns: [Permit.io — Implementing RBAC in React](https://www.permit.io/blog/implementing-react-rbac-authorization), [Building scalable RBAC in Next.js — Medium](https://medium.com/@muhebollah.diu/building-a-scalable-role-based-access-control-rbac-system-in-next-js-b67b9ecfe5fa)
+- First-user admin bootstrapping: [Build multi-tenant SaaS — Logto](https://blog.logto.io/build-multi-tenant-saas-application)
+- Pending invite UX (Slack model): [Manage pending invitations — Slack Help](https://slack.com/help/articles/360060363633-Manage-pending-invitations-and-invite-links-for-your-workspace)
 
 ---
 
-*Feature research for: ATUI Tokens Manager v1.4 — Theme Token Sets*
-*Researched: 2026-03-20*
+*Feature research for: ATUI Tokens Manager v1.5 — Org User Management + Auth*
+*Researched: 2026-03-28*
