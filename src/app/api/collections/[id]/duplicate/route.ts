@@ -1,12 +1,13 @@
 import { NextResponse } from 'next/server';
 import { getRepository } from '@/lib/db/get-repository';
-import { requireAuth } from '@/lib/auth/require-auth';
+import { requireRole } from '@/lib/auth/require-auth';
+import { Action } from '@/lib/auth/permissions';
 
 export async function POST(
   _request: Request,
   { params }: { params: { id: string } }
 ) {
-  const authResult = await requireAuth();
+  const authResult = await requireRole(Action.CreateCollection, params.id);
   if (authResult instanceof NextResponse) return authResult;
   try {
     const repo = await getRepository();
