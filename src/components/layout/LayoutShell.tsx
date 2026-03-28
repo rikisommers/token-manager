@@ -17,13 +17,17 @@ function isOrgRoute(pathname: string): boolean {
   return pathname === '/collections' || pathname === '/settings';
 }
 
+function isAuthRoute(pathname: string): boolean {
+  return pathname.startsWith('/auth/');
+}
+
 export function LayoutShell({ children }: { children: React.ReactNode }) {
   const pathname = usePathname();
 
   return (
     <CollectionProvider>
-      {isCollectionRoute(pathname) ? (
-        // Collection pages own their full layout via CollectionLayoutClient
+      {isCollectionRoute(pathname) || isAuthRoute(pathname) ? (
+        // Collection pages and auth pages own their full layout
         children
       ) : isOrgRoute(pathname) ? (
         <div className="flex flex-col h-screen overflow-hidden bg-gray-50">
