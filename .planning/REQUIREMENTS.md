@@ -20,7 +20,7 @@ Requirements for v1.5 Org User Management milestone. Each maps to roadmap phases
 
 - [ ] **USER-01**: Admin can view a list of all org members with their roles and status
 - [x] **USER-02**: Admin can invite a new user by entering their email address
-- [ ] **USER-03**: Invited user receives an email with a magic link to create their account (sent via Resend)
+- [x] **USER-03**: Invited user receives an email with a magic link to create their account (sent via Resend)
 - [x] **USER-04**: Invited user can set display name and password during account setup
 - [ ] **USER-05**: Admin can change an existing user's org-level role (Admin / Editor / Viewer)
 - [ ] **USER-06**: Admin can remove a user from the org
@@ -102,7 +102,7 @@ Which phases cover which requirements. Updated during roadmap creation.
 | PERM-05 | Phase 19 | Complete |
 | PERM-06 | Phase 19 | Complete |
 | USER-02 | Phase 20 | Complete |
-| USER-03 | Phase 20 | Pending |
+| USER-03 | Phase 20 | Complete |
 | USER-04 | Phase 20 | Complete |
 | USER-07 | Phase 20 | Complete |
 | USER-01 | Phase 21 | Pending |
