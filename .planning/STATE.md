@@ -22,10 +22,10 @@ See: .planning/PROJECT.md (updated 2026-03-28)
 
 ## Current Position
 
-Phase: 20 of 21 (Email Invite Flow and Account Setup — in progress)
-Plan: 02 complete (20-02 — invite setup page and API route: Server/Client Component, atomic invite acceptance)
-Status: In progress — Phase 20 Plans 01 and 02 complete; Plan 03 (users page) remaining
-Last activity: 2026-03-28 — Completed 20-02: Account setup flow for invited users with token validation, User creation, auto sign-in
+Phase: 20 of 21 (Email Invite Flow and Account Setup — complete)
+Plan: 03 complete (20-03 — /org/users page, InviteModal, OrgSidebar Users nav, LayoutShell /org/* routing, middleware Admin guard)
+Status: Phase 20 complete — all 3 plans done; Phase 21 remaining
+Last activity: 2026-03-28 — Completed 20-03: /org/users page with pending invites table, InviteModal component, infrastructure plumbing
 
 Progress: [░░░░░░░░░░] 0% (0/6 phases complete, 3 plans complete in phase 16)
 
@@ -65,6 +65,7 @@ Progress: [░░░░░░░░░░] 0% (0/6 phases complete, 3 plans comp
 | Phase 19 P06 | 3 | 1 tasks | 1 files |
 | Phase 20 P01 | ~30 min | 2 tasks | 9 files |
 | Phase 20 P02 | 5 | 2 tasks | 3 files |
+| Phase 20 P03 | 3 | 2 tasks | 5 files |
 
 ## Accumulated Context
 
@@ -132,6 +133,9 @@ Key decisions relevant to v1.5 (from research and 16-01 execution):
 - [Phase 20]: findOneAndUpdate with { status: 'pending' } filter for atomic invite acceptance — prevents race on double-submit
 - [Phase 20]: User created with status='active' explicitly — Mongoose default is 'invited' which blocks sign-in in authorize()
 - [Phase 20]: Server Component wrapper reads searchParams.token and passes as prop — avoids useSearchParams() + Suspense boundary in Client Component
+- [Phase 20]: toLocaleDateString() used instead of date-fns (not installed in project)
+- [Phase 20]: /org/users uses 'use client' for useState invite list and modal state management
+- [Phase 20]: Admin-only nav items via spread conditional array: ...(isAdmin ? [{...}] : []) in OrgSidebar navItems
 
 ### Pending Todos
 
@@ -146,6 +150,6 @@ None.
 
 ## Session Continuity
 
-Last session: 2026-03-28T21:25:16Z
-Stopped at: Completed 20-01-PLAN.md — invite API foundation: GET/POST /api/invites, GET /api/invites/validate, DELETE/POST /api/invites/[id], resend integration
+Last session: 2026-03-28T21:35:57Z
+Stopped at: Completed 20-03-PLAN.md — /org/users page, InviteModal, OrgSidebar Users nav item, LayoutShell /org/* routing fix, middleware Admin guard
 Resume file: None
