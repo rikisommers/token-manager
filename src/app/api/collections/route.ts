@@ -1,14 +1,36 @@
 import { NextResponse } from 'next/server';
+import { getServerSession } from 'next-auth';
 import { getRepository } from '@/lib/db/get-repository';
+import dbConnect from '@/lib/mongodb';
+import { requireRole } from '@/lib/auth/require-auth';
+import { Action } from '@/lib/auth/permissions';
+import { authOptions } from '@/lib/auth/nextauth.config';
+import { bootstrapCollectionGrants } from '@/lib/auth/collection-bootstrap';
+import CollectionPermission from '@/lib/db/models/CollectionPermission';
 import type { CollectionCardData, ISourceMetadata } from '@/types/collection.types';
-import { requireAuth } from '@/lib/auth/require-auth';
 
 export async function GET() {
+  await bootstrapCollectionGrants();
+
+  const session = await getServerSession(authOptions);
+  if (!session) {
+    return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+  }
+
   try {
     const repo = await getRepository();
     const docs = await repo.list();
 
-    const collections: CollectionCardData[] = docs.map((doc) => ({
+    let visibleDocs = docs;
+
+    if (session.user.role !== 'Admin') {
+      await dbConnect();
+      const grants = await CollectionPermission.find({ userId: session.user.id }, 'collectionId').lean();
+      const grantedIds = new Set(grants.map(g => g.collectionId));
+      visibleDocs = docs.filter(d => grantedIds.has(d._id.toString()));
+    }
+
+    const collections: CollectionCardData[] = visibleDocs.map((doc) => ({
       _id: doc._id,
       name: doc.name,
       description: doc.description ?? null,
@@ -27,7 +49,7 @@ export async function GET() {
 }
 
 export async function POST(request: Request) {
-  const authResult = await requireAuth();
+  const authResult = await requireRole(Action.CreateCollection);
   if (authResult instanceof NextResponse) return authResult;
   try {
     const body = await request.json() as {

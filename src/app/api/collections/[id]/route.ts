@@ -1,12 +1,33 @@
 import { NextResponse } from 'next/server';
+import { getServerSession } from 'next-auth';
 import { getRepository } from '@/lib/db/get-repository';
+import dbConnect from '@/lib/mongodb';
+import { requireRole } from '@/lib/auth/require-auth';
+import { Action } from '@/lib/auth/permissions';
+import { authOptions } from '@/lib/auth/nextauth.config';
+import CollectionPermission from '@/lib/db/models/CollectionPermission';
 import type { UpdateTokenCollectionInput } from '@/types/collection.types';
-import { requireAuth } from '@/lib/auth/require-auth';
 
 export async function GET(
   _request: Request,
   { params }: { params: { id: string } }
 ) {
+  const session = await getServerSession(authOptions);
+  if (!session) {
+    return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+  }
+
+  if (session.user.role !== 'Admin') {
+    await dbConnect();
+    const grant = await CollectionPermission.findOne({
+      userId: session.user.id,
+      collectionId: params.id,
+    }).lean();
+    if (!grant) {
+      return NextResponse.json({ error: 'Collection not found' }, { status: 404 });
+    }
+  }
+
   try {
     const repo = await getRepository();
     const doc = await repo.findById(params.id);
@@ -41,7 +62,7 @@ export async function PUT(
   request: Request,
   { params }: { params: { id: string } }
 ) {
-  const authResult = await requireAuth();
+  const authResult = await requireRole(Action.Write, params.id);
   if (authResult instanceof NextResponse) return authResult;
   try {
     const body = await request.json() as UpdateTokenCollectionInput;
@@ -90,7 +111,7 @@ export async function DELETE(
   _request: Request,
   { params }: { params: { id: string } }
 ) {
-  const authResult = await requireAuth();
+  const authResult = await requireRole(Action.DeleteCollection, params.id);
   if (authResult instanceof NextResponse) return authResult;
   try {
     const repo = await getRepository();
