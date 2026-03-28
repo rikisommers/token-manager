@@ -33,7 +33,7 @@ Requirements for v1.5 Org User Management milestone. Each maps to roadmap phases
 - [x] **PERM-03**: Viewer role grants read-only access to all collections; no create, no push/pull, no user management
 - [x] **PERM-04**: Admin can set a per-collection access override for any user (e.g. downgrade an Editor to Viewer on one specific collection)
 - [x] **PERM-05**: All existing MongoDB collections are assigned to the first Admin user after auth is introduced (one-time migration at bootstrap)
-- [ ] **PERM-06**: Permissions are available globally via a React context (`PermissionsProvider` + `usePermissions()`) so any client component can check access without prop drilling
+- [x] **PERM-06**: Permissions are available globally via a React context (`PermissionsProvider` + `usePermissions()`) so any client component can check access without prop drilling
 
 ### Protected UI (UI)
 
@@ -100,7 +100,7 @@ Which phases cover which requirements. Updated during roadmap creation.
 | PERM-03 | Phase 19 | Complete |
 | PERM-04 | Phase 19 | Complete |
 | PERM-05 | Phase 19 | Complete |
-| PERM-06 | Phase 19 | Pending |
+| PERM-06 | Phase 19 | Complete |
 | USER-02 | Phase 20 | Pending |
 | USER-03 | Phase 20 | Pending |
 | USER-04 | Phase 20 | Pending |

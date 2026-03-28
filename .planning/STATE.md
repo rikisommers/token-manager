@@ -3,7 +3,7 @@ gsd_state_version: 1.0
 milestone: v1.5
 milestone_name: Org User Management
 status: in_progress
-last_updated: "2026-03-28T08:13:23Z"
+last_updated: "2026-03-28T09:26:28Z"
 progress:
   total_phases: 6
   completed_phases: 0
@@ -18,14 +18,14 @@ progress:
 See: .planning/PROJECT.md (updated 2026-03-28)
 
 **Core value:** Token collections are always available and editable: stored in MongoDB, accessible via collection-scoped URLs, with per-collection Figma/GitHub config, full CRUD from the collections grid, Figma import/export fully integrated, and a Themes system where each theme is a complete token value set with per-group edit permissions, dark-mode awareness, and theme-targeted export.
-**Current focus:** Phase 18 — Middleware and Route Handler Guards
+**Current focus:** Phase 19 — RBAC and Permissions Context
 
 ## Current Position
 
-Phase: 18 of 21 (Middleware and Route Handler Guards)
-Plan: 02 (18-02 complete — requireAuth() guards on all 17 write Route Handlers)
+Phase: 19 of 21 (RBAC and Permissions Context)
+Plan: 04 (19-04 complete — PermissionsContext rewritten with collection-aware named boolean API)
 Status: In progress
-Last activity: 2026-03-28 — Completed 18-02: requireAuth() applied to all 17 write handlers across 15 route files; POST /api/auth/setup documented as bootstrap exception (ARCH-02 satisfied)
+Last activity: 2026-03-28 — Completed 19-04: PermissionsContext.tsx rewritten with usePathname() collection detection, /permissions/me fetch, and named boolean API { canEdit, canCreate, isAdmin, canGitHub, canFigma }
 
 Progress: [░░░░░░░░░░] 0% (0/6 phases complete, 3 plans complete in phase 16)
 
@@ -57,6 +57,7 @@ Progress: [░░░░░░░░░░] 0% (0/6 phases complete, 3 plans comp
 | Phase 18 P01 | 2 | 2 tasks | 2 files |
 | Phase 18 P02 | 4 | 2 tasks | 16 files |
 | Phase 19 P01 | 2 | 2 tasks | 3 files |
+| Phase 19 P04 | 1 | 1 task | 1 file |
 
 ## Accumulated Context
 
@@ -102,6 +103,11 @@ Key decisions relevant to v1.5 (from research and 16-01 execution):
 - [Phase 19]: Admin org role bypasses CollectionPermission grant lookup — canPerform('Admin', action) is the only check
 - [Phase 19]: bootstrapCollectionGrants() uses countDocuments guard + module-level flag for double idempotency across processes and same-process calls
 - [Phase 19]: GET /permissions/me uses direct getServerSession() (not requireAuth()) consistent with Phase 18 pattern for read endpoints
+- [Phase 19-04]: canCreate uses orgRole (not effectiveRole) — creating collections is org-level permission, not collection-scoped
+- [Phase 19-04]: isAdmin uses orgRole === 'Admin' — Admin status is org-wide, independent of any collection grant
+- [Phase 19-04]: Admin short-circuit sets effectiveRole to 'Admin' without fetching /permissions/me — Admin bypasses all collection-level checks
+- [Phase 19-04]: PermissionsContextValue interface now exported — required for typed consumers in Phase 20+
+- [Phase 19-04]: Named boolean API replaces scaffold { role, canPerform } — usePermissions() returns { canEdit, canCreate, isAdmin, canGitHub, canFigma }
 
 ### Pending Todos
 
@@ -116,6 +122,6 @@ None.
 
 ## Session Continuity
 
-Last session: 2026-03-28T08:13:23Z
-Stopped at: Completed 18-02-PLAN.md (requireAuth() guards on all 17 write Route Handlers)
+Last session: 2026-03-28T09:26:28Z
+Stopped at: Completed 19-04-PLAN.md (PermissionsContext rewrite with collection-aware named boolean API)
 Resume file: None
