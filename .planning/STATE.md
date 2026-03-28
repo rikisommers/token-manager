@@ -3,7 +3,7 @@ gsd_state_version: 1.0
 milestone: v1.5
 milestone_name: Org User Management
 status: in_progress
-last_updated: "2026-03-28T06:46:00Z"
+last_updated: "2026-03-28T06:57:14Z"
 progress:
   total_phases: 6
   completed_phases: 0
@@ -23,9 +23,9 @@ See: .planning/PROJECT.md (updated 2026-03-28)
 ## Current Position
 
 Phase: 17 of 21 (Auth API Routes and Sign-In Flow)
-Plan: 02 (17-02 complete — SessionProvider + PermissionsProvider wired into layout)
+Plan: 03 (17-03 complete — sign-in page, setup page, UserMenu + OrgHeader integration)
 Status: In progress
-Last activity: 2026-03-28 — Completed 17-02: PermissionsContext, AuthProviders, layout.tsx wiring
+Last activity: 2026-03-28 — Completed 17-03: /auth/sign-in, /auth/setup, UserMenu, OrgHeader updated
 
 Progress: [░░░░░░░░░░] 0% (0/6 phases complete, 3 plans complete in phase 16)
 
@@ -52,6 +52,7 @@ Progress: [░░░░░░░░░░] 0% (0/6 phases complete, 3 plans comp
 | Phase 16 P03 | 4 | 2 tasks | 3 files |
 | Phase 17 P01 | 18 | 2 tasks | 2 files |
 | Phase 17 P02 | 5 | 2 tasks | 3 files |
+| Phase 17 P03 | 7 | 3 tasks | 4 files |
 
 ## Accumulated Context
 
@@ -82,6 +83,10 @@ Key decisions relevant to v1.5 (from research and 16-01 execution):
 - [Phase 17-01]: invited-status users can sign in — only 'disabled' is explicitly blocked at auth layer
 - [Phase 17-01]: GET /api/auth/setup includes SUPER_ADMIN_EMAIL only when setupRequired=true — email never exposed post-setup
 - [Phase 17-01]: POST /api/auth/setup sets status:'active' explicitly — User schema defaults to 'invited' which would block sign-in
+- [Phase 17]: Auth pages (sign-in, setup) have no app shell — isolated centered card layout for pre-auth flows
+- [Phase 17]: setupEmail stored from GET /api/auth/setup response in component state (not process.env — server-side only)
+- [Phase 17]: router.replace (not push) on setup redirect — prevents back-button return to setup page
+- [Phase 17]: UserMenu returns null when no session — Phase 18 middleware will redirect unauthenticated users
 
 ### Pending Todos
 
@@ -96,6 +101,6 @@ None.
 
 ## Session Continuity
 
-Last session: 2026-03-28T06:46:00Z
-Stopped at: Completed 17-01-PLAN.md (authorize() errors, displayName in session, /api/auth/setup route)
+Last session: 2026-03-28T06:57:14Z
+Stopped at: Completed 17-03-PLAN.md (sign-in page, setup page, UserMenu + OrgHeader integration)
 Resume file: None
