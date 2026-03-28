@@ -18,14 +18,14 @@ progress:
 See: .planning/PROJECT.md (updated 2026-03-28)
 
 **Core value:** Token collections are always available and editable: stored in MongoDB, accessible via collection-scoped URLs, with per-collection Figma/GitHub config, full CRUD from the collections grid, Figma import/export fully integrated, and a Themes system where each theme is a complete token value set with per-group edit permissions, dark-mode awareness, and theme-targeted export.
-**Current focus:** Phase 17 — Auth API Routes and Sign-In Flow
+**Current focus:** Phase 18 — Middleware and Route Handler Guards
 
 ## Current Position
 
-Phase: 17 of 21 (Auth API Routes and Sign-In Flow)
-Plan: 04 (17-04 complete — human verification of full auth round-trip; Phase 17 complete)
+Phase: 18 of 21 (Middleware and Route Handler Guards)
+Plan: 01 (18-01 complete — middleware withAuth + requireAuth() utility)
 Status: In progress
-Last activity: 2026-03-28 — Completed 17-04: human verification confirmed all 5 auth scenarios; Phase 17 complete
+Last activity: 2026-03-28 — Completed 18-01: middleware.ts and require-auth.ts created; dual-layer security model established
 
 Progress: [░░░░░░░░░░] 0% (0/6 phases complete, 3 plans complete in phase 16)
 
@@ -54,6 +54,7 @@ Progress: [░░░░░░░░░░] 0% (0/6 phases complete, 3 plans comp
 | Phase 17 P02 | 5 | 2 tasks | 3 files |
 | Phase 17 P03 | 7 | 3 tasks | 4 files |
 | Phase 17 P04 | - | 1 task (human-verify) | 0 files |
+| Phase 18 P01 | 2 | 2 tasks | 2 files |
 
 ## Accumulated Context
 
@@ -89,6 +90,9 @@ Key decisions relevant to v1.5 (from research and 16-01 execution):
 - [Phase 17]: router.replace (not push) on setup redirect — prevents back-button return to setup page
 - [Phase 17]: UserMenu returns null when no session — Phase 18 middleware will redirect unauthenticated users
 - [Phase 17-04]: Phase 17 complete — all 5 auth scenarios verified by human: inline sign-in errors, session persistence, sign-out redirect, setup bootstrap, setup redirect guard
+- [Phase 18]: Middleware excludes api/ routes — HTML redirect would break fetch() callers; requireAuth() is the actual API security boundary
+- [Phase 18]: getServerSession(authOptions) single-argument form required in App Router — three-argument Pages Router form throws res.getHeader is not a function
+- [Phase 18]: requireAuth() returns 401 {error: Unauthorized} — no WWW-Authenticate header needed for session-cookie app; no DB lookup; JWT-only validation
 
 ### Pending Todos
 
@@ -103,6 +107,6 @@ None.
 
 ## Session Continuity
 
-Last session: 2026-03-28T07:10:00Z
-Stopped at: Completed 17-04-PLAN.md (human verification of full auth round-trip; Phase 17 complete)
+Last session: 2026-03-28T08:05:39Z
+Stopped at: Completed 18-01-PLAN.md (middleware withAuth + requireAuth() utility)
 Resume file: None

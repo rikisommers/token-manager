@@ -10,7 +10,7 @@ Requirements for v1.5 Org User Management milestone. Each maps to roadmap phases
 ### Authentication (AUTH)
 
 - [x] **AUTH-01**: User can sign in with email and password
-- [ ] **AUTH-02**: Unauthenticated users are redirected to the sign-in page
+- [x] **AUTH-02**: Unauthenticated users are redirected to the sign-in page
 - [x] **AUTH-03**: Signed-in session persists across browser refresh (JWT)
 - [x] **AUTH-04**: User can sign out from any page
 - [x] **AUTH-05**: First user to complete registration is automatically granted the Admin role
@@ -45,7 +45,7 @@ Requirements for v1.5 Org User Management milestone. Each maps to roadmap phases
 ### Architecture Constraint (ARCH)
 
 - [x] **ARCH-01**: Auth infrastructure lives in isolated modules — `src/lib/auth/` (authOptions, helpers, models), `src/app/api/auth/` (NextAuth route handler), `src/app/auth/` (sign-in, invite setup pages) — never mixed with existing token/collection code
-- [ ] **ARCH-02**: All 18 existing write Route Handlers are guarded with `getServerSession()` / `requireAuth()` — middleware alone is not a security boundary
+- [x] **ARCH-02**: All 18 existing write Route Handlers are guarded with `getServerSession()` / `requireAuth()` — middleware alone is not a security boundary
 
 ## Future Requirements
 
@@ -93,8 +93,8 @@ Which phases cover which requirements. Updated during roadmap creation.
 | AUTH-03 | Phase 17 | Complete |
 | AUTH-04 | Phase 17 | Complete |
 | AUTH-05 | Phase 17 | Complete |
-| AUTH-02 | Phase 18 | Pending |
-| ARCH-02 | Phase 18 | Pending |
+| AUTH-02 | Phase 18 | Complete |
+| ARCH-02 | Phase 18 | Complete |
 | PERM-01 | Phase 19 | Pending |
 | PERM-02 | Phase 19 | Pending |
 | PERM-03 | Phase 19 | Pending |
