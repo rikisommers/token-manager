@@ -1,10 +1,11 @@
 import { NextRequest, NextResponse } from 'next/server';
 import mongoose, { Connection } from 'mongoose';
 import type { DatabaseConnectionStatus, DatabaseProvider } from '@/types/database.types';
-import { requireAuth } from '@/lib/auth/require-auth';
+import { requireRole } from '@/lib/auth/require-auth';
+import { Action } from '@/lib/auth/permissions';
 
 export async function POST(request: NextRequest) {
-  const authResult = await requireAuth();
+  const authResult = await requireRole(Action.ManageUsers);
   if (authResult instanceof NextResponse) return authResult;
   const body = await request.json();
   const provider: DatabaseProvider = body.provider ?? 'custom-mongodb';

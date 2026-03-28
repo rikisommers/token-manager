@@ -2,7 +2,8 @@ import { NextRequest, NextResponse } from 'next/server';
 import { readDbConfig, writeDbConfig } from '@/lib/db-config';
 import { type DatabaseConfig } from '@/types/database.types';
 import { invalidateRepository } from '@/lib/db/get-repository';
-import { requireAuth } from '@/lib/auth/require-auth';
+import { requireRole } from '@/lib/auth/require-auth';
+import { Action } from '@/lib/auth/permissions';
 
 export async function GET() {
   try {
@@ -23,7 +24,7 @@ export async function GET() {
 }
 
 export async function PUT(request: NextRequest) {
-  const authResult = await requireAuth();
+  const authResult = await requireRole(Action.ManageUsers);
   if (authResult instanceof NextResponse) return authResult;
   try {
     const body = (await request.json()) as DatabaseConfig & { persistFromEnv?: boolean };
