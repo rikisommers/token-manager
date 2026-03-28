@@ -197,7 +197,7 @@ Plans:
 | 14. Dark Mode Support | v1.4 | 5/5 | Complete | 2026-03-26 |
 | 15. Multi-Row Actions | v1.4 | 4/4 | Complete | 2026-03-27 |
 | 16. Auth Infrastructure and Security Baseline | 3/3 | Complete    | 2026-03-28 | - |
-| 17. Auth API Routes and Sign-In Flow | v1.5 | 0/TBD | Not started | - |
+| 17. Auth API Routes and Sign-In Flow | 1/4 | In Progress|  | - |
 | 18. Middleware and Route Handler Guards | v1.5 | 0/TBD | Not started | - |
 | 19. RBAC and Permissions Context | v1.5 | 0/TBD | Not started | - |
 | 20. Email Invite Flow and Account Setup | v1.5 | 0/TBD | Not started | - |

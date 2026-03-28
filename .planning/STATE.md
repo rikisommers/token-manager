@@ -3,12 +3,12 @@ gsd_state_version: 1.0
 milestone: v1.5
 milestone_name: Org User Management
 status: in_progress
-last_updated: "2026-03-28T05:12:00Z"
+last_updated: "2026-03-28T06:33:00Z"
 progress:
   total_phases: 6
   completed_phases: 0
   total_plans: 0
-  completed_plans: 3
+  completed_plans: 4
 ---
 
 # Project State
@@ -18,14 +18,14 @@ progress:
 See: .planning/PROJECT.md (updated 2026-03-28)
 
 **Core value:** Token collections are always available and editable: stored in MongoDB, accessible via collection-scoped URLs, with per-collection Figma/GitHub config, full CRUD from the collections grid, Figma import/export fully integrated, and a Themes system where each theme is a complete token value set with per-group edit permissions, dark-mode awareness, and theme-targeted export.
-**Current focus:** Phase 16 — Auth Infrastructure and Security Baseline
+**Current focus:** Phase 17 — Auth API Routes and Sign-In Flow
 
 ## Current Position
 
-Phase: 16 of 21 (Auth Infrastructure and Security Baseline)
-Plan: 03 (16-03 complete — Phase 16 DONE)
+Phase: 17 of 21 (Auth API Routes and Sign-In Flow)
+Plan: 02 (17-02 complete — SessionProvider + PermissionsProvider wired into layout)
 Status: In progress
-Last activity: 2026-03-28 — Completed 16-03: authOptions, NextAuth route handler, env vars
+Last activity: 2026-03-28 — Completed 17-02: PermissionsContext, AuthProviders, layout.tsx wiring
 
 Progress: [░░░░░░░░░░] 0% (0/6 phases complete, 3 plans complete in phase 16)
 
@@ -50,6 +50,7 @@ Progress: [░░░░░░░░░░] 0% (0/6 phases complete, 3 plans comp
 *Updated after each plan completion*
 | Phase 16 P02 | 4 | 2 tasks | 5 files |
 | Phase 16 P03 | 4 | 2 tasks | 3 files |
+| Phase 17 P02 | 5 | 2 tasks | 3 files |
 
 ## Accumulated Context
 
@@ -72,6 +73,9 @@ Key decisions relevant to v1.5 (from research and 16-01 execution):
 - [Phase 16-03]: SUPER_ADMIN_EMAIL enforcement checks token.email (always present) not user?.email (only on initial sign-in)
 - [Phase 16-03]: authOptions centralized in src/lib/auth/nextauth.config.ts — single import target for getServerSession() in Phases 18+
 - [Phase 16-03]: pages.signIn: '/auth/sign-in' configured now even though page is Phase 17 work
+- [Phase 17-02]: AuthProviders is the 'use client' boundary in Server Component layout — valid Next.js App Router pattern
+- [Phase 17-02]: SessionProvider must be outer wrapper; PermissionsProvider inner — PermissionsProvider calls useSession() so must be descendant
+- [Phase 17-02]: PermissionsContext scaffold minimal by design — Phase 19 expands without layout changes; hook API surface (usePermissions() returning { role, canPerform }) stays identical
 
 ### Pending Todos
 
@@ -86,6 +90,6 @@ None.
 
 ## Session Continuity
 
-Last session: 2026-03-28T05:12:00Z
-Stopped at: Completed 16-03-PLAN.md (authOptions, NextAuth route handler, env vars — Phase 16 complete)
+Last session: 2026-03-28T06:33:00Z
+Stopped at: Completed 17-02-PLAN.md (PermissionsContext, AuthProviders, layout.tsx wiring)
 Resume file: None
