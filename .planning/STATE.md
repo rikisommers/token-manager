@@ -23,9 +23,9 @@ See: .planning/PROJECT.md (updated 2026-03-28)
 ## Current Position
 
 Phase: 17 of 21 (Auth API Routes and Sign-In Flow)
-Plan: 03 (17-03 complete — sign-in page, setup page, UserMenu + OrgHeader integration)
+Plan: 04 (17-04 complete — human verification of full auth round-trip; Phase 17 complete)
 Status: In progress
-Last activity: 2026-03-28 — Completed 17-03: /auth/sign-in, /auth/setup, UserMenu, OrgHeader updated
+Last activity: 2026-03-28 — Completed 17-04: human verification confirmed all 5 auth scenarios; Phase 17 complete
 
 Progress: [░░░░░░░░░░] 0% (0/6 phases complete, 3 plans complete in phase 16)
 
@@ -53,6 +53,7 @@ Progress: [░░░░░░░░░░] 0% (0/6 phases complete, 3 plans comp
 | Phase 17 P01 | 18 | 2 tasks | 2 files |
 | Phase 17 P02 | 5 | 2 tasks | 3 files |
 | Phase 17 P03 | 7 | 3 tasks | 4 files |
+| Phase 17 P04 | - | 1 task (human-verify) | 0 files |
 
 ## Accumulated Context
 
@@ -87,6 +88,7 @@ Key decisions relevant to v1.5 (from research and 16-01 execution):
 - [Phase 17]: setupEmail stored from GET /api/auth/setup response in component state (not process.env — server-side only)
 - [Phase 17]: router.replace (not push) on setup redirect — prevents back-button return to setup page
 - [Phase 17]: UserMenu returns null when no session — Phase 18 middleware will redirect unauthenticated users
+- [Phase 17-04]: Phase 17 complete — all 5 auth scenarios verified by human: inline sign-in errors, session persistence, sign-out redirect, setup bootstrap, setup redirect guard
 
 ### Pending Todos
 
@@ -101,6 +103,6 @@ None.
 
 ## Session Continuity
 
-Last session: 2026-03-28T06:57:14Z
-Stopped at: Completed 17-03-PLAN.md (sign-in page, setup page, UserMenu + OrgHeader integration)
+Last session: 2026-03-28T07:10:00Z
+Stopped at: Completed 17-04-PLAN.md (human verification of full auth round-trip; Phase 17 complete)
 Resume file: None

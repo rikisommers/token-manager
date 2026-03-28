@@ -78,7 +78,7 @@ See: `.planning/milestones/v1.4-ROADMAP.md` for full phase details.
 **Milestone Goal:** Add authentication and org-level user management so multiple users can collaborate on token collections with role-based access control.
 
 - [x] **Phase 16: Auth Infrastructure and Security Baseline** — Patch CVE-2025-29927, install packages, Mongoose models, authOptions, permissions pure function (completed 2026-03-28)
-- [ ] **Phase 17: Auth API Routes and Sign-In Flow** — NextAuth route handler, first-user bootstrap, sign-in and sign-out pages, SessionProvider wiring
+- [x] **Phase 17: Auth API Routes and Sign-In Flow** — NextAuth route handler, first-user bootstrap, sign-in and sign-out pages, SessionProvider wiring (completed 2026-03-28)
 - [ ] **Phase 18: Middleware and Route Handler Guards** — withAuth middleware, requireAuth() utility, all 18 existing write Route Handlers guarded
 - [ ] **Phase 19: RBAC and Permissions Context** — PermissionsProvider, usePermissions() hook, role enforcement on write routes, JWT role re-fetch, per-collection overrides
 - [ ] **Phase 20: Email Invite Flow and Account Setup** — Resend invite email, invite token generation, account setup page, invite management
@@ -197,7 +197,7 @@ Plans:
 | 14. Dark Mode Support | v1.4 | 5/5 | Complete | 2026-03-26 |
 | 15. Multi-Row Actions | v1.4 | 4/4 | Complete | 2026-03-27 |
 | 16. Auth Infrastructure and Security Baseline | 3/3 | Complete    | 2026-03-28 | - |
-| 17. Auth API Routes and Sign-In Flow | 3/4 | In Progress|  | - |
+| 17. Auth API Routes and Sign-In Flow | v1.5 | 4/4 | Complete | 2026-03-28 |
 | 18. Middleware and Route Handler Guards | v1.5 | 0/TBD | Not started | - |
 | 19. RBAC and Permissions Context | v1.5 | 0/TBD | Not started | - |
 | 20. Email Invite Flow and Account Setup | v1.5 | 0/TBD | Not started | - |
