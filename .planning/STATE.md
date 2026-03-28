@@ -23,9 +23,9 @@ See: .planning/PROJECT.md (updated 2026-03-28)
 ## Current Position
 
 Phase: 20 of 21 (Email Invite Flow and Account Setup — in progress)
-Plan: 01 complete (20-01 — invite API foundation: 5 route handlers, email utility, resend integration)
-Status: In progress — Phase 20 Plan 01 complete; Plans 02 (setup page) and 03 (users page) remaining
-Last activity: 2026-03-28 — Completed 20-01: Resend-backed invite API with hashed token storage, duplicate guards, validate endpoint
+Plan: 02 complete (20-02 — invite setup page and API route: Server/Client Component, atomic invite acceptance)
+Status: In progress — Phase 20 Plans 01 and 02 complete; Plan 03 (users page) remaining
+Last activity: 2026-03-28 — Completed 20-02: Account setup flow for invited users with token validation, User creation, auto sign-in
 
 Progress: [░░░░░░░░░░] 0% (0/6 phases complete, 3 plans complete in phase 16)
 
@@ -64,6 +64,7 @@ Progress: [░░░░░░░░░░] 0% (0/6 phases complete, 3 plans comp
 | Phase 19 P05 | 5 | 2 tasks | 1 files |
 | Phase 19 P06 | 3 | 1 tasks | 1 files |
 | Phase 20 P01 | ~30 min | 2 tasks | 9 files |
+| Phase 20 P02 | 5 | 2 tasks | 3 files |
 
 ## Accumulated Context
 
@@ -127,6 +128,10 @@ Key decisions relevant to v1.5 (from research and 16-01 execution):
 - [Phase 20-01]: POST /api/invites rolls back Invite document if Resend email fails — delete-on-error atomicity pattern
 - [Phase 20-01]: GET /api/invites/validate is public (no requireRole) — must be reachable pre-login when invited user lands on setup page
 - [Phase 20-01]: Duplicate check covers both active User account and pending non-expired Invite; both return 409
+- [Phase 20]: POST /api/auth/invite-setup has no requireAuth() — invited user has no session; second ARCH-02 bootstrap exception
+- [Phase 20]: findOneAndUpdate with { status: 'pending' } filter for atomic invite acceptance — prevents race on double-submit
+- [Phase 20]: User created with status='active' explicitly — Mongoose default is 'invited' which blocks sign-in in authorize()
+- [Phase 20]: Server Component wrapper reads searchParams.token and passes as prop — avoids useSearchParams() + Suspense boundary in Client Component
 
 ### Pending Todos
 
