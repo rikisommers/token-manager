@@ -3,12 +3,12 @@ gsd_state_version: 1.0
 milestone: v1.5
 milestone_name: Org User Management
 status: in_progress
-last_updated: "2026-03-28T06:33:00Z"
+last_updated: "2026-03-28T06:46:00Z"
 progress:
   total_phases: 6
   completed_phases: 0
   total_plans: 0
-  completed_plans: 4
+  completed_plans: 5
 ---
 
 # Project State
@@ -50,6 +50,7 @@ Progress: [░░░░░░░░░░] 0% (0/6 phases complete, 3 plans comp
 *Updated after each plan completion*
 | Phase 16 P02 | 4 | 2 tasks | 5 files |
 | Phase 16 P03 | 4 | 2 tasks | 3 files |
+| Phase 17 P01 | 18 | 2 tasks | 2 files |
 | Phase 17 P02 | 5 | 2 tasks | 3 files |
 
 ## Accumulated Context
@@ -76,6 +77,11 @@ Key decisions relevant to v1.5 (from research and 16-01 execution):
 - [Phase 17-02]: AuthProviders is the 'use client' boundary in Server Component layout — valid Next.js App Router pattern
 - [Phase 17-02]: SessionProvider must be outer wrapper; PermissionsProvider inner — PermissionsProvider calls useSession() so must be descendant
 - [Phase 17-02]: PermissionsContext scaffold minimal by design — Phase 19 expands without layout changes; hook API surface (usePermissions() returning { role, canPerform }) stays identical
+- [Phase 17-01]: authorize() throws Error (not returns null) — CredentialsSignin generic error replaced by user-readable messages via NextAuth error URL param
+- [Phase 17-01]: Disabled accounts return 'Incorrect password' same as wrong password — no status enumeration risk
+- [Phase 17-01]: invited-status users can sign in — only 'disabled' is explicitly blocked at auth layer
+- [Phase 17-01]: GET /api/auth/setup includes SUPER_ADMIN_EMAIL only when setupRequired=true — email never exposed post-setup
+- [Phase 17-01]: POST /api/auth/setup sets status:'active' explicitly — User schema defaults to 'invited' which would block sign-in
 
 ### Pending Todos
 
@@ -90,6 +96,6 @@ None.
 
 ## Session Continuity
 
-Last session: 2026-03-28T06:33:00Z
-Stopped at: Completed 17-02-PLAN.md (PermissionsContext, AuthProviders, layout.tsx wiring)
+Last session: 2026-03-28T06:46:00Z
+Stopped at: Completed 17-01-PLAN.md (authorize() errors, displayName in session, /api/auth/setup route)
 Resume file: None

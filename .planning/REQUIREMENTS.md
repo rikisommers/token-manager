@@ -9,11 +9,11 @@ Requirements for v1.5 Org User Management milestone. Each maps to roadmap phases
 
 ### Authentication (AUTH)
 
-- [ ] **AUTH-01**: User can sign in with email and password
+- [x] **AUTH-01**: User can sign in with email and password
 - [ ] **AUTH-02**: Unauthenticated users are redirected to the sign-in page
 - [x] **AUTH-03**: Signed-in session persists across browser refresh (JWT)
 - [ ] **AUTH-04**: User can sign out from any page
-- [ ] **AUTH-05**: First user to complete registration is automatically granted the Admin role
+- [x] **AUTH-05**: First user to complete registration is automatically granted the Admin role
 - [x] **AUTH-06**: A superadmin account is configured via `SUPER_ADMIN_EMAIL` environment variable; this account always has Admin access and cannot be removed or downgraded by any user action (enforced in JWT callback on every sign-in)
 
 ### User Management (USER)
@@ -89,10 +89,10 @@ Which phases cover which requirements. Updated during roadmap creation.
 |-------------|-------|--------|
 | ARCH-01 | Phase 16 | Complete |
 | AUTH-06 | Phase 16 | Complete |
-| AUTH-01 | Phase 17 | Pending |
+| AUTH-01 | Phase 17 | Complete |
 | AUTH-03 | Phase 17 | Complete |
 | AUTH-04 | Phase 17 | Pending |
-| AUTH-05 | Phase 17 | Pending |
+| AUTH-05 | Phase 17 | Complete |
 | AUTH-02 | Phase 18 | Pending |
 | ARCH-02 | Phase 18 | Pending |
 | PERM-01 | Phase 19 | Pending |
