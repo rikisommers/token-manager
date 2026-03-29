@@ -13,7 +13,7 @@ requires:
   - phase: 20-03
     provides: "/org/users page, InviteModal, OrgSidebar Admin-only Users nav, middleware role guard"
 provides:
-  - Human-verified end-to-end invite flow (pending approval)
+  - Human-verified end-to-end invite flow (APPROVED)
   - Pre-flight TypeScript build confirmation for Phase 20
   - File existence confirmation for all Phase 20 artifacts
 affects:
@@ -41,32 +41,33 @@ requirements-completed:
   - USER-07
 
 # Metrics
-duration: ~2min (Task 1 auto); Task 2 pending human approval
+duration: ~2min (Task 1 auto) + human verification
 completed: 2026-03-29
 ---
 
 # Phase 20 Plan 04: Human Verification Checkpoint Summary
 
-**Pre-flight build verification passed; awaiting human sign-off on 6 end-to-end invite flow scenarios.**
+**Pre-flight build clean + human approval of all 6 end-to-end invite flow scenarios — Phase 20 complete.**
 
 ## Performance
 
-- **Duration:** ~2 min (Task 1 auto-complete)
+- **Duration:** ~2 min (Task 1 auto) + human verification (Task 2)
 - **Started:** 2026-03-28T21:38:18Z
-- **Completed:** 2026-03-29 (pending Task 2 human approval)
-- **Tasks:** 1 of 2 complete
+- **Completed:** 2026-03-29
+- **Tasks:** 2 of 2 complete
 - **Files modified:** 0
 
 ## Accomplishments
 
 - npx tsc --noEmit passes with zero errors across the full Phase 20 implementation
 - All 8 infrastructure checks confirmed: invite API routes, account setup route and page, /org/users page, middleware /org/users guard, LayoutShell /org/* routing, OrgSidebar isAdmin conditional nav
+- Human approved all 6 end-to-end scenarios: invite send + email delivery, duplicate rejection, account setup + auto sign-in, single-use link enforcement, pending table management (resend/revoke), non-Admin redirect
 
 ## Task Commits
 
 Task 1 produced no file changes (verification only — no commit needed).
 
-Task 2 pending human approval.
+Task 2: Human approved all 6 scenarios — Phase 20 requirements USER-02, USER-03, USER-04, USER-07 satisfied end-to-end.
 
 ## Files Created/Modified
 
@@ -90,9 +91,9 @@ None — all 8 pre-flight checks passed on first run.
 
 ## Next Phase Readiness
 
-- Phase 20 implementation is complete and TypeScript-clean
-- Human approval of the 6 scenarios (Task 2) is the final gate before Phase 21 can begin
-- Phase 21 (active members) extends /org/users by adding active member rows above the pending invites table
+- Phase 20 complete — all 4 plans done, all 6 end-to-end scenarios approved
+- Phase 21 (active members / org users admin UI) can proceed — /org/users page and InviteModal are ready to be extended
+- No blockers
 
 ---
 *Phase: 20-email-invite-flow-and-account-setup*
@@ -113,3 +114,5 @@ Pre-flight results:
 - FOUND: middleware /org/users guard (startsWith('/org/users'))
 - FOUND: LayoutShell pathname.startsWith('/org') in isOrgRoute()
 - FOUND: OrgSidebar isAdmin conditional Users nav item
+
+Human verification: APPROVED — all 6 scenarios passed.
