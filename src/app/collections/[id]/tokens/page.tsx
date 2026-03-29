@@ -511,7 +511,7 @@ export default function CollectionTokensPage({ params }: TokensPageProps) {
     const onKeyDown = (e: KeyboardEvent) => {
       if ((e.metaKey || e.ctrlKey) && e.key === 's') {
         e.preventDefault();
-        handleSave();
+        if (canEdit) handleSave();
       }
       if ((e.metaKey || e.ctrlKey) && e.key === 'z') {
         e.preventDefault();
@@ -991,16 +991,18 @@ export default function CollectionTokensPage({ params }: TokensPageProps) {
             <Download size={16} />
           </Button>
 
-          {/* Save button */}
-          <Button 
-            onClick={handleSave} 
-            disabled={isSaving}
-            className="bg-blue-600 hover:bg-blue-700 text-white gap-1"
-            size="sm"
-          >
-            <Save size={14} />
-            {isSaving ? 'Saving…' : 'Save'}
-          </Button>
+          {/* Save button — hidden for read-only roles */}
+          {canEdit && (
+            <Button
+              onClick={handleSave}
+              disabled={isSaving}
+              className="bg-blue-600 hover:bg-blue-700 text-white gap-1"
+              size="sm"
+            >
+              <Save size={14} />
+              {isSaving ? 'Saving…' : 'Save'}
+            </Button>
+          )}
 
           {/* More actions dropdown */}
           <DropdownMenu>
@@ -1010,12 +1012,16 @@ export default function CollectionTokensPage({ params }: TokensPageProps) {
               </Button>
             </DropdownMenuTrigger>
             <DropdownMenuContent align="end">
-              <DropdownMenuItem onClick={() => setSaveAsDialogOpen(true)}>
-                Save As
-              </DropdownMenuItem>
-              <DropdownMenuItem onClick={() => setShowLoadDialog(true)}>
-                Load from Database
-              </DropdownMenuItem>
+              {canEdit && (
+                <DropdownMenuItem onClick={() => setSaveAsDialogOpen(true)}>
+                  Save As
+                </DropdownMenuItem>
+              )}
+              {canEdit && (
+                <DropdownMenuItem onClick={() => setShowLoadDialog(true)}>
+                  Load from Database
+                </DropdownMenuItem>
+              )}
               {(canFigma || canGitHub) && <DropdownMenuSeparator />}
               {canFigma && (
                 <DropdownMenuItem onClick={() => setImportFigmaOpen(true)}>
@@ -1037,20 +1043,24 @@ export default function CollectionTokensPage({ params }: TokensPageProps) {
                   Export to Figma
                 </DropdownMenuItem>
               )}
-              <DropdownMenuSeparator />
-            <DropdownMenuItem onClick={() => setEditOpen(true)}>
-              Edit
-            </DropdownMenuItem>
-              <DropdownMenuSeparator />
-              <DropdownMenuItem onClick={() => setShowClearDialog(true)} className="text-amber-600 focus:text-amber-600 focus:bg-amber-50">
-                Clear Form
-              </DropdownMenuItem>
-              <DropdownMenuItem
-                onClick={() => setDeleteOpen(true)}
-                className="text-red-600 focus:text-red-600 focus:bg-red-50"
-              >
-                Delete
-              </DropdownMenuItem>
+              {canEdit && (
+                <>
+                  <DropdownMenuSeparator />
+                  <DropdownMenuItem onClick={() => setEditOpen(true)}>
+                    Edit
+                  </DropdownMenuItem>
+                  <DropdownMenuSeparator />
+                  <DropdownMenuItem onClick={() => setShowClearDialog(true)} className="text-amber-600 focus:text-amber-600 focus:bg-amber-50">
+                    Clear Form
+                  </DropdownMenuItem>
+                  <DropdownMenuItem
+                    onClick={() => setDeleteOpen(true)}
+                    className="text-red-600 focus:text-red-600 focus:bg-red-50"
+                  >
+                    Delete
+                  </DropdownMenuItem>
+                </>
+              )}
             </DropdownMenuContent>
           </DropdownMenu>
         </div>
@@ -1128,11 +1138,11 @@ export default function CollectionTokensPage({ params }: TokensPageProps) {
                 groups={filteredGroups}
                 selectedGroupId={selectedGroupId}
                 onGroupSelect={(id) => { setSelectedGroupId(id); setSelectedToken(null); }}
-                onAddGroup={() => setIsAddingGroup(true)}
-                onDeleteGroup={(groupId) => setPendingGroupAction({ type: 'delete', groupId })}
-                onAddSubGroup={(groupId) => { setAddSubGroupParentId(groupId); setIsAddingGroup(true); }}
-                onGroupsReordered={handleGroupsReordered}
-                onRenameGroup={handleRenameGroup}
+                onAddGroup={canEdit ? () => setIsAddingGroup(true) : undefined}
+                onDeleteGroup={canEdit ? (groupId) => setPendingGroupAction({ type: 'delete', groupId }) : undefined}
+                onAddSubGroup={canEdit ? (groupId) => { setAddSubGroupParentId(groupId); setIsAddingGroup(true); } : undefined}
+                onGroupsReordered={canEdit ? handleGroupsReordered : undefined}
+                onRenameGroup={canEdit ? handleRenameGroup : undefined}
               />
               {/* Collapse toggle at bottom */}
               <div className="mt-auto p-2 border-t border-gray-200">

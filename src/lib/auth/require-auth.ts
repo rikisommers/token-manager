@@ -41,7 +41,8 @@ export async function requireAuth(): Promise<AuthResult> {
  * - Admin org role + can perform action → Session (Admin bypasses collection grant check)
  * - Admin org role + cannot perform action → 403 Forbidden (data integrity edge case)
  * - Non-Admin + no collectionId → use orgRole as effectiveRole
- * - Non-Admin + collectionId + no grant → 404 Not Found (collection invisible to user)
+ * - Non-Admin + collectionId + no grant + user has other grants → 404 Not Found (collection-scoped, no access)
+ * - Non-Admin + collectionId + no grant + user has no grants → org-scoped, use orgRole
  * - Non-Admin + collectionId + grant found → use grant.role as effectiveRole
  * - effectiveRole can perform action → Session; otherwise → 403 Forbidden
  *
@@ -73,10 +74,17 @@ export async function requireRole(action: ActionType, collectionId?: string): Pr
     }).lean();
 
     if (!grant) {
-      return NextResponse.json({ error: 'Not Found' }, { status: 404 });
+      // No grant for this collection — check if user is org-scoped (zero grants total)
+      // vs collection-scoped (has grants but not for this one)
+      const anyGrant = await CollectionPermission.exists({ userId: session.user.id });
+      if (anyGrant) {
+        // Collection-scoped user with no access to this collection
+        return NextResponse.json({ error: 'Not Found' }, { status: 404 });
+      }
+      // Org-scoped user: fall through using orgRole as effectiveRole
+    } else {
+      effectiveRole = grant.role as Role;
     }
-
-    effectiveRole = grant.role as Role;
   }
 
   if (canPerform(effectiveRole, action)) {

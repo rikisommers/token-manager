@@ -34,6 +34,6 @@ export async function GET(request: Request) {
     valid: true,
     email: invite.email,
     role: invite.role,
-    ...(invite.collectionId ? { collectionId: invite.collectionId } : {}),
+    ...(invite.collectionIds?.length ? { collectionIds: invite.collectionIds } : {}),
   });
 }

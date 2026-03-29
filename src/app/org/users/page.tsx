@@ -1,11 +1,13 @@
 'use client';
 
 import { useEffect, useState } from 'react';
-import { UserPlus, RefreshCw, Trash2 } from 'lucide-react';
+import { UserPlus, RefreshCw, Trash2, Pencil, Check } from 'lucide-react';
 import { useSession } from 'next-auth/react';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from '@/components/ui/dialog';
+import { Checkbox } from '@/components/ui/checkbox';
 import {
   AlertDialog,
   AlertDialogAction,
@@ -27,6 +29,11 @@ interface InviteRow {
   expiresAt: string;
 }
 
+interface CollectionRef {
+  id: string;
+  name: string;
+}
+
 interface UserRow {
   _id: string;
   displayName: string;
@@ -35,6 +42,7 @@ interface UserRow {
   status: 'active' | 'invited';
   createdAt: string;
   isSuperAdmin: boolean;
+  collections: CollectionRef[];
 }
 
 export default function OrgUsersPage() {
@@ -44,10 +52,14 @@ export default function OrgUsersPage() {
   const [modalOpen, setModalOpen] = useState(false);
   const [users, setUsers] = useState<UserRow[]>([]);
   const [removeTarget, setRemoveTarget] = useState<UserRow | null>(null);
+  const [collectionsTarget, setCollectionsTarget] = useState<UserRow | null>(null);
+  const [allCollections, setAllCollections] = useState<CollectionRef[]>([]);
+  const [selectedCollectionIds, setSelectedCollectionIds] = useState<Set<string>>(new Set());
+  const [savingCollections, setSavingCollections] = useState(false);
 
   useEffect(() => {
     setLoading(true);
-    Promise.all([fetchUsers(), fetchInvites()]).finally(() => setLoading(false));
+    Promise.all([fetchUsers(), fetchInvites(), fetchAllCollections()]).finally(() => setLoading(false));
   // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
@@ -56,6 +68,14 @@ export default function OrgUsersPage() {
     if (res.ok) {
       const data = await res.json();
       setUsers(data.users ?? []);
+    }
+  }
+
+  async function fetchAllCollections() {
+    const res = await fetch('/api/collections');
+    if (res.ok) {
+      const data = await res.json();
+      setAllCollections((data.collections ?? []).map((c: { _id: string; name: string }) => ({ id: c._id, name: c.name })));
     }
   }
 
@@ -111,6 +131,31 @@ export default function OrgUsersPage() {
     }
   }
 
+  function openCollectionsDialog(user: UserRow) {
+    setCollectionsTarget(user);
+    setSelectedCollectionIds(new Set(user.collections.map((c) => c.id)));
+  }
+
+  async function handleSaveCollections() {
+    if (!collectionsTarget) return;
+    setSavingCollections(true);
+    const res = await fetch(`/api/org/users/${collectionsTarget._id}/collections`, {
+      method: 'PUT',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ collectionIds: Array.from(selectedCollectionIds) }),
+    });
+    setSavingCollections(false);
+    if (res.ok) {
+      const updated = allCollections.filter((c) => selectedCollectionIds.has(c.id));
+      setUsers((prev) =>
+        prev.map((u) => u._id === collectionsTarget._id ? { ...u, collections: updated } : u)
+      );
+      setCollectionsTarget(null);
+    } else {
+      showErrorToast('Failed to update collection access');
+    }
+  }
+
   async function handleRevoke(id: string) {
     const res = await fetch(`/api/invites/${id}`, { method: 'DELETE' });
     if (res.ok) {
@@ -149,6 +194,7 @@ export default function OrgUsersPage() {
               <th className="text-left px-4 py-3 font-medium text-gray-500 dark:text-gray-400">Name</th>
               <th className="text-left px-4 py-3 font-medium text-gray-500 dark:text-gray-400">Email</th>
               <th className="text-left px-4 py-3 font-medium text-gray-500 dark:text-gray-400">Role</th>
+              <th className="text-left px-4 py-3 font-medium text-gray-500 dark:text-gray-400">Collections</th>
               <th className="text-left px-4 py-3 font-medium text-gray-500 dark:text-gray-400">Status</th>
               <th className="text-right px-4 py-3 font-medium text-gray-500 dark:text-gray-400">Actions</th>
             </tr>
@@ -156,12 +202,12 @@ export default function OrgUsersPage() {
           <tbody>
             {loading && (
               <tr>
-                <td colSpan={5} className="px-4 py-8 text-center text-gray-400">Loading...</td>
+                <td colSpan={6} className="px-4 py-8 text-center text-gray-400">Loading...</td>
               </tr>
             )}
             {!loading && users.length === 0 && invites.length === 0 && (
               <tr>
-                <td colSpan={5} className="px-4 py-8 text-center text-gray-400">No members yet. Click &quot;Invite User&quot; to get started.</td>
+                <td colSpan={6} className="px-4 py-8 text-center text-gray-400">No members yet. Click &quot;Invite User&quot; to get started.</td>
               </tr>
             )}
             {!loading && users.map((user) => {
@@ -189,6 +235,19 @@ export default function OrgUsersPage() {
                         <SelectItem value="Viewer">Viewer</SelectItem>
                       </SelectContent>
                     </Select>
+                  </td>
+                  <td className="px-4 py-3">
+                    <button
+                      onClick={() => canAct && openCollectionsDialog(user)}
+                      className={`flex items-center gap-1.5 text-sm group ${canAct ? 'cursor-pointer hover:text-gray-900 dark:hover:text-gray-100' : 'cursor-default'} text-gray-600 dark:text-gray-300`}
+                      title={canAct ? 'Edit collection access' : undefined}
+                    >
+                      {user.collections.length === 0
+                        ? <span className="text-gray-400 dark:text-gray-500">All collections</span>
+                        : <span>{user.collections.map((c) => c.name).join(', ')}</span>
+                      }
+                      {canAct && <Pencil className="h-3 w-3 opacity-0 group-hover:opacity-50 flex-shrink-0" />}
+                    </button>
                   </td>
                   <td className="px-4 py-3">
                     <Badge variant={user.status === 'active' ? 'secondary' : 'outline'}>
@@ -220,6 +279,7 @@ export default function OrgUsersPage() {
                   <td className="px-4 py-3 text-gray-400 dark:text-gray-500">—</td>
                   <td className="px-4 py-3 text-gray-600 dark:text-gray-300">{invite.email}</td>
                   <td className="px-4 py-3 text-gray-500 dark:text-gray-400">{invite.role}</td>
+                  <td className="px-4 py-3 text-gray-400 dark:text-gray-500 text-sm">—</td>
                   <td className="px-4 py-3">
                     <Badge variant={expired ? 'destructive' : 'outline'}>
                       {expired ? 'Expired' : 'Pending'}
@@ -258,6 +318,48 @@ export default function OrgUsersPage() {
         onOpenChange={setModalOpen}
         onSuccess={handleInviteSuccess}
       />
+
+      {/* Collection access dialog */}
+      <Dialog open={collectionsTarget !== null} onOpenChange={(open) => { if (!open) setCollectionsTarget(null); }}>
+        <DialogContent className="max-w-sm">
+          <DialogHeader>
+            <DialogTitle>Collection access — {collectionsTarget?.displayName}</DialogTitle>
+          </DialogHeader>
+          <div className="flex flex-col gap-3 mt-2">
+            {/* All collections option */}
+            <label className="flex items-center gap-3 cursor-pointer">
+              <Checkbox
+                checked={selectedCollectionIds.size === 0}
+                onCheckedChange={(checked) => { if (checked) setSelectedCollectionIds(new Set()); }}
+              />
+              <span className="text-sm font-medium text-gray-700 dark:text-gray-300">All collections</span>
+            </label>
+            <div className="border-t border-gray-100 dark:border-gray-800 pt-2 flex flex-col gap-2">
+              {allCollections.map((c) => (
+                <label key={c.id} className="flex items-center gap-3 cursor-pointer">
+                  <Checkbox
+                    checked={selectedCollectionIds.has(c.id)}
+                    onCheckedChange={(checked) => {
+                      setSelectedCollectionIds((prev) => {
+                        const next = new Set(prev);
+                        if (checked) next.add(c.id); else next.delete(c.id);
+                        return next;
+                      });
+                    }}
+                  />
+                  <span className="text-sm text-gray-700 dark:text-gray-300">{c.name}</span>
+                </label>
+              ))}
+            </div>
+          </div>
+          <DialogFooter className="mt-4">
+            <Button variant="outline" onClick={() => setCollectionsTarget(null)} disabled={savingCollections}>Cancel</Button>
+            <Button onClick={handleSaveCollections} disabled={savingCollections}>
+              {savingCollections ? 'Saving...' : <><Check className="mr-2 h-4 w-4" />Save</>}
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
 
       <AlertDialog open={removeTarget !== null} onOpenChange={(open) => { if (!open) setRemoveTarget(null); }}>
         <AlertDialogContent>

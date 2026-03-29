@@ -23,24 +23,26 @@ export function OrgSidebar() {
       icon: LayoutGrid,
       badge: null,
     },
-    {
-      href: '/settings',
-      label: 'Settings',
-      icon: SlidersHorizontal,
-      badge: (
-        <span
-          title={isLoading ? 'Connecting...' : db.label}
-          className={`w-2 h-2 rounded-full flex-shrink-0 ${
-            isLoading
-              ? 'bg-gray-300 animate-pulse'
-              : isConnected
-                ? 'bg-green-500'
-                : 'bg-amber-400'
-          }`}
-        />
-      ),
-    },
-    ...(isAdmin ? [{ href: '/org/users', label: 'Users', icon: Users, badge: null }] : []),
+    ...(isAdmin ? [
+      {
+        href: '/settings',
+        label: 'Settings',
+        icon: SlidersHorizontal,
+        badge: (
+          <span
+            title={isLoading ? 'Connecting...' : db.label}
+            className={`w-2 h-2 rounded-full flex-shrink-0 ${
+              isLoading
+                ? 'bg-gray-300 animate-pulse'
+                : isConnected
+                  ? 'bg-green-500'
+                  : 'bg-amber-400'
+            }`}
+          />
+        ),
+      },
+      { href: '/org/users', label: 'Users', icon: Users, badge: null },
+    ] : []),
   ];
 
   return (

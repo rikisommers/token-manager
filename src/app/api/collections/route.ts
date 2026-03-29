@@ -26,8 +26,11 @@ export async function GET() {
     if (session.user.role !== 'Admin') {
       await dbConnect();
       const grants = await CollectionPermission.find({ userId: session.user.id }, 'collectionId').lean();
-      const grantedIds = new Set(grants.map(g => g.collectionId));
-      visibleDocs = docs.filter(d => grantedIds.has(d._id.toString()));
+      // No grants = org-scoped access (all collections visible)
+      if (grants.length > 0) {
+        const grantedIds = new Set(grants.map(g => g.collectionId));
+        visibleDocs = docs.filter(d => grantedIds.has(d._id.toString()));
+      }
     }
 
     const collections: CollectionCardData[] = visibleDocs.map((doc) => ({

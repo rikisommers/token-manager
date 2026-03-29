@@ -24,7 +24,11 @@ export async function GET(
       collectionId: params.id,
     }).lean();
     if (!grant) {
-      return NextResponse.json({ error: 'Collection not found' }, { status: 404 });
+      // No specific grant — org-scoped users (zero grants) can access all collections
+      const anyGrant = await CollectionPermission.exists({ userId: session.user.id });
+      if (anyGrant) {
+        return NextResponse.json({ error: 'Collection not found' }, { status: 404 });
+      }
     }
   }
 

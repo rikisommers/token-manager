@@ -40,7 +40,7 @@ export async function POST(request: Request) {
   if (authResult instanceof NextResponse) return authResult;
   const session = authResult;
 
-  const { email, role, collectionId } = await request.json();
+  const { email, role, collectionIds } = await request.json() as { email: string; role: string; collectionIds?: string[] };
 
   if (!email || !role || !['Admin', 'Editor', 'Viewer'].includes(role)) {
     return NextResponse.json({ error: 'Invalid input' }, { status: 400 });
@@ -48,8 +48,8 @@ export async function POST(request: Request) {
 
   await dbConnect();
 
-  // Duplicate check: existing user account
-  const existingUser = await User.findOne({ email: email.toLowerCase() });
+  // Duplicate check: existing active user account (disabled = removed, can be re-invited)
+  const existingUser = await User.findOne({ email: email.toLowerCase(), status: { $ne: 'disabled' } });
   if (existingUser) {
     return NextResponse.json(
       { error: 'An account with this email already exists' },
@@ -82,23 +82,24 @@ export async function POST(request: Request) {
     createdBy: session.user.id,
     expiresAt,
     status: 'pending',
-    ...(collectionId ? { collectionId } : {}),
+    ...(collectionIds?.length ? { collectionIds } : {}),
   });
 
   // Send email
   const setupUrl = `${process.env.NEXTAUTH_URL}/auth/invite-setup?token=${plainToken}`;
   const resend = new Resend(process.env.RESEND_API_KEY);
   const { error: emailError } = await resend.emails.send({
-    from: 'ATUI Tokens Manager <onboarding@resend.dev>', // dev sandbox; prod needs verified domain
+    from: process.env.RESEND_FROM ?? 'ATUI Tokens Manager <noreply@tokenflow.studio>',
     to: [email.toLowerCase()],
     subject: `You've been invited to ATUI Tokens Manager as ${role}`,
     html: buildInviteEmailHtml(email.toLowerCase(), role, setupUrl),
   });
 
   if (emailError) {
+    console.error('[invites] Resend error:', emailError);
     // Roll back invite creation if email delivery failed
     await Invite.deleteOne({ _id: invite._id });
-    return NextResponse.json({ error: 'Failed to send invite email' }, { status: 500 });
+    return NextResponse.json({ error: 'Failed to send invite email', detail: emailError.message }, { status: 500 });
   }
 
   return NextResponse.json({ invite }, { status: 201 });

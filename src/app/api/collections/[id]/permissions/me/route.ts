@@ -38,7 +38,12 @@ export async function GET(
   }).lean();
 
   if (!grant) {
-    return NextResponse.json({ error: 'Not Found' }, { status: 404 });
+    // No specific grant — org-scoped users (zero grants) use their org role
+    const anyGrant = await CollectionPermission.exists({ userId: session.user.id });
+    if (anyGrant) {
+      return NextResponse.json({ error: 'Not Found' }, { status: 404 });
+    }
+    return NextResponse.json({ role: orgRole });
   }
 
   return NextResponse.json({ role: grant.role });

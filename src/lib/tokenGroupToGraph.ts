@@ -15,12 +15,14 @@ function isAlias(value: unknown): boolean {
   return typeof value === 'string' && value.startsWith('{') && value.endsWith('}');
 }
 
-function resolveColor(value: string, allGroups: TokenGroup[]): string | undefined {
+function resolveColor(value: string, allGroups: TokenGroup[], visited = new Set<string>()): string | undefined {
   if (!isAlias(value)) return value.startsWith('#') ? value : undefined;
   const clean = value.slice(1, -1).replace(/\.value$/, '');
+  if (visited.has(clean)) return undefined; // circular alias — bail out
+  visited.add(clean);
   const found = findTokenByPath(clean, allGroups);
   if (!found) return undefined;
-  if (isAlias(String(found.value))) return resolveColor(String(found.value), allGroups);
+  if (isAlias(String(found.value))) return resolveColor(String(found.value), allGroups, visited);
   return String(found.value);
 }
 

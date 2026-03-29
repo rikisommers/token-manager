@@ -281,7 +281,7 @@ function TokenTableRow({
           <div className="h-9 flex items-center gap-1.5 px-2">
             {/* Color swatch / picker */}
             {token.type === "color" && (
-              <Popover open={colorPickerOpen} onOpenChange={setColorPickerOpen}>
+              <Popover open={isReadOnly ? false : colorPickerOpen} onOpenChange={isReadOnly ? undefined : setColorPickerOpen}>
                 <PopoverTrigger asChild>
                   <button
                     type="button"
@@ -363,15 +363,17 @@ function TokenTableRow({
                 </button>
               )}
 
-            {/* Reference picker */}
-            <div onClick={(e) => e.stopPropagation()}>
-              <TokenReferencePicker
-                allGroups={tokenGroups}
-                onSelect={(alias) =>
-                  onUpdateToken(group.id, token.id, "value", alias)
-                }
-              />
-            </div>
+            {/* Reference picker — hidden for read-only roles */}
+            {!isReadOnly && (
+              <div onClick={(e) => e.stopPropagation()}>
+                <TokenReferencePicker
+                  allGroups={tokenGroups}
+                  onSelect={(alias) =>
+                    onUpdateToken(group.id, token.id, "value", alias)
+                  }
+                />
+              </div>
+            )}
           </div>
         </td>
 
@@ -453,15 +455,11 @@ function TokenTableRow({
                   <Input
                     type="text"
                     value={key}
-                    onChange={(e) => {
+                    readOnly={isReadOnly}
+                    onChange={isReadOnly ? undefined : (e) => {
                       const newKey = e.target.value;
                       onRemoveAttribute(group.id, token.id, key);
-                      onUpdateAttribute(
-                        group.id,
-                        token.id,
-                        newKey,
-                        value as string,
-                      );
+                      onUpdateAttribute(group.id, token.id, newKey, value as string);
                     }}
                     placeholder="Attribute name"
                     className="flex-1 px-2 py-1 text-xs rounded border border-gray-300 h-auto"
@@ -470,32 +468,37 @@ function TokenTableRow({
                   <Input
                     type="text"
                     value={value as string}
-                    onChange={(e) =>
+                    readOnly={isReadOnly}
+                    onChange={isReadOnly ? undefined : (e) =>
                       onUpdateAttribute(group.id, token.id, key, e.target.value)
                     }
                     placeholder="Attribute value"
                     className="flex-1 px-2 py-1 text-xs rounded border border-gray-300 h-auto"
                   />
-                  <Button
-                    variant="ghost"
-                    size="sm"
-                    onClick={() => onRemoveAttribute(group.id, token.id, key)}
-                    className="text-sm text-red-600 hover:text-red-800 h-auto p-0"
-                  >
-                    ✕
-                  </Button>
+                  {!isReadOnly && (
+                    <Button
+                      variant="ghost"
+                      size="sm"
+                      onClick={() => onRemoveAttribute(group.id, token.id, key)}
+                      className="text-sm text-red-600 hover:text-red-800 h-auto p-0"
+                    >
+                      ✕
+                    </Button>
+                  )}
                 </div>
               ))}
-              <Button
-                variant="ghost"
-                size="sm"
-                onClick={() =>
-                  onUpdateAttribute(group.id, token.id, "newAttribute", "")
-                }
-                className="text-sm font-medium text-blue-600 hover:text-blue-800 h-auto p-0"
-              >
-                + Add Attribute
-              </Button>
+              {!isReadOnly && (
+                <Button
+                  variant="ghost"
+                  size="sm"
+                  onClick={() =>
+                    onUpdateAttribute(group.id, token.id, "newAttribute", "")
+                  }
+                  className="text-sm font-medium text-blue-600 hover:text-blue-800 h-auto p-0"
+                >
+                  + Add Attribute
+                </Button>
+              )}
             </div>
           </td>
         </tr>
@@ -1408,7 +1411,8 @@ export function TokenGeneratorForm({
               <Input
                 type="text"
                 value={group.name}
-                onChange={(e) => updateGroupName(group.id, e.target.value)}
+                readOnly={isReadOnly}
+                onChange={isReadOnly ? undefined : (e) => updateGroupName(group.id, e.target.value)}
                 className="px-2 py-1 text-base font-semibold bg-transparent rounded border-none outline-none focus:bg-gray-50 h-auto flex-1"
                 placeholder="Group name"
               />
@@ -1422,41 +1426,47 @@ export function TokenGeneratorForm({
                   {group.tokens.length} tokens
                 </span>
               )}
-              <DropdownMenu>
-                <DropdownMenuTrigger asChild>
-                  <Button
-                    variant="ghost"
-                    size="sm"
-                    className="h-7 w-7 p-0 text-gray-400 hover:text-gray-700"
-                  >
-                    ···
-                  </Button>
-                </DropdownMenuTrigger>
-                <DropdownMenuContent align="end" className="w-44">
-                  {onResetGroupToSource && !isGroupSource?.(group.id) && (
-                    <>
-                      <DropdownMenuItem
-                        onClick={() => onResetGroupToSource(group.id)}
-                        className="text-amber-700 focus:text-amber-800"
-                      >
-                        <RotateCcw size={14} className="mr-2" />
-                        Reset to source
-                      </DropdownMenuItem>
-                      <DropdownMenuSeparator />
-                    </>
-                  )}
-                  <DropdownMenuItem onClick={() => addSubGroup(group.id)}>
-                    + Add Sub-group
-                  </DropdownMenuItem>
-                  <DropdownMenuSeparator />
-                  <DropdownMenuItem
-                    className="text-red-600 focus:text-red-700"
-                    onClick={() => deleteTokenGroup(group.id)}
-                  >
-                    Delete Group
-                  </DropdownMenuItem>
-                </DropdownMenuContent>
-              </DropdownMenu>
+              {(!isReadOnly || (onResetGroupToSource && !isGroupSource?.(group.id))) && (
+                <DropdownMenu>
+                  <DropdownMenuTrigger asChild>
+                    <Button
+                      variant="ghost"
+                      size="sm"
+                      className="h-7 w-7 p-0 text-gray-400 hover:text-gray-700"
+                    >
+                      ···
+                    </Button>
+                  </DropdownMenuTrigger>
+                  <DropdownMenuContent align="end" className="w-44">
+                    {onResetGroupToSource && !isGroupSource?.(group.id) && (
+                      <>
+                        <DropdownMenuItem
+                          onClick={() => onResetGroupToSource(group.id)}
+                          className="text-amber-700 focus:text-amber-800"
+                        >
+                          <RotateCcw size={14} className="mr-2" />
+                          Reset to source
+                        </DropdownMenuItem>
+                        {!isReadOnly && <DropdownMenuSeparator />}
+                      </>
+                    )}
+                    {!isReadOnly && (
+                      <>
+                        <DropdownMenuItem onClick={() => addSubGroup(group.id)}>
+                          + Add Sub-group
+                        </DropdownMenuItem>
+                        <DropdownMenuSeparator />
+                        <DropdownMenuItem
+                          className="text-red-600 focus:text-red-700"
+                          onClick={() => deleteTokenGroup(group.id)}
+                        >
+                          Delete Group
+                        </DropdownMenuItem>
+                      </>
+                    )}
+                  </DropdownMenuContent>
+                </DropdownMenu>
+              )}
             </div>
           </div>
 
@@ -1740,7 +1750,7 @@ export function TokenGeneratorForm({
         </>
       )}
       {/* Add Group */}
-      {!hideAddGroupButton && (
+      {!hideAddGroupButton && !isReadOnly && (
         <div className="p-6 text-center bg-gray-50 rounded-lg border-2 border-gray-300 border-dashed">
           {!isAddingGroup ? (
             <Button

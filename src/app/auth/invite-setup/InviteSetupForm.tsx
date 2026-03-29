@@ -98,9 +98,8 @@ export default function InviteSetupForm({ token }: { token: string }) {
       return;
     }
 
-    // Step 3: Redirect to specific collection or home
-    const collectionId = (data as { collectionId?: string }).collectionId;
-    router.push(collectionId ? `/collections/${collectionId}` : '/collections');
+    // Step 3: Always redirect to collections list
+    router.push('/collections');
   };
 
   // Loading state while validating token

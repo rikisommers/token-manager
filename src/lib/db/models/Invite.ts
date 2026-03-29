@@ -10,7 +10,7 @@ export interface IInvite {
   expiresAt:    Date;
   createdBy:    string;    // User._id as string
   role:         Role;
-  collectionId?: string;  // Optional: used for post-setup redirect to a specific collection
+  collectionIds?: string[];  // Optional: collection-scoped access; empty/absent = all-org
   createdAt?: Date;
   updatedAt?: Date;
 }
@@ -25,7 +25,7 @@ const inviteSchema = new Schema<InviteDoc>(
     expiresAt: { type: Date, required: true, default: () => new Date(Date.now() + 7 * 24 * 60 * 60 * 1000) },
     createdBy: { type: String, required: true },
     role:         { type: String, enum: ['Admin', 'Editor', 'Viewer'], required: true },
-    collectionId: { type: String, required: false },
+    collectionIds: { type: [String], required: false, default: undefined },
   },
   { timestamps: true }
 );
