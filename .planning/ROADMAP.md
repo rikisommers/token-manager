@@ -195,7 +195,7 @@ Plans:
 - [ ] 21-02-PLAN.md — Org users API routes: GET /api/org/users, PATCH /api/org/users/[id]/role, DELETE /api/org/users/[id]
 - [ ] 21-03-PLAN.md — Permission-gated UI: hide New Collection for Viewers; hide GitHub/Figma items; wire canEdit to TokenGeneratorForm
 - [ ] 21-04-PLAN.md — Extend /org/users page with active members section, inline role selector, and remove confirmation
-- [ ] 21-05-PLAN.md — Human verification of all 7 Phase 21 success criteria
+- [x] 21-05-PLAN.md — Human verification of all 7 Phase 21 success criteria (completed 2026-03-29)
 
 ## Progress
 
@@ -227,4 +227,4 @@ Plans:
 | 18. Middleware and Route Handler Guards | 3/3 | Complete    | 2026-03-28 | - |
 | 19. RBAC and Permissions Context | 6/6 | Complete    | 2026-03-28 | - |
 | 20. Email Invite Flow and Account Setup | 4/4 | Complete   | 2026-03-28 | - |
-| 21. Org Users Admin UI and Permission-Gated UI | 5/5 | Complete   | 2026-03-29 | - |
+| 21. Org Users Admin UI and Permission-Gated UI | 5/5 | Complete    | 2026-03-29 | - |
