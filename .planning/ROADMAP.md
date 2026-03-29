@@ -82,7 +82,7 @@ See: `.planning/milestones/v1.4-ROADMAP.md` for full phase details.
 - [x] **Phase 18: Middleware and Route Handler Guards** — withAuth middleware, requireAuth() utility, all 18 existing write Route Handlers guarded (completed 2026-03-28)
 - [x] **Phase 19: RBAC and Permissions Context** — PermissionsProvider, usePermissions() hook, role enforcement on write routes, JWT role re-fetch, per-collection overrides (completed 2026-03-28)
 - [x] **Phase 20: Email Invite Flow and Account Setup** — Resend invite email, invite token generation, account setup page, invite management (in progress — 1/4 plans complete)
-- [ ] **Phase 21: Org Users Admin UI and Permission-Gated UI** — /org/users admin page, role change and removal API, write controls hidden for Viewer
+- [x] **Phase 21: Org Users Admin UI and Permission-Gated UI** — /org/users admin page, role change and removal API, write controls hidden for Viewer (completed 2026-03-29)
 
 ## Phase Details
 
@@ -227,4 +227,4 @@ Plans:
 | 18. Middleware and Route Handler Guards | 3/3 | Complete    | 2026-03-28 | - |
 | 19. RBAC and Permissions Context | 6/6 | Complete    | 2026-03-28 | - |
 | 20. Email Invite Flow and Account Setup | 4/4 | Complete   | 2026-03-28 | - |
-| 21. Org Users Admin UI and Permission-Gated UI | 4/5 | In Progress|  | - |
+| 21. Org Users Admin UI and Permission-Gated UI | 5/5 | Complete   | 2026-03-29 | - |

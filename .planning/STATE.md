@@ -2,8 +2,8 @@
 gsd_state_version: 1.0
 milestone: v1.5
 milestone_name: Org User Management
-status: in_progress
-last_updated: "2026-03-28T21:25:16Z"
+status: complete
+last_updated: "2026-03-29T00:05:00Z"
 progress:
   total_phases: 6
   completed_phases: 0
@@ -23,9 +23,9 @@ See: .planning/PROJECT.md (updated 2026-03-28)
 ## Current Position
 
 Phase: 21 of 21 (Org Users Admin UI and Permission-Gated UI — complete)
-Plan: 04 complete (21-04 — /org/users page extended with Members table, role selector, remove dialog)
-Status: Phase 21 complete — all plans (01, 02, 03, 04) done; milestone v1.5 Org User Management complete
-Last activity: 2026-03-28 — Completed 21-04: Members table, inline role selector, AlertDialog remove flow; 1 task, 2 files modified (+1 created)
+Plan: 05 complete (21-05 — Pre-flight human verification: all 7 Phase 21 success criteria approved)
+Status: Phase 21 complete — all plans (01, 02, 03, 04, 05) done; milestone v1.5 Org User Management complete
+Last activity: 2026-03-29 — Completed 21-05: Human verification approved all 7 scenarios; build clean; Phase 21 and milestone v1.5 closed
 
 Progress: [░░░░░░░░░░] 0% (0/6 phases complete, 3 plans complete in phase 16)
 
@@ -71,6 +71,7 @@ Progress: [░░░░░░░░░░] 0% (0/6 phases complete, 3 plans comp
 | Phase 21-org-users-admin-ui-and-permission-gated-ui P01 | 4 | 2 tasks | 2 files |
 | Phase 21 P03 | 4 | 2 tasks | 2 files |
 | Phase 21-org-users-admin-ui-and-permission-gated-ui P04 | 2 | 1 task | 2 files |
+| Phase 21 P05 | 5 | 2 tasks | 0 files |
 
 ## Accumulated Context
 
@@ -153,6 +154,7 @@ Key decisions relevant to v1.5 (from research and 16-01 execution):
 - [Phase 21-04]: alert-dialog.tsx created as new shadcn-style component — @radix-ui/react-alert-dialog installed to support AlertDialog confirmation for remove user flow
 - [Phase 21-04]: canAct = !user.isSuperAdmin && !isSelf — single boolean gate controls both role selector disabled and remove button disabled per row
 - [Phase 21-04]: fetchUsers re-fetch used to revert optimistic role update — simpler than tracking previous value; consistent with fetch-on-mount pattern
+- [Phase 21]: All 7 Phase 21 success criteria verified by human: org members list, role change propagation, user removal, superadmin/self protection, Viewer collection page gating, Viewer GitHub/Figma dropdown gating, Viewer token editing disabled
 
 ### Pending Todos
 
@@ -167,6 +169,6 @@ None.
 
 ## Session Continuity
 
-Last session: 2026-03-28T21:59:38Z
-Stopped at: Completed 21-04-PLAN.md — /org/users page extended with Members table, inline role selector, AlertDialog remove flow; Phase 21 complete
+Last session: 2026-03-29T00:05:00Z
+Stopped at: Completed 21-05-PLAN.md — Phase 21 human verification approved; all 7 scenarios pass; milestone v1.5 Org User Management complete
 Resume file: None
